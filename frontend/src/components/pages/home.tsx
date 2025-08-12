@@ -114,6 +114,7 @@ function Home() {
         ))}
       </section>
 
+<<<<<<< HEAD
       <section className="bg-headline text-main py-12 text-center px-8 flex">
         <div>
           <h3 className="text-3xl font-semibold mb-4">
@@ -140,6 +141,22 @@ function Home() {
           </a>
           .
         </p>
+=======
+      <section className="bg-headline text-main py-12 text-center px-8">
+        <h3 className=" text-3xl font-semibold  mb-4">
+          Subscribe to our newsletter
+        </h3>
+
+        <div className="max-w-md mx-auto">
+          <input
+            type="email"
+            placeholder="Email của bạn"
+            className="w-full p-3 mb-4 rounded-lg border border-main focus:outline-none focus:ring-2 focus:ring-main"
+          />
+          <button className="w-full bg-tertiary text-headline p-3 rounded-lg">
+            Gửi
+          </button>
+>>>>>>> efbb19e48492cd1fe52a08e568dd0e7b8e0728ca
         </div>
       </section>
     </div>
