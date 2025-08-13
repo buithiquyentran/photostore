@@ -42,7 +42,6 @@ h1 {
 button {
   border-radius: 8px;
   border: 1px solid transparent;
-  padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
@@ -63,10 +62,13 @@ button {
   }
 }
 .bg-gradient {
-  background: linear-gradient(-45deg, #E3F6F5, #BAE8E8, #FFD803, #E3F6F5);
+  background: linear-gradient(-45deg, #e3f6f5, #bae8e8, #ffd803, #e3f6f5);
   background-size: 400% 400%;
 }
-
+.bg-gradient-btn {
+  background: linear-gradient(-45deg #e3f6f5, #ffd803, #bae8e8, #e3f6f5);
+  background-size: 400% 400%;
+}
 @keyframes gradientMove {
   0% {
     background-position: 0% 50%;

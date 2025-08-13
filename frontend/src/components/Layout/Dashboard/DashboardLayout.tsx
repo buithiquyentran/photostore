@@ -1,5 +1,5 @@
 // import Footer from "@/components/TracNghiem9231/Layout/Footer";
-import Sidebar from "@/components/Layout/Sidebar";
+import Sidebar from "@/components/Layout/Dashboard/Sidebar";
 import { Outlet } from "react-router-dom";
 
 const Layout = () => {

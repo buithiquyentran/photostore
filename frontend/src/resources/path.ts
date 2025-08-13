@@ -1,6 +1,7 @@
 const path = {
   HOME: "/",
-  LOGIN: "/dang-nhap",
+  LOGIN: "/login",
+  REGISTER: "/register",
 } as const;
 
 export default path;
