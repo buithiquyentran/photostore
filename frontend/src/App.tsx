@@ -5,6 +5,7 @@ import DashboardLayout from "@/components/Layout/Dashboard/DashboardLayout";
 import HOME from "@/components/pages/welcome/home";
 import LOGIN from "@/components/pages/login/login";
 import REGISTER from "@/components/pages/login/register";
+import BROWER from "@/components/pages/brower";
 function App() {
   return (
     <>
@@ -15,7 +16,9 @@ function App() {
           <Route path={path.LOGIN} element={<LOGIN />} />
         </Route>
 
-        <Route path="/" element={<DashboardLayout />}></Route>
+        <Route path="/" element={<DashboardLayout />}>
+          <Route path={path.BROWER} element={<BROWER/>} />
+        </Route>
       </Routes>
     </>
   );
