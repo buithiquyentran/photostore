@@ -6,9 +6,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     PROJECT_NAME: str = "PhotoStore"
     API_V1_STR: str = "/api/v1"
-    ENVIRONMENT: str = "local"           # local | staging | production
-    SENTRY_DSN: str | None = None
-
+    ENVIRONMENT: str = "local"          
+    SECRET_KEY: str = "supersecretkey"
+    
     # CORS
     all_cors_origins: List[str] = []
 
