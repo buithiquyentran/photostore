@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "supersecretkey"
     
     # CORS
-    all_cors_origins: List[str] = []
+    all_cors_origins: List[str] = ["http://localhost:5173"]
 
     class Config:
         env_file = ".env"

@@ -12,6 +12,7 @@ class LoginRequest(BaseModel):
     password: str
 
 class TokenResponse(BaseModel):
+    status: int = 0
     access_token: str
     token_type: str = "bearer"
     user_id: int
@@ -44,6 +45,7 @@ def login(data: LoginRequest, session: Session = Depends(get_session)):
         token = create_access_token({"sub": str(user["id"]), "email": user["email"]})
 
         return {
+            "status": 1,
             "access_token": token,
             "token_type": "bearer",
             "user_id": user["id"],

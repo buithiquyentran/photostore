@@ -3,9 +3,9 @@ from sqlmodel import Session, select
 from db.session import get_session
 from models import  Projects, Folders, Assets # model Asset đã tạo ở models/asset.py
 
-router = APIRouter( tags=["Assets"])
+router = APIRouter(prefix="/assets",  tags=["Assets"])
 
-@router.get("/assets")
+@router.get("/all_assets")
 def get_assets(session: Session = Depends(get_session)):
     
     try:

@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import FormGroup from "@/components/ui/FormGroup";
 // import ModalThongBao from "@/components/TracNghiem9231/shared/ModalThongBao";
 import path from "@/resources/path";
-
+import { authService } from "@/components/util/login.api";
 const DangNhapPage: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -21,10 +21,11 @@ const DangNhapPage: React.FC = () => {
     // Kiểm tra xem người dùng đã đăng nhập hay chưa
     const accessToken = localStorage.getItem("access_token");
     if (accessToken) {
-      // Nếu đã đăng nhập, chuyển hướng đến trang trac-nghiem
+      // Nếu đã đăng nhập, chuyển hướng đến trang
       navigate(path.HOME);
     }
   }, [navigate]);
+
   const handleSubmit = async () => {
     if (!email) {
       setIsModalOpen({
@@ -43,27 +44,23 @@ const DangNhapPage: React.FC = () => {
     }
 
     try {
-      const response = await dangNhapTaiKhoanLDAP({
-        user: email,
-        pass: password,
+      const response = await authService.Login({
+        email: email,
+        password: password,
       });
 
       console.log(response);
-      if (response.data.status && response.data.data?.token) {
-        console.log("ok");
-        localStorage.setItem("access_token", response.data.data.token);
-        localStorage.setItem("tinh", response.data.data.matinh);
-        localStorage.setItem("isdn", response.data.data.dienthoai);
-        localStorage.setItem("email", response.data.data.email);
-        localStorage.setItem("ma_nhanvien", response.data.data.userid);
-        localStorage.setItem("hoten", response.data.data.hoten);
+      if (response.user_id && response.access_token) {
+        localStorage.setItem("access_token", response.access_token);
+        localStorage.setItem("email", response.email);
+        localStorage.setItem("username", response.username);
         console.log(
           "Token đã được lưu vào localStorage:",
-          response.data.data.token
+          response.access_token
         );
         setIsModalOpen(null);
         // Refresh trang sau khi đăng nhập thành công
-        navigate("/trac-nghiem");
+        navigate("/brower");
       } else {
         if (response.data.code === "2222") {
           setIsModalOpen({
