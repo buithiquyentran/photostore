@@ -11,7 +11,7 @@ class Projects(SQLModel, table=True):
 
     name: str = Field(max_length=100, nullable=False)
     description: Optional[str] = Field(default=None)
-
+    is_default: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Quan hệ với User (1 user có nhiều projects)

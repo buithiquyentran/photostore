@@ -12,6 +12,7 @@ class Folders(SQLModel, table=True):
 
     name: str = Field(max_length=100, nullable=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    is_default: bool = Field(default=False)
 
     # Quan hệ với Project (1 project có nhiều folders)
     projects: Optional["Projects"] = Relationship(back_populates="folders")

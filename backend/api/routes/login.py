@@ -19,6 +19,12 @@ class TokenResponse(BaseModel):
     username: str
     is_superuser: bool
 
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    username: str
+
+
 @router.post("/login", response_model=TokenResponse)
 def login(data: LoginRequest, session: Session = Depends(get_session)):
     """
@@ -34,6 +40,39 @@ def login(data: LoginRequest, session: Session = Depends(get_session)):
         if not user:
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
+        # Tạo JWT
+        token = create_access_token({"sub": str(user["id"]), "email": user["email"]})
+
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "user_id": user["id"],
+            "email": user["email"],
+            "username": user["username"],
+            "is_superuser": user["is_superuser"]
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+
+
+@router.post("/register", response_model=TokenResponse)
+def register(data: RegisterRequest, session: Session = Depends(get_session)):
+    """
+    Gọi procedure MySQL để register, nếu thành công thì trả về JWT token
+    """
+    try:
+        # Gọi stored procedure
+        result = session.exec(
+            text("CALL register(:p_email, :p_password, :p_name)").bindparams(p_email=data.email, p_password=data.password, p_name=data.username)
+        )
+
+        user = result.mappings().first()
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+         # COMMIT transaction để ghi dữ liệu
+        session.commit()
         # Tạo JWT
         token = create_access_token({"sub": str(user["id"]), "email": user["email"]})
 
