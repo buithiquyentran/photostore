@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException,status
+from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session
 from sqlalchemy import text
 from db.session import get_session
-from core.security import create_access_token
+from core.security import create_access_token, decode_access_token
 from pydantic import BaseModel
 
+from models.users import Users
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -89,3 +91,21 @@ def register(data: RegisterRequest, session: Session = Depends(get_session)):
 
     except Exception as e:
         raise HTTPException(status_code=401, detail=str(e))
+
+
+@router.get("/me", response_model=Users)
+def get_me(token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)):
+    payload = decode_access_token(token)
+    print(payload)
+    if not payload:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    id = payload.get("sub")
+    user = session.get(Users, id)
+    return {
+            "id": user.id,
+            "email": user.email,
+            "username": user.username,
+            "is_superuser": user.is_superuser
+        }
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")

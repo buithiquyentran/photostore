@@ -12,16 +12,24 @@ class AuthService {
   async Logout() {
     return (await this.api.post("/logout")).data;
   }
-}
+  async GetMe(token: string) {
+    return (
+      await this.api.get("/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+    ).data;
+  }
 
-export function resetLocalStorage() {
-  localStorage.removeItem("access_token");
-  localStorage.clear();
-  return;
-}
-
-export function logOut() {
-  resetLocalStorage();
+  async resetLocalStorage() {
+    localStorage.removeItem("access_token");
+    localStorage.clear();
+    return;
+  }
+  async logOut() {
+    this.resetLocalStorage();
+  }
 }
 
 export const authService = new AuthService();

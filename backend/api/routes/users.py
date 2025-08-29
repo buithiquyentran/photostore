@@ -6,7 +6,7 @@ from models.users import Users
 router = APIRouter(tags=["Users"])
 
 
-@router.delete("/users/{user_id}")
+@router.delete("/{user_id}")
 def delete_user(user_id: int, session: Session = Depends(get_session)):
     user = session.get(Users, user_id)
     if not user:
@@ -17,3 +17,4 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
         return {"status": "success", "message": "Xóa user thành công"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi xóa user: {e}")
+    
