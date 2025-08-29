@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from db.session import get_session
-from models.projects import Projects  
+from models.projects import Projects
 
-router = APIRouter(prefix="/items", tags=["Items"])
+router = APIRouter(tags=["Projects"])
 
 @router.get("/projects")
 def get_projects(session: Session = Depends(get_session)):
@@ -16,3 +16,50 @@ def get_projects(session: Session = Depends(get_session)):
         return {"status": "success", "data": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi truy vấn dữ liệu: {e}")
+
+@router.post("/projects")
+def create_project(project: Projects, session: Session = Depends(get_session)):
+    """
+    Thêm mới một project
+    """
+    try:
+        session.add(project)
+        session.commit()
+        session.refresh(project)
+        return {"status": "success", "data": project}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi thêm project: {e}")
+
+@router.put("/projects/{project_id}")
+def update_project(project_id: int, project_update: Projects, session: Session = Depends(get_session)):
+    """
+    Sửa thông tin một project
+    """
+    project = session.get(Projects, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project không tồn tại")
+    try:
+        update_data = project_update.dict(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(project, key, value)
+        session.add(project)
+        session.commit()
+        session.refresh(project)
+        return {"status": "success", "data": project}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi cập nhật project: {e}")
+
+@router.delete("/projects/{project_id}")
+def delete_project(project_id: int, session: Session = Depends(get_session)):
+    """
+    Xóa một project
+    """
+    project = session.get(Projects, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project không tồn tại")
+    try:
+        session.delete(project)
+        session.commit()
+        return {"status": "success", "message": "Xóa project thành công"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi xóa project: {e}")
