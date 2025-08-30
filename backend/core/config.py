@@ -7,8 +7,8 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "PhotoStore"
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "local"          
-    SECRET_KEY: str = "supersecretkey"
-    
+    SECRET_KEY: str  = "supersecretkey"
+    REFR_SECRET_KEY : str = "supersecretkeyrefresh"
     # CORS
     all_cors_origins: List[str] = ["http://localhost:5173"]
 

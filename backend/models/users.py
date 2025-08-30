@@ -14,5 +14,13 @@ class Users(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     # Quan hệ với Project (1 user có nhiều projects)
     projects: List["Projects"] = Relationship(back_populates="users")
-
+    refresh_token: List["RefreshToken"] = Relationship(back_populates="users")
+class RefreshToken(SQLModel, table=True):
+    __tablename__ = "refresh_token"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id")
+    token: str
+    expires_at: datetime
+    users: Optional["Users"] = Relationship(back_populates="refresh_token")
 

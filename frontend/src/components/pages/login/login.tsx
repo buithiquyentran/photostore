@@ -54,10 +54,7 @@ const DangNhapPage: React.FC = () => {
         localStorage.setItem("access_token", response.access_token);
         localStorage.setItem("email", response.email);
         localStorage.setItem("username", response.username);
-        console.log(
-          "Token đã được lưu vào localStorage:",
-          response.access_token
-        );
+        localStorage.setItem("refresh_token", response.refresh_token);
         setIsModalOpen(null);
         // Refresh trang sau khi đăng nhập thành công
         navigate("/brower");
@@ -91,7 +88,6 @@ const DangNhapPage: React.FC = () => {
       await handleSubmit();
     }
   };
-
 
   return (
     <div className="h-screen bg-bg">

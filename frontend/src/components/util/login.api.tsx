@@ -1,4 +1,4 @@
-import { createApiClient } from "./api";
+import createApiClient  from "./api";
 
 class AuthService {
   private api: any;
