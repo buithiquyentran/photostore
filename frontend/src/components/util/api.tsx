@@ -5,9 +5,13 @@ const commonConfig = {
     Accept: "application/json",
   },
 };
-export const createApiClient = (baseURL: string) => {
-  return axios.create({
+const createApiClient = (baseURL: string) => {
+  const api = axios.create({
     baseURL,
     ...commonConfig,
   });
+
+  return api;
 };
+
+export default createApiClient;

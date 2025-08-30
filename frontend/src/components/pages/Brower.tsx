@@ -1,39 +1,34 @@
 import React, { useEffect } from "react";
 import AsssetService from "../util/photostore.api";
-import { authService } from "@/components/util/login.api";
 
 const Brower = () => {
-  // useEffect(() => {
-  //   const fetchAssets = async () => {
-  //     try {
-  //       const assets = await AsssetService.GetAllAssets();
-  //       console.log("Fetched assets:", assets);
-  //     } catch (error) {
-  //       console.error("Error fetching assets:", error);
-  //     }
-  //   };
-  //   fetchAssets();
-  // }, []);
-  // lấy user info từ /me
-  const fetchUser = async () => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      return;
-    }
-
+  const [assets, setAssets] = React.useState<any[]>([]);
+  const fetchAssets = async () => {
     try {
-      await authService.GetMe(
-       token);
+      const response = await AsssetService.GetAllAssets();
+      setAssets(response);
+      console.log(response);
     } catch (error) {
-      console.error("Lỗi khi lấy thông tin user:", error);
+      console.error("Error fetching assets:", error);
     }
   };
-
   // chạy khi app load
   useEffect(() => {
-    fetchUser();
+    fetchAssets();
+
   }, []);
-  return <div className="bg-bg text-paragraph">Brower</div>;
+  return (
+    <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+      {assets?.map((src, idx) => (
+        <img
+          key={idx}
+          src={src}
+          alt=""
+          className="w-full mb-4 break-inside-avoid rounded-lg shadow"
+        />
+      ))}
+    </div>
+  );
 };
 
 export default Brower;
