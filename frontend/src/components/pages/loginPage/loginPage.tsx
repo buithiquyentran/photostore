@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import FormGroup from "@/components/ui/FormGroup";
 // import ModalThongBao from "@/components/TracNghiem9231/shared/ModalThongBao";
 import path from "@/resources/path";
-import { authService } from "@/components/util/login.api";
+import LoginService from "@/components/services/login";
 const DangNhapPage: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -44,7 +44,7 @@ const DangNhapPage: React.FC = () => {
     }
 
     try {
-      const response = await authService.Login({
+      const response = await LoginService.Login({
         email: email,
         password: password,
       });

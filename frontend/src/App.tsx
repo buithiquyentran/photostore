@@ -3,9 +3,9 @@ import path from "@/resources/path";
 import PublicLayout from "@/components/Layout/Public/PublicLayout";
 import DashboardLayout from "@/components/Layout/Dashboard/DashboardLayout";
 import HOME from "@/components/pages/welcome/home";
-import LOGIN from "@/components/pages/login/login";
-import REGISTER from "@/components/pages/login/register";
-import BROWER from "@/components/pages/brower";
+import LOGIN from "@/components/pages/loginPage/loginPage";
+import REGISTER from "@/components/pages/loginPage/registerPage";
+import BROWER from "@/components/pages/browerPage";
 function App() {
   return (
     <>

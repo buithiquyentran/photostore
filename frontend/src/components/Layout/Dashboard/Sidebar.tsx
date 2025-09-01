@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Bookmark,
@@ -17,8 +17,7 @@ import {
   Puzzle,
   HelpCircle,
 } from "lucide-react";
-import { useEffect } from "react";
-import { authService } from "@/components/util/login.api";
+import AuthService  from "@/components/services/auth";
 interface MenuItem {
   label: string;
   icon: React.ReactNode;
@@ -53,7 +52,7 @@ export default function Sidebar() {
     }
 
     try {
-      const res = await authService.GetMe(token);
+      const res = await AuthService.GetMe(token);
       setUsername(res.username);
     } catch (error) {
       console.error("Lỗi khi lấy thông tin user:", error);
@@ -65,7 +64,7 @@ export default function Sidebar() {
     fetchUser();
   }, []);
   return (
-    <div className="flex flex-col justify-between h-screen w-60 bg-headline text-main p-4">
+    <div className="flex flex-col sticky top-0 h-screen justify-between  w-60 bg-headline text-main p-4  border border-gray-700">
       {/* Top section */}
       <div>
         <div className="flex items-center justify-center gap-2 mb-8 underline underline-offset-4 decoration-4 decoration-highlight">
