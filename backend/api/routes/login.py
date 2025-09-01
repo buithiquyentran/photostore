@@ -4,7 +4,7 @@ from sqlmodel import SQLModel, Session, create_engine, select
 from sqlalchemy import text
 from jose import jwt, JWTError
 from db.session import get_session
-from core.security import create_access_token, decode_access_token, create_refresh_token
+from core.security import create_access_token, decode_access_token, create_refresh_token, decode_refresh_token
 from pydantic import BaseModel
 from datetime import datetime
 from models.users import Users, RefreshToken
@@ -30,7 +30,8 @@ class RegisterRequest(BaseModel):
     email: str
     password: str
     username: str
-
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 @router.post("/login", response_model=TokenResponse)
 def login(data: LoginRequest, session: Session = Depends(get_session)):
@@ -114,15 +115,15 @@ def get_me(token: str = Depends(oauth2_scheme), session: Session = Depends(get_s
         }
    
 @router.post("/refresh")
-def refresh_token(refresh_token: str):
+def refresh_token(data: RefreshRequest, session: Session = Depends(get_session)):
     try:
-        payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-
-        if payload.get("scope") != "refresh_token":
+        payload = decode_refresh_token(data.refresh_token)
+        print(payload)
+        if payload.get("type") != "refresh":
             raise HTTPException(status_code=401, detail="Invalid scope for token")
 
         user_data = {"id": payload.get("id"), "email": payload.get("email")}
-        new_access_token = create_refresh_token(user_data)
+        new_access_token = create_access_token(user_data)
 
         return {
             "access_token": new_access_token,
