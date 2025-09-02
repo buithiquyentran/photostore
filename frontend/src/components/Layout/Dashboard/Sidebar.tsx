@@ -1,45 +1,56 @@
 import { useState, useEffect } from "react";
 import {
-  Search,
   Bookmark,
   Play,
   User,
   Star,
-  MapPin,
-  Calendar,
-  Film,
   Tag,
-  Folder,
-  Library,
   Settings,
   Camera,
   UserPlus,
   Puzzle,
   HelpCircle,
 } from "lucide-react";
-import AuthService  from "@/components/services/auth";
+import AuthService from "@/components/services/auth";
+import AssetService from "@/components/services/assets";
 interface MenuItem {
   label: string;
   icon: React.ReactNode;
-  count?: number;
+  count: number;
   subMenu?: string[];
 }
 export default function Sidebar() {
   const [openMenus, setOpenMenus] = useState<string[]>([]);
   const [username, setUsername] = useState<string | null>(null);
-  const menuItems: MenuItem[] = [
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([
     {
       label: "Assets",
       icon: <Bookmark size={18} />,
-      count: 3,
+      count: 0, // mặc định 0
       subMenu: ["Assets", "Projects", "Folders"],
     },
-    { label: "Videos", icon: <Play size={18} />, count: 8 },
-    { label: "People", icon: <User size={18} />, count: 8 },
-    { label: "Favorites", icon: <Star size={18} />, count: 2 },
-    { label: "Labels", icon: <Tag size={18} />, count: 35 },
-  ];
+    { label: "Videos", icon: <Play size={18} />, count: 0 },
+    { label: "People", icon: <User size={18} />, count: 0 },
+    { label: "Favorites", icon: <Star size={18} />, count: 0 },
+    { label: "Labels", icon: <Tag size={18} />, count: 0 },
+  ]);
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const assetCount = await AssetService.Count();
 
+        setMenuItems((prev) =>
+          prev.map((item) =>
+            item.label === "Assets" ? { ...item, count: assetCount } : item
+          )
+        );
+      } catch (err) {
+        console.error("Failed to fetch asset count:", err);
+      }
+    };
+
+    fetchCounts();
+  }, []);
   const toggleMenu = (label: string) => {
     setOpenMenus((prev) =>
       prev.includes(label) ? prev.filter((m) => m !== label) : [...prev, label]

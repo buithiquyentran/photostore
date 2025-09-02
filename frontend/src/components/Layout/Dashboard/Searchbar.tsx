@@ -1,14 +1,8 @@
 import { useState } from "react";
-import {
-  Search,
-  Upload,
-  Filter,
-  LayoutGrid,
-  LayoutList,
-  Columns,
-  MoreVertical,
-} from "lucide-react";
+import { Search, Upload, MoreVertical } from "lucide-react";
 import UploadButton from "@/components/ui/UploadButton";
+import AdvancedSearchBar from "@/components/ui/AdvancedSearchBar";
+
 export default function SearchBarFull({
   onSearchText,
   onSearchImage,
@@ -71,6 +65,7 @@ export default function SearchBarFull({
           <MoreVertical size={20} />
         </button>
       </div>
+      <AdvancedSearchBar onSearch={(filters) => console.log(filters)} />
     </div>
   );
 }

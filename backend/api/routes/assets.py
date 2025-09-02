@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 from db.session import get_session
 from models import  Projects, Folders, Assets # model Asset đã tạo ở models/asset.py
 
 router = APIRouter(prefix="/assets",  tags=["Assets"])
 
-@router.get("/all_assets")
+@router.get("/all")
 def get_assets(session: Session = Depends(get_session)):
     
     try:
@@ -35,8 +35,8 @@ def get_videos(session: Session = Depends(get_session)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi truy vấn dữ liệu: {e}")
    
-@router.get("/get_user_assets/{user_id}") 
-def get_user_assets(user_id: int, session: Session = Depends(get_session)):
+@router.get("/get_by_user/{user_id}") 
+def get_by_user(user_id: int, session: Session = Depends(get_session)):
     """
     Lấy tất cả assets của user dùng ORM
     """
@@ -52,3 +52,12 @@ def get_user_assets(user_id: int, session: Session = Depends(get_session)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi truy vấn ORM: {str(e)}")
+    
+@router.get("/count")
+def count(session: Session = Depends(get_session)):
+    try:
+        statement = select(func.count()).select_from(Assets)
+        total = session.exec(statement).one()
+        return {"status": "success", "data": total}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi đếm: {e}")

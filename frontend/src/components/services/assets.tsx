@@ -45,7 +45,10 @@ class AssetService {
   }
 
   async GetAllAssets() {
-    return (await this.api.get("/all_assets")).data.data;
+    return (await this.api.get("/all")).data.data;
+  }
+  async Count (){
+    return (await this.api.get("/count")).data.data;
   }
 }
 

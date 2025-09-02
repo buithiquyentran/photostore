@@ -14,7 +14,7 @@ class LoginService {
     localStorage.clear();
     return;
   }
-  async logOut() {
+  async LogOut() {
     this.resetLocalStorage();
   }
 }
