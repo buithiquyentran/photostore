@@ -1,12 +1,14 @@
-import os
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
 from sqlmodel import Session, select
 from uuid import uuid4
 from models.users import Users, RefreshToken
-# Import settings containing SECRET_KEY
+
 from core.config import settings  # Ensure this path matches your project structure
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 # Cấu hình
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -58,3 +60,9 @@ def decode_refresh_token(token: str):
         return payload
     except jwt.JWTError:
         return None
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    payload = decode_access_token(token) 
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return payload.get("id")

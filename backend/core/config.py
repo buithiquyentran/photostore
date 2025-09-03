@@ -12,7 +12,9 @@ class Settings(BaseSettings):
     # CORS
     all_cors_origins: List[str] = ["http://localhost:5173"]
 
-    class Config:
+    SUPABASE_URL: str
+    SUPABASE_SERVICE_ROLE_KEY: str
+    class Config:   
         env_file = ".env"
 
 settings = Settings()

@@ -12,6 +12,8 @@ from core.config import settings
 from core.security import ALGORITHM 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+from core.security import get_current_user
+
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -99,13 +101,7 @@ def register(data: RegisterRequest, session: Session = Depends(get_session)):
 
 
 @router.get("/me", response_model=Users)
-def get_me(token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)):
-    payload = decode_access_token(token)
-    print(payload)
-    if not payload:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-
-    id = payload.get("id")
+def get_me(id=Depends(get_current_user), session: Session = Depends(get_session)):
     user = session.get(Users, id)
     return {
             "id": user.id,

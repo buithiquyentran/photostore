@@ -19,7 +19,9 @@ const Brower = () => {
 
   const fetchAssets = async () => {
     try {
-      const response = await AssetsService.GetAllAssets();
+      const pubic_assets = await AssetsService.GetPublicAssets();
+      const user_assets = await AssetsService.GetAll();
+      const response = [...pubic_assets, ...user_assets];
       setAssets(response);
       console.log(response);
     } catch (error) {
@@ -67,7 +69,7 @@ const Brower = () => {
           </button>
           <div className="flex items-center gap-4">
             {/* Sort */}
-           
+
             <SortDropdown />
             {/* View toggle */}
             <div className=" items-center p-1 shadow-md flex flex-wrap  gap-3 ">
