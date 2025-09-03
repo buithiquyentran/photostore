@@ -18,7 +18,7 @@ export default function AdvancedSearchBar({
   };
 
   return (
-    <div className="bg-gray-900 text-white p-4 shadow-md flex flex-wrap items-center gap-3 border-b border-gray-700">
+    <div className="bg-gray-900  text-gray-400 p-4 shadow-md flex flex-wrap items-center gap-3 border-b border-gray-700">
       {/* Search box */}
       <input
         type="text"
@@ -95,8 +95,7 @@ function Dropdown({ label, options, onChange }: DropdownProps) {
     setSearch("");
   };
   return (
-
-    <div className="relative">
+    <div>
       {/* Trigger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -107,37 +106,39 @@ function Dropdown({ label, options, onChange }: DropdownProps) {
       <span></span>
 
       {/* Dropdown */}
-      {isOpen && (
-        <div className="absolute z-10 w-64 bg-gray-800 border border-gray-700 rounded mt-1 shadow-lg">
-          {/* Search input */}
-          <input
-            type="text"
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-2 py-1 text-sm bg-gray-700 text-white border-b border-gray-600 outline-none"
-          />
+      <div className="relative">
+        {isOpen && (
+          <div className="absolute  w-64 bg-gray-800 border border-gray-700 rounded mt-1 shadow-lg">
+            {/* Search input */}
+            <input
+              type="text"
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-2 py-1 text-sm bg-gray-700 text-white border-b border-gray-600 outline-none"
+            />
 
-          {/* Options */}
-          <div className="max-h-40 overflow-y-auto">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((opt) => (
-                <div
-                  key={opt}
-                  onClick={() => handleSelect(opt)}
-                  className="px-2 py-1 text-sm text-white hover:bg-gray-600 cursor-pointer"
-                >
-                  {opt}
+            {/* Options */}
+            <div className="max-h-40 overflow-y-auto">
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((opt) => (
+                  <div
+                    key={opt}
+                    onClick={() => handleSelect(opt)}
+                    className="px-2 py-1 text-sm text-white hover:bg-gray-600 cursor-pointer"
+                  >
+                    {opt}
+                  </div>
+                ))
+              ) : (
+                <div className="px-2 py-1 text-sm text-gray-400">
+                  No results found
                 </div>
-              ))
-            ) : (
-              <div className="px-2 py-1 text-sm text-gray-400">
-                No results found
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -39,13 +39,36 @@ class AssetService {
             }
           }
         }
+        // Nếu lỗi 403/404 từ Supabase signed URL => gọi lại list assets để lấy URL mới
+        if (
+          error.response &&
+          (error.response.status === 403 || error.response.status === 404) &&
+          error.config.url.includes("supabase.co/storage")
+        ) {
+          console.warn("Signed URL expired. Refreshing asset list...");
+          try {
+            // Gọi lại API lấy toàn bộ danh sách asset
+            const refreshed = await this.GetAll();
+            // trả về luôn danh sách mới để FE re-render
+            return Promise.resolve({ data: refreshed });
+          } catch (e) {
+            console.error("Failed to refresh signed URLs", e);
+          }
+        }
+
         return Promise.reject(error);
       }
     );
   }
 
-  async GetAllAssets() {
-    return (await this.api.get("/all_assets")).data.data;
+  async GetPublicAssets() {
+    return (await this.api.get("/public_asssets")).data.data;
+  }
+  async GetAll() {
+    return (await this.api.get("/all")).data.data;
+  }
+  async Count() {
+    return (await this.api.get("/count")).data.data;
   }
 }
 

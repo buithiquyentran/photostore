@@ -12,13 +12,16 @@ import {
   MoreVertical,
   RotateCcw,
 } from "lucide-react";
+import SortDropdown from "@/components/ui/SortDropdown";
 const Brower = () => {
   const [assets, setAssets] = React.useState<any[]>([]);
   const [view, setView] = useState("columns");
 
   const fetchAssets = async () => {
     try {
-      const response = await AssetsService.GetAllAssets();
+      const pubic_assets = await AssetsService.GetPublicAssets();
+      const user_assets = await AssetsService.GetAll();
+      const response = [...pubic_assets, ...user_assets];
       setAssets(response);
       console.log(response);
     } catch (error) {
@@ -58,23 +61,16 @@ const Brower = () => {
 
   return (
     <div>
-      <AdvancedSearchBar onSearch={(filters) => console.log(filters)} />
       <div className=" bg-[rgb(31,36,46)]">
         <div className="flex items-center justify-between px-4 border-b border-gray-700 text-white ">
-          <button className="flex  items-center text-gray-400 hover:text-white">
+          <button className="flex  items-center text-gray-400  hover:text-white px-2">
             <RotateCcw size={20} /> &nbsp;{" "}
-            <div className="text-sm"> Refresh </div>
+            <div className="text-sm "> Refresh </div>
           </button>
           <div className="flex items-center gap-4">
             {/* Sort */}
-            <div className="ml-auto flex items-center gap-2 text-sm">
-              <span>Sort by:</span>
-              <Dropdown
-                label="Display name"
-                options={["Display name", "Date created", "File size"]}
-                // onChange={(val) => handleChange("sortBy", val)}
-              />
-            </div>
+
+            <SortDropdown />
             {/* View toggle */}
             <div className=" items-center p-1 shadow-md flex flex-wrap  gap-3 ">
               <button
