@@ -36,7 +36,7 @@ const Brower = () => {
   const changeView = (newView) => {
     setView(newView);
     if (onViewChange) onViewChange(newView);
-  };
+  };  
   interface DropdownProps {
     label: string;
     options: string[];
