@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File,Request
 from sqlmodel import Session, select, func
 from PIL import Image
 import io, os
@@ -137,7 +137,7 @@ def list_public_assets(session: Session = Depends(get_session)):
 
 
 
-# @router.post("/upload-image/")
+# @router.post("/upload-image")
 # async def upload_image(file: UploadFile = File(...)):
 #     try:
 #         # Đọc nội dung file
@@ -165,8 +165,9 @@ def list_public_assets(session: Session = Depends(get_session)):
 #         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/upload-image/")
-async def upload_asset(file: UploadFile = File(...), id=2, session: Session = Depends(get_session)):
+@router.post("/upload-image")
+async def upload_asset(request: Request, file: UploadFile = File(...), id=Depends(get_current_user),session: Session = Depends(get_session)):
+    print(request.headers)  # debug
     try:
         # Tìm folder mặc định của user
         folder = session.exec(
@@ -223,6 +224,7 @@ async def upload_asset(file: UploadFile = File(...), id=2, session: Session = De
         # tạo signed url ngắn hạn để preview (tuỳ chọn)
         signed = supabase.storage.from_(BUCKET_NAME).create_signed_url(object_path, 120)  # 60s
         return {
+            "status":1,
             "id": asset_id,
             "path": object_path,
             "preview_url": signed.get("signedURL"),

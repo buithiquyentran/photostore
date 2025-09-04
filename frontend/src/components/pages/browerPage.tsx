@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Masonry from "react-masonry-css";
-import AssetsService from "@/components/services/assets";
+import AssetsService from "@/components/services/assets.service";
 import AdvancedSearchBar from "@/components/ui/AdvancedSearchBar";
 import {
   Search,
@@ -36,7 +36,7 @@ const Brower = () => {
   const changeView = (newView) => {
     setView(newView);
     if (onViewChange) onViewChange(newView);
-  };  
+  };
   interface DropdownProps {
     label: string;
     options: string[];

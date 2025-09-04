@@ -1,4 +1,4 @@
-import createApiClient from "./api";
+import createApiClient from "./api.service";
 import axios from "axios";
 
 class AssetService {
@@ -12,34 +12,41 @@ class AssetService {
     this.api.interceptors.response.use(
       (res: any) => res,
       async (error: any) => {
-        if (error.response && error.response.status === 401) {
+        const originalRequest = error.config;
+
+        // Tránh lặp vô hạn
+        if (
+          error.response &&
+          error.response.status === 401 &&
+          !originalRequest._retry
+        ) {
+          originalRequest._retry = true; // đánh dấu đã retry
+
           const refreshToken = localStorage.getItem("refresh_token");
 
           if (refreshToken) {
             try {
-              // Gọi API để refresh token
               const res = await axios.post("/api/v1/auth/refresh", {
                 refresh_token: refreshToken,
               });
 
-              // Lưu access_token mới
               localStorage.setItem("access_token", res.data.access_token);
 
-              // Gắn token mới vào header và thử lại request
-              error.config.headers[
+              originalRequest.headers[
                 "Authorization"
               ] = `Bearer ${res.data.access_token}`;
-              return this.api(error.config);
+
+              return this.api(originalRequest); // retry 1 lần duy nhất
             } catch (refreshError) {
               console.error("Refresh token failed", refreshError);
-              // Nếu refresh token lỗi => đăng xuất người dùng
               localStorage.removeItem("access_token");
               localStorage.removeItem("refresh_token");
               window.location.href = "/login";
             }
           }
         }
-        // Nếu lỗi 403/404 từ Supabase signed URL => gọi lại list assets để lấy URL mới
+
+        // Nếu lỗi signed URL (403/404) thì refetch list
         if (
           error.response &&
           (error.response.status === 403 || error.response.status === 404) &&
@@ -47,9 +54,7 @@ class AssetService {
         ) {
           console.warn("Signed URL expired. Refreshing asset list...");
           try {
-            // Gọi lại API lấy toàn bộ danh sách asset
             const refreshed = await this.GetAll();
-            // trả về luôn danh sách mới để FE re-render
             return Promise.resolve({ data: refreshed });
           } catch (e) {
             console.error("Failed to refresh signed URLs", e);
@@ -59,6 +64,7 @@ class AssetService {
         return Promise.reject(error);
       }
     );
+
   }
 
   async GetPublicAssets() {
@@ -70,6 +76,18 @@ class AssetService {
   async Count() {
     return (await this.api.get("/count")).data.data;
   }
+  async Upload (file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return (
+      await this.api.post("/upload-image", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      })
+    ).data;
+}
 }
 
 export default new AssetService();

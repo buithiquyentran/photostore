@@ -1,4 +1,4 @@
-import createApiClient from "./api";
+import createApiClient from "./api.service";
 
 class LoginService {
   private api: any;

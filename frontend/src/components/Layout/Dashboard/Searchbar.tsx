@@ -3,14 +3,10 @@ import { Search, Upload, MoreVertical } from "lucide-react";
 import UploadButton from "@/components/ui/UploadButton";
 import AdvancedSearchBar from "@/components/ui/AdvancedSearchBar";
 
-export default function SearchBarFull({
-  onSearchText,
-  onSearchImage,
-  onViewChange,
-}) {
+export default function SearchBar({ onSearchText, onSearchImage, onUpload }) {
   const [query, setQuery] = useState("");
 
-  const handleImageUpload = (e) => {
+  const handleUploadSearch = (e) => {
     const file = e.target.files?.[0];
     if (file && onSearchImage) {
       onSearchImage(file);
@@ -46,7 +42,7 @@ export default function SearchBarFull({
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={handleImageUpload}
+              onChange={handleUploadSearch}
             />
           </label>
         </div>
@@ -58,7 +54,7 @@ export default function SearchBarFull({
           className="p-2 text-gray-400 hover:text-white"
         >
           {/* <Search size={20} /> */}
-          <UploadButton onClick={() => console.log("upload image")} />
+          <UploadButton onClick={onUpload} />
         </button>
         {/* Menu ba chấm */}
         <button className="p-2 text-gray-400 hover:text-white">
