@@ -64,7 +64,6 @@ class AssetService {
         return Promise.reject(error);
       }
     );
-
   }
 
   async GetPublicAssets() {
@@ -76,18 +75,16 @@ class AssetService {
   async Count() {
     return (await this.api.get("/count")).data.data;
   }
-  async Upload (file: File) {
-    const formData = new FormData();
-    formData.append("file", file);
+  async Upload(data) {
     return (
-      await this.api.post("/upload-image", formData, {
+      await this.api.post("/upload-images", data, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         },
       })
     ).data;
-}
+  }
 }
 
 export default new AssetService();

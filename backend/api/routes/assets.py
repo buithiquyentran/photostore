@@ -165,71 +165,86 @@ def list_public_assets(session: Session = Depends(get_session)):
 #         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/upload-image")
-async def upload_asset(request: Request, file: UploadFile = File(...), id=Depends(get_current_user),session: Session = Depends(get_session)):
-    print(request.headers)  # debug
+from fastapi import UploadFile, File
+from typing import List
+
+@router.post("/upload-images")  # đổi tên để phân biệt với single upload
+async def upload_assets(
+    files: List[UploadFile] = File(...),
+    id=Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    results = []
+
+    # Tìm folder mặc định của user
+    folder = session.exec(
+        select(Folders)
+        .join(Projects, Folders.project_id == Projects.id)
+        .where(Projects.user_id == id, Projects.is_default == True, Folders.is_default == True)
+    ).first()
+    if not folder:
+        raise HTTPException(404, "Không tìm thấy folder mặc định cho user")
+
+    folder_id = folder.id
     try:
-        # Tìm folder mặc định của user
-        folder = session.exec(
-            select(Folders).join(Projects, Folders.project_id == Projects.id and Folders.is_default == True)
-            .where(Projects.user_id == id, Projects.is_default == True)
-        ).first()
-        if not folder:
-            raise HTTPException(404, "Không tìm thấy folder mặc định cho user")
+        for file in files:
+            # validate mime
+            if not file.content_type or not file.content_type.startswith(("image/", "video/")):
+                raise HTTPException(400, f"File {file.filename} không hợp lệ (chỉ hỗ trợ image/video)")
 
-        folder_id = folder.id
+            # đọc bytes
+            file_bytes = await file.read()
+            size = len(file_bytes)
 
-        # validate mime
-        if not file.content_type or not file.content_type.startswith(("image/", "video/")):
-            raise HTTPException(400, "Only image/video allowed")
+            # lấy dimension nếu là ảnh
+            width = height = None
+            if file.content_type.startswith("image/"):
+                try:
+                    with Image.open(io.BytesIO(file_bytes)) as im:
+                        width, height = im.size
+                except Exception:
+                    raise HTTPException(400, f"Ảnh {file.filename} không hợp lệ")
 
-        # đọc bytes
-        file_bytes = await file.read()
-        size = len(file_bytes)
+            # path trong bucket (mỗi user 1 folder)
+            ext = os.path.splitext(file.filename or "")[1].lower() or ".bin"
+            object_path = f"{id}/{uuid4().hex}{ext}"
 
-        # lấy dimension nếu là ảnh
-        width = height = None
-        if file.content_type.startswith("image/"):
+            # upload (bucket private)
+            supabase.storage.from_(BUCKET_NAME).upload(
+                object_path,
+                file_bytes,
+                {"content-type": file.content_type, "x-upsert": "false"},
+            )
+
             try:
-                with Image.open(io.BytesIO(file_bytes)) as im:
-                    width, height = im.size
-            except Exception:
-                raise HTTPException(400, "Invalid image")
+                asset_id = save_asset_to_db(
+                    db=session,
+                    user_id=id,
+                    folder_id=folder_id,
+                    url=object_path,
+                    name=file.filename or object_path,
+                    format=file.content_type,
+                    width=width, height=height,
+                    file_size=size,
+                )
+            except Exception as e:
+                # rollback supabase nếu DB fail
+                supabase.storage.from_(BUCKET_NAME).remove([object_path])
+                raise HTTPException(status_code=500, detail=f"DB insert failed: {e}")
 
-        # path trong bucket (mỗi user 1 folder)
-        ext = os.path.splitext(file.filename or "")[1].lower() or ".bin"
-        object_path = f"{id}/{uuid4().hex}{ext}"
+            # tạo signed url ngắn hạn để preview
+            signed = supabase.storage.from_(BUCKET_NAME).create_signed_url(object_path, 120)
 
-        # upload (bucket đang private)
-        supabase.storage.from_(BUCKET_NAME).upload(
-            object_path,
-            file_bytes,
-            {"content-type": file.content_type, "x-upsert": "false"},
-        )
-        try:
-            asset_id = save_asset_to_db(  
-            db=session,
-            user_id=id,
-            folder_id =folder_id,
-            url=object_path,
-            name=file.filename or object_path,
-            format=file.content_type,
-            width=width, height=height,
-            file_size=size,
-        )
-        except Exception as e:
-            # rollback supabase nếu DB fail
-            supabase.storage.from_(BUCKET_NAME).remove([object_path])
-            raise HTTPException(status_code=500, detail=f"DB insert failed: {e}")
-        # tạo signed url ngắn hạn để preview (tuỳ chọn)
-        signed = supabase.storage.from_(BUCKET_NAME).create_signed_url(object_path, 120)  # 60s
-        return {
-            "status":1,
-            "id": asset_id,
-            "path": object_path,
-            "preview_url": signed.get("signedURL"),
-            "width": width, "height": height, "file_size": size,
-            "mime_type": file.content_type,
-        }
+            results.append({
+                "status": 1,
+                "id": asset_id,
+                "path": object_path,
+                "preview_url": signed.get("signedURL"),
+                "width": width, "height": height, "file_size": size,
+                "mime_type": file.content_type,
+            })
+
+        return {"status": 1, "data": results}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

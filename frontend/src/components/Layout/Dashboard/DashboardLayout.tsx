@@ -26,19 +26,22 @@ const Layout = () => {
   //   }
 
   // };
-const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (file) {
+const handleUpload = async (e) => {
+  const files = e.target.files;
+  if (files && files.length > 0) {
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append("files", files[i]); // phải trùng với tên param trong BE
+    }
+
     try {
-      const response = await AssetsService.Upload(file);
-      if (response.status == 1) {
-        alert("Upload thành công");
-      } else {
-        alert("Upload thất bại");
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert(`Lỗi upload file ${error}` );
+      const res = await AssetsService.Upload(formData);
+
+      console.log("Upload results:", res.data);
+      alert("Upload thành công");
+    } catch (err) {
+      console.error(err);
+      alert("Upload thất bại");
     }
   }
 };
