@@ -11,8 +11,8 @@ import {
   Puzzle,
   HelpCircle,
 } from "lucide-react";
-import AuthService from "@/components/services/auth";
-import AssetService from "@/components/services/assets";
+import AuthService from "@/components/services/auth.service";
+import AssetService from "@/components/services/assets.service";
 interface MenuItem {
   label: string;
   icon: React.ReactNode;

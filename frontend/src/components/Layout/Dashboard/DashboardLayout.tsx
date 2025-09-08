@@ -1,19 +1,62 @@
-// import Footer from "@/components/TracNghiem9231/Layout/Footer";
+import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "@/components/Layout/Dashboard/Sidebar";
 import SearchBar from "@/components/Layout/Dashboard/SearchBar";
+import AssetsService from "@/components/services/assets.service";
 const Layout = () => {
+  // const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [assets, setAssets] = useState<any[]>([]);
+
   const handleSearchText = (text) => {
     console.log("Searching by text:", text);
     // Gọi API backend tìm kiếm text
   };
 
-  const handleSearchImage = (file) => {
-    console.log("Searching by image:", file);
-    // Upload file -> backend -> search AI
+  const fetchAssets = async () => {
+    try {
+      const user_assets = await AssetsService.GetAll();
+      const response = [...user_assets];
+      setAssets(response);
+    } catch (error) {
+      console.error("Error fetching assets:", error);
+    }
   };
-  const handleViewChange = (view) => {
-    console.log("View changed to:", view);
+  // chạy khi app load
+  useEffect(() => {
+    fetchAssets();
+  }, []);
+  const handleSearchImage = async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await AssetsService.UploadImageForSearch(formData);
+        setAssets(res); // Lưu kết quả tìm kiếm vào state
+      } catch (err) {
+        console.error("Search failed", err);
+      }
+    }
+  };
+
+  const handleUpload = async (e) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append("files", files[i]); // phải trùng với tên param trong BE
+      }
+
+      try {
+        const res = await AssetsService.Upload(formData);
+
+        console.log("Upload results:", res.data);
+        alert("Upload thành công");
+      } catch (err) {
+        console.error(err);
+        alert("Upload thất bại");
+      }
+    }
   };
 
   return (
@@ -24,10 +67,10 @@ const Layout = () => {
           <SearchBar
             onSearchText={handleSearchText}
             onSearchImage={handleSearchImage}
-            onViewChange={handleViewChange}
+            onUpload={handleUpload}
           />
           <div className="grow">
-            <Outlet />
+            <Outlet context={{ assets }} />
           </div>
         </div>
 

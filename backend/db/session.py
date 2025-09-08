@@ -11,6 +11,6 @@ engine = create_engine(
 def get_session():
     with Session(engine) as session:
         yield session
-# Khởi tạo bảng
+
 def init_db():
     SQLModel.metadata.create_all(engine)
