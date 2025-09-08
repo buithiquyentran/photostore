@@ -4,15 +4,18 @@ from starlette.middleware.cors import CORSMiddleware
 
 from api.main import api_router
 from core.config import settings
-from db.session import init_db
+from db.session import init_db, get_session,engine
+
+# import thêm
+from sqlalchemy.orm import Session
+from models import Embeddings 
+from services.embeddings_service import rebuild_faiss  
+from core.security import get_current_user
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     tag = route.tags[0] if route.tags else "default"
     return f"{tag}-{route.name}"
 
-
-# if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
-#     sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -35,3 +38,9 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.get("/")
 def root():
     return {"message": "Database connected successfully!"}
+
+
+# @app.on_event("startup")
+# def load_faiss():
+#     with next(get_session()) as session:   # nhớ dùng next()
+#         rebuild_faiss(session)

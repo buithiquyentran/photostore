@@ -44,7 +44,7 @@ class AssetService {
               window.location.href = "/login";
             }
           }
-        }
+        } 
 
         // Nếu lỗi signed URL (403/404) thì refetch list
         if (
@@ -72,18 +72,29 @@ class AssetService {
   async GetAll() {
     return (await this.api.get("/all")).data.data;
   }
+  async GetSignedUrl(asset_id: string) {
+    return (await this.api.get(`/${asset_id}/signed-url`)).data.data;
+  }
   async Count() {
     return (await this.api.get("/count")).data.data;
   }
-  async Upload(data) {
+  async Upload(formData: FormData) {
     return (
-      await this.api.post("/upload-images", data, {
+      await this.api.post("/upload-images", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         },
       })
     ).data;
+  }
+  async UploadImageForSearch(formData: FormData) {
+    return (
+      await this.api.post("/search-image", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+    ).data.data;
   }
 }
 

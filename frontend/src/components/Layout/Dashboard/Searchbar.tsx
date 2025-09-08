@@ -6,13 +6,6 @@ import AdvancedSearchBar from "@/components/ui/AdvancedSearchBar";
 export default function SearchBar({ onSearchText, onSearchImage, onUpload }) {
   const [query, setQuery] = useState("");
 
-  const handleUploadSearch = (e) => {
-    const file = e.target.files?.[0];
-    if (file && onSearchImage) {
-      onSearchImage(file);
-    }
-  };
-
   const handleTextSearch = () => {
     if (query.trim() && onSearchText) {
       onSearchText(query);
@@ -42,7 +35,7 @@ export default function SearchBar({ onSearchText, onSearchImage, onUpload }) {
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={handleUploadSearch}
+              onChange={onSearchImage}
             />
           </label>
         </div>

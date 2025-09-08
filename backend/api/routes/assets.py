@@ -1,30 +1,33 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File,Request
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File,Request,BackgroundTasks
 from sqlmodel import Session, select, func
+from fastapi import UploadFile, File
+from typing import List
 from PIL import Image
 import io, os
 from uuid import uuid4
 from datetime import datetime, timedelta
+import io, faiss, json
+import torch
+import clip
+import numpy as np
+
+
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import JSONResponse
 from db.supabase_client import supabase
 from db.session import get_session
-from models import  Projects, Folders, Assets , Users
+from models import  Projects, Folders, Assets , Users, Embeddings
 from core.security import get_current_user
-from db.crud_item import save_asset_to_db
+from db.crud_asset import add_asset
+from db.crud_embedding import add_embedding
+from db.crud_embedding import embed_image, embed_text
+from services.embeddings_service import index, faiss_id_to_asset, embed_image, rebuild_faiss
 router = APIRouter(prefix="/assets",  tags=["Assets"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
+BUCKET_NAME = "photostore"
+BUCKET_NAME_PUBLIC = "images" 
 
-# @router.get("/all")
-# def get_assets(session: Session = Depends(get_session)):
-    
-#     try:
-#         statement = select(Assets)
-#         results = session.exec(statement).all()
-#         return {"status": "success", "data": results}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Lỗi khi truy vấn dữ liệu: {e}")
-    
 # @router.get("/images")
 # def get_images(session: Session = Depends(get_session)):
     
@@ -45,7 +48,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=f"Lỗi khi truy vấn dữ liệu: {e}")
    
- 
 @router.get("/count")
 def count(session: Session = Depends(get_session)):
     try:
@@ -55,32 +57,6 @@ def count(session: Session = Depends(get_session)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi đếm: {e}")
     
-    
-# @router.get("/get-image/{file_name}")
-# async def get_private_image(file_name: str):
-#     try:
-#         # Tạo signed URL hết hạn sau 60 giây
-#         signed_url = supabase.storage.from_(BUCKET_NAME).create_signed_url(f"sys_folder/{file_name}", 60)
-#         return {"signed_url": signed_url}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-
-# @router.get("/all")
-# def list_assets(id=Depends(get_current_user), session: Session = Depends(get_session)):
-#     try:
-#         statement = (
-#             select(Assets).where(Assets.access_control == True)
-#             .join(Folders, Assets.folder_id == Folders.id)
-#             .join(Projects, Folders.project_id == Projects.id)
-#             .where(Projects.user_id == id)
-#         )
-#         results = session.exec(statement).all()
-#         return {"status": "success", "data": results}
-
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Lỗi truy vấn ORM: {str(e)}")
-BUCKET_NAME = "photostore"
 @router.get("/all")
 def list_private_assets(
     id=Depends(get_current_user),
@@ -94,81 +70,34 @@ def list_private_assets(
             .where(Projects.user_id == id)
         )
         results = session.exec(statement).all()
-        # return results
-        data_with_signed = []
-        for asset in results:
-            signed = supabase.storage \
-                .from_(BUCKET_NAME) \
-                .create_signed_url(asset.url, expires_in=60*10)  # 10 phút
-                
-            data_with_signed.append({
-                "id": asset.id,
-                "name": asset.name,
-                "format": asset.format,
-                "width": asset.width,
-                "height": asset.height,
-                "file_size": asset.file_size,
-                "created": asset.created,
-                "url": signed.get("signedURL"),
-            })
-
-        return {"status": "success", "data": data_with_signed}
-
+        rebuild_faiss(session,id )
+        return {"status": "success", "data": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi ORM hoặc Supabase: {str(e)}")
 
+@router.get("/{asset_id}/signed-url")
+def get_signed_url(asset_id: int, session: Session = Depends(get_session)):
+    asset = session.get(Assets, asset_id)
+    if not asset:
+        raise HTTPException(404, "Asset not found")
 
+    url = asset.url
 
-@router.get("/public_asssets")
-def list_public_assets(session: Session = Depends(get_session)):
+    # Nếu URL đã là public (bắt đầu bằng http), return luôn
+    if url.startswith("http://") or url.startswith("https://"):
+        return {"data": url}
+
+    # Nếu là private path => tạo signed URL
     try:
-        statement = (
-            select(Assets).where(Assets.access_control == True)
-            .join(Folders, Assets.folder_id == Folders.id)
-            .join(Projects, Folders.project_id == Projects.id)
-            .join(Users, Projects.user_id == Users.id)
-            .where(Users.is_superuser == True)
-        )
-        results = session.exec(statement).all()
-        return {"status": "success", "data": results}
-
+        signed = supabase.storage \
+            .from_(BUCKET_NAME) \
+            .create_signed_url(url, expires_in=60 * 60)  # 1 giờ
+        return {"data": signed.get("signedURL")}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi truy vấn ORM: {str(e)}")
+        raise HTTPException(500, f"Signed URL creation failed: {e}")
 
 
-
-# @router.post("/upload-image")
-# async def upload_image(file: UploadFile = File(...)):
-#     try:
-#         # Đọc nội dung file
-#         file_path = f"sys_folder/{file.filename}"
-#         # Xác định content-type từ UploadFile
-#         content_type = file.content_type or "application/octet-stream"
-#         file_bytes = await file.read()
-        
-#         # Upload lên bucket 
-#         supabase.storage.from_(BUCKET_NAME).upload(file_path,file_bytes,
-#         {
-#             "content-type": content_type,
-
-#         })
-
-#         # Nếu bucket public → có thể generate URL public
-#         public_url = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
-
-#         return JSONResponse({
-#             "status": "success",
-#             "public_url": public_url
-#         })
-
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-
-from fastapi import UploadFile, File
-from typing import List
-
-@router.post("/upload-images")  # đổi tên để phân biệt với single upload
+@router.post("/upload-images")  
 async def upload_assets(
     files: List[UploadFile] = File(...),
     id=Depends(get_current_user),
@@ -217,8 +146,8 @@ async def upload_assets(
             )
 
             try:
-                asset_id = save_asset_to_db(
-                    db=session,
+                asset_id = add_asset(
+                    session=session,
                     user_id=id,
                     folder_id=folder_id,
                     url=object_path,
@@ -248,3 +177,61 @@ async def upload_assets(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ====== Route search_image ======
+@router.post("/search-image")
+async def search_image(
+    file: UploadFile = File(...),
+    k: int = 4,
+    session: Session = Depends(get_session),
+):
+    print("index.ntotal:", index.ntotal)
+
+    try:
+        # Đọc ảnh query
+        content = await file.read()
+        image = Image.open(io.BytesIO(content)).convert("RGB")
+
+        # Vector hóa
+        query_vec = embed_image(image)
+        if index.ntotal == 0:
+            raise HTTPException(404, "Chưa có embedding nào trong hệ thống")
+
+        # FAISS search
+        scores, ids = index.search(query_vec, k)
+        results = []
+        print("ids:", ids)
+        print("scores:", scores)
+        print("faiss_id_to_asset:", faiss_id_to_asset)
+        for faiss_id in ids[0]:
+            print(f"faiss_id={faiss_id}, asset_id={faiss_id_to_asset.get(faiss_id)}")
+        for faiss_id, score in zip(ids[0], scores[0]):
+            if faiss_id == -1:
+                continue
+
+            asset_id = faiss_id_to_asset.get(faiss_id)
+            if not asset_id:
+                continue
+
+            # Lấy thông tin asset từ DB
+            asset = session.exec(select(Assets).where(Assets.id == asset_id)).first()
+            if not asset:
+                continue
+
+            results.append({
+                "id": asset.id,
+                "name": asset.name,
+                "url": asset.url,  # nếu bucket private thì tạo signed URL
+                "score": float(score),
+                "width": asset.width,
+                "height": asset.height,
+                "file_size": asset.file_size,
+            })
+
+        return {"status": 1, "data": results}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

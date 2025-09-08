@@ -5,12 +5,16 @@ import { useNavigate } from "react-router-dom";
 import FormGroup from "@/components/ui/FormGroup";
 // import ModalThongBao from "@/components/TracNghiem9231/shared/ModalThongBao";
 import path from "@/resources/path";
+import LoginService from "@/components/services/login.service";
 
 const DangNhapPage: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
+  const [name, setName] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
+
   const [isModalOpen, setIsModalOpen] = useState<{
     message: string;
     warningMessage?: string;
@@ -21,7 +25,6 @@ const DangNhapPage: React.FC = () => {
     // Kiểm tra xem người dùng đã đăng nhập hay chưa
     const accessToken = localStorage.getItem("access_token");
     if (accessToken) {
-      // Nếu đã đăng nhập, chuyển hướng đến trang trac-nghiem
       navigate(path.HOME);
     }
   }, [navigate]);
@@ -43,27 +46,20 @@ const DangNhapPage: React.FC = () => {
     }
 
     try {
-      const response = await dangNhapTaiKhoanLDAP({
-        user: email,
-        pass: password,
+      const response = await LoginService.Register({
+        username: name,
+        email: email,
+        password: password,
       });
 
-      console.log(response);
-      if (response.data.status && response.data.data?.token) {
-        console.log("ok");
-        localStorage.setItem("access_token", response.data.data.token);
-        localStorage.setItem("tinh", response.data.data.matinh);
-        localStorage.setItem("isdn", response.data.data.dienthoai);
-        localStorage.setItem("email", response.data.data.email);
-        localStorage.setItem("ma_nhanvien", response.data.data.userid);
-        localStorage.setItem("hoten", response.data.data.hoten);
-        console.log(
-          "Token đã được lưu vào localStorage:",
-          response.data.data.token
-        );
+      if (response.user_id && response.access_token) {
+        localStorage.setItem("access_token", response.access_token);
+        localStorage.setItem("email", response.email);
+        localStorage.setItem("username", response.username);
+        localStorage.setItem("refresh_token", response.refresh_token);
         setIsModalOpen(null);
         // Refresh trang sau khi đăng nhập thành công
-        navigate("/trac-nghiem");
+        navigate("/brower");
       } else {
         if (response.data.code === "2222") {
           setIsModalOpen({
@@ -115,8 +111,8 @@ const DangNhapPage: React.FC = () => {
             label="Your name"
             id="name"
             type="name"
-            value={email}
-            onChange={(e) => setEmail(e.target.value.trim())}
+            value={name}
+            onChange={(e) => setName(e.target.value.trim())}
           />
 
           <FormGroup
@@ -148,8 +144,8 @@ const DangNhapPage: React.FC = () => {
             label="Confirm password"
             id="confirm-password"
             type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
             onKeyDown={handleKeyDown}
           >
             <button

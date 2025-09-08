@@ -6,8 +6,8 @@ from datetime import datetime
 from models import Assets
 from db.session import get_session
 
-def save_asset_to_db(
-    db: Session,
+def add_asset(
+    session: Session,
     user_id: int,
     name: str,
     format: str,
@@ -31,7 +31,7 @@ def save_asset_to_db(
         is_image=is_image,
         access_control=access_control,
     )
-    db.add(asset)
-    db.commit()
-    db.refresh(asset)
+    session.add(asset)
+    session.commit()
+    session.refresh(asset)
     return asset.id
