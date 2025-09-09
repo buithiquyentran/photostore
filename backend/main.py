@@ -9,7 +9,7 @@ from db.session import init_db, get_session,engine
 # import thêm
 from sqlalchemy.orm import Session
 from models import Embeddings 
-from services.embeddings_service import rebuild_faiss  
+# from services.embeddings_service import rebuild_faiss  
 from core.security import get_current_user
 
 def custom_generate_unique_id(route: APIRoute) -> str:

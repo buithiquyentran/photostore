@@ -20,8 +20,10 @@ from models import  Projects, Folders, Assets , Users, Embeddings
 from core.security import get_current_user
 from db.crud_asset import add_asset
 from db.crud_embedding import add_embedding
-from db.crud_embedding import embed_image, embed_text
-from services.embeddings_service import index, faiss_id_to_asset, embed_image, rebuild_faiss
+from db.crud_embedding import embed_image, embed_text, add_to_faiss
+# from services.embeddings_service import index, faiss_id_to_asset, embed_image, rebuild_faiss,add_embedding_to_faiss, ensure_user_index,search_user
+from services.embeddings_service import  embed_image,add_embedding_to_faiss, search_user,ensure_user_index
+
 router = APIRouter(prefix="/assets",  tags=["Assets"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -70,7 +72,8 @@ def list_private_assets(
             .where(Projects.user_id == id)
         )
         results = session.exec(statement).all()
-        rebuild_faiss(session,id )
+        ensure_user_index(session, id)
+        
         return {"status": "success", "data": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi ORM hoặc Supabase: {str(e)}")
@@ -156,6 +159,8 @@ async def upload_assets(
                     width=width, height=height,
                     file_size=size,
                 )
+                embedding, vec = add_embedding(session=session,asset_id=asset_id,file_bytes=file_bytes)
+                add_embedding_to_faiss(user_id = id, asset_id=asset_id, embedding=vec)
             except Exception as e:
                 # rollback supabase nếu DB fail
                 supabase.storage.from_(BUCKET_NAME).remove([object_path])
@@ -184,54 +189,26 @@ async def upload_assets(
 @router.post("/search-image")
 async def search_image(
     file: UploadFile = File(...),
+    id=Depends(get_current_user),
     k: int = 4,
     session: Session = Depends(get_session),
 ):
-    print("index.ntotal:", index.ntotal)
-
     try:
         # Đọc ảnh query
         content = await file.read()
         image = Image.open(io.BytesIO(content)).convert("RGB")
 
         # Vector hóa
-        query_vec = embed_image(image)
-        if index.ntotal == 0:
-            raise HTTPException(404, "Chưa có embedding nào trong hệ thống")
+        query_vec = embed_image(image)  # numpy (1,512)
 
-        # FAISS search
-        scores, ids = index.search(query_vec, k)
-        results = []
-        print("ids:", ids)
-        print("scores:", scores)
-        print("faiss_id_to_asset:", faiss_id_to_asset)
-        for faiss_id in ids[0]:
-            print(f"faiss_id={faiss_id}, asset_id={faiss_id_to_asset.get(faiss_id)}")
-        for faiss_id, score in zip(ids[0], scores[0]):
-            if faiss_id == -1:
-                continue
-
-            asset_id = faiss_id_to_asset.get(faiss_id)
-            if not asset_id:
-                continue
-
-            # Lấy thông tin asset từ DB
-            asset = session.exec(select(Assets).where(Assets.id == asset_id)).first()
-            if not asset:
-                continue
-
-            results.append({
-                "id": asset.id,
-                "name": asset.name,
-                "url": asset.url,  # nếu bucket private thì tạo signed URL
-                "score": float(score),
-                "width": asset.width,
-                "height": asset.height,
-                "file_size": asset.file_size,
-            })
+        asset_ids = search_user(session=session, user_id=id, query_vec=query_vec, k=k)
+        print(asset_ids)
+        # Lấy metadata từ DB
+        results = session.exec(
+            select(Assets).where(Assets.id.in_(asset_ids))
+        ).all()
 
         return {"status": 1, "data": results}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
