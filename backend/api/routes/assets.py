@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File,Request,BackgroundTasks
 from sqlmodel import Session, select, func
-from fastapi import UploadFile, File
+from fastapi import UploadFile, File, Form
 from typing import List
 from PIL import Image
 import io, os
@@ -22,7 +22,7 @@ from db.crud_asset import add_asset
 from db.crud_embedding import add_embedding
 from db.crud_embedding import embed_image, embed_text, add_to_faiss
 # from services.embeddings_service import index, faiss_id_to_asset, embed_image, rebuild_faiss,add_embedding_to_faiss, ensure_user_index,search_user
-from services.embeddings_service import  embed_image,add_embedding_to_faiss, search_user,ensure_user_index
+from services.embeddings_service import  embed_image,add_embedding_to_faiss, search_user,ensure_user_index, get_text_embedding, search_by_embedding
 
 router = APIRouter(prefix="/assets",  tags=["Assets"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -186,7 +186,7 @@ async def upload_assets(
 
 
 # ====== Route search_image ======
-@router.post("/search-image")
+@router.post("/search-by-image")
 async def search_image(
     file: UploadFile = File(...),
     id=Depends(get_current_user),
@@ -204,6 +204,39 @@ async def search_image(
         asset_ids = search_user(session=session, user_id=id, query_vec=query_vec, k=k)
         print(asset_ids)
         # Lấy metadata từ DB
+        results = session.exec(
+            select(Assets).where(Assets.id.in_(asset_ids))
+        ).all()
+
+        return {"status": 1, "data": results}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+@router.post("/search")
+async def search_assets(
+    query_text: str | None = Form(None), 
+    file: UploadFile | None = File(None),
+    id=Depends(get_current_user),
+    k: int = 5,
+    session: Session = Depends(get_session),
+):
+    try:
+        if file:  # search bằng ảnh
+            content = await file.read()
+            image = Image.open(io.BytesIO(content)).convert("RGB")
+            query_vec = embed_image(image)
+
+        elif query_text:  # search bằng text
+            query_vec = get_text_embedding(query_text)
+
+        else:
+            raise HTTPException(status_code=400, detail="Cần gửi query_text hoặc file ảnh")
+
+        # Gọi search chung
+        asset_ids = search_by_embedding(session=session, user_id=id, query_vec=query_vec, k=k)
+
+        # Lấy metadata asset từ DB
         results = session.exec(
             select(Assets).where(Assets.id.in_(asset_ids))
         ).all()

@@ -1,14 +1,33 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Search, Upload, MoreVertical } from "lucide-react";
 import UploadButton from "@/components/ui/UploadButton";
 import AdvancedSearchBar from "@/components/ui/AdvancedSearchBar";
 
-export default function SearchBar({ onSearchText, onSearchImage, onUpload }) {
+export default function SearchBar({ onSearchFile, onSearchText, onUpload }) {
   const [query, setQuery] = useState("");
 
-  const handleTextSearch = () => {
-    if (query.trim() && onSearchText) {
-      onSearchText(query);
+  // Debounce (chỉ gọi API sau khi ngừng gõ 500ms)
+  const debounce = (func, delay) => {
+    let timeout;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), delay);
+    };
+  };
+  // Wrap search với debounce
+  const debouncedSearch = useCallback(debounce(onSearchText, 500), []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const text = e.target.value;
+    setQuery(text);
+    debouncedSearch(text); // gọi search khi ngưng gõ
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      console.log(query)
+      onSearchText(query); // gọi search khi nhấn Enter
     }
   };
 
@@ -24,7 +43,8 @@ export default function SearchBar({ onSearchText, onSearchImage, onUpload }) {
             type="text"
             placeholder="Search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
             className="flex-1 h-10 text-white placeholder-gray-400 px-2 bg-gray-800 border border-gray-700 rounded"
           />
 
@@ -35,17 +55,14 @@ export default function SearchBar({ onSearchText, onSearchImage, onUpload }) {
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={onSearchImage}
+              onChange={onSearchFile}
             />
           </label>
         </div>
         {/* Input search */}
 
         {/* Nút search text */}
-        <button
-          onClick={handleTextSearch}
-          className="p-2 text-gray-400 hover:text-white"
-        >
+        <button className="p-2 text-gray-400 hover:text-white">
           {/* <Search size={20} /> */}
           <UploadButton onClick={onUpload} />
         </button>
