@@ -31,7 +31,14 @@ def embed_image(image: Image.Image) -> np.ndarray:
         image_features = model.encode_image(image_tensor)
         image_features /= image_features.norm(dim=-1, keepdim=True)  # normalize
     return image_features.cpu().numpy().astype("float32")  # shape (1, 512)
-
+def get_text_embedding(text: str):
+    text_token = clip.tokenize([text]).to(device)
+    with torch.no_grad():
+        text_features = model.encode_text(text_token)
+        # Chuẩn hóa về vector đơn vị (giống ảnh)
+        text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+    return text_features.cpu().numpy().astype("float32")  # shape (1, 512)
+    
 
 # ====== Hàm add asset vào FAISS ======
 # def add_embedding_to_faiss(asset_id: int, embedding: List[float]):
@@ -150,4 +157,21 @@ def search_user(session, user_id: int, query_vec: np.ndarray, k: int = 10):
             continue
         if fid in mapping:
             asset_ids.append(mapping[fid])
+    return asset_ids
+
+def search_by_embedding(session, user_id: int, query_vec: np.ndarray, k: int = 10):
+    # ensure_user_index(session, user_id)
+    idx = USER_INDICES[user_id]
+    mapping = USER_FAISS_MAP[user_id]
+
+    faiss.normalize_L2(query_vec)
+    D, I = idx.search(query_vec, k)
+
+    asset_ids = []
+    for fid in I[0]:
+        if fid == -1:
+            continue
+        if fid in mapping:
+            asset_ids.append(mapping[fid])
+
     return asset_ids

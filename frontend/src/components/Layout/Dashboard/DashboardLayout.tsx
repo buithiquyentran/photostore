@@ -6,8 +6,9 @@ import AssetsService from "@/components/services/assets.service";
 const Layout = () => {
   // const [searchResults, setSearchResults] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
-
-  const handleSearchText = (text) => {
+  const [queryText, setqueryText] = useState<string>("");
+  const handleSearchText = (text: string) => {
+    setqueryText(text);
     console.log("Searching by text:", text);
     // Gọi API backend tìm kiếm text
   };
@@ -25,8 +26,9 @@ const Layout = () => {
   useEffect(() => {
     fetchAssets();
   }, []);
-  const handleSearchImage = async (e) => {
+  const handleSearchByFile = async (e) => {
     const file = e.target.files?.[0];
+
     if (file) {
       try {
         const formData = new FormData();
@@ -36,6 +38,22 @@ const Layout = () => {
       } catch (err) {
         console.error("Search failed", err);
       }
+    }
+  };
+  const handleSearchByText = async (text: string) => {
+    if (text) {
+      try {
+        const formData = new FormData();
+        formData.append("query_text", text);
+        const res = await AssetsService.UploadImageForSearch(formData);
+        setAssets(res); // Lưu kết quả tìm kiếm vào state
+      } catch (err) {
+        console.error("Search failed", err);
+      }
+    }
+    else {
+      const res = await AssetsService.GetAll();
+      setAssets(res); // Lưu kết quả tìm kiếm vào state
     }
   };
 
@@ -65,8 +83,8 @@ const Layout = () => {
         <Sidebar />
         <div className="grow flex flex-col bg-bg">
           <SearchBar
-            onSearchText={handleSearchText}
-            onSearchImage={handleSearchImage}
+            onSearchFile={handleSearchByFile}
+            onSearchText={handleSearchByText}
             onUpload={handleUpload}
           />
           <div className="grow">

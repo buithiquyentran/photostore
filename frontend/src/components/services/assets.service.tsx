@@ -44,7 +44,7 @@ class AssetService {
               window.location.href = "/login";
             }
           }
-        } 
+        }
 
         // Nếu lỗi signed URL (403/404) thì refetch list
         if (
@@ -89,7 +89,7 @@ class AssetService {
   }
   async UploadImageForSearch(formData: FormData) {
     return (
-      await this.api.post("/search-image", formData, {
+      await this.api.post("/search", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
