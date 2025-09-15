@@ -4,7 +4,6 @@ from starlette.middleware.cors import CORSMiddleware
 
 from api.main import api_router
 from core.config import settings
-from db.session import init_db, get_session,engine
 
 # import thêm
 from sqlalchemy.orm import Session

@@ -8,8 +8,7 @@ from db.session import get_session
 from models import Assets, Embeddings
 router = APIRouter()
 router = APIRouter(prefix="/assets",  tags=["Assets"])
-# from services.faiss_index import index, faiss_id_to_asset, next_faiss_id, DIM
-from services.faiss_index import USER_INDICES, USER_FAISS_MAP, USER_ASSET_MAP,DIM
+from services.search.faiss_index import USER_INDICES, USER_FAISS_MAP, USER_ASSET_MAP,DIM
 from core.security import get_current_user
 from models import Folders, Projects
 # ====== FAISS Setup ======
@@ -48,7 +47,7 @@ def get_text_embedding(text: str):
 #     faiss_id_to_asset[next_faiss_id] = asset_id
 #     next_faiss_id += 1
 def add_embedding_to_faiss(user_id: int, asset_id: int, embedding: list[float]):
-    ensure_user_index(None, user_id)  # đảm bảo có index, session=None vì không rebuild DB
+    # ensure_user_index(None, user_id)  # đảm bảo có index, session=None vì không rebuild DB
     idx = USER_INDICES[user_id]
     mapping = USER_FAISS_MAP[user_id]
     reverse_map = USER_ASSET_MAP[user_id]

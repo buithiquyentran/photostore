@@ -14,7 +14,7 @@ from transformers import CLIPProcessor, CLIPModel
 import torch
 
 # from services.embeddings_service import index, faiss_id_to_asset, embed_image, rebuild_faiss
-from services.embeddings_service import embed_image
+from services.search.embeddings_service import embed_image
 
 clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
