@@ -13,7 +13,7 @@ from models.users import Users, RefreshToken
 from core.config import settings
 from core.security import ALGORITHM 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 from core.security import get_current_user
 from db.crud_embedding import add_embedding
 import requests
@@ -121,7 +121,7 @@ def register(data: RegisterRequest, session: Session = Depends(get_session)):
             file_bytes = resp.content
             size = len(file_bytes)
             content_type = resp.headers.get("Content-Type")
-             # lấy dimension nếu là ảnh
+            # lấy dimension nếu là ảnh
             width = height = None
             if content_type.startswith("image/"):
                 try:
