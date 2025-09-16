@@ -19,7 +19,9 @@ from models import  Projects, Folders, Assets , Users, Embeddings
 from core.security import get_current_user
 from db.crud_asset import add_asset
 from db.crud_embedding import add_embedding
-from db.crud_embedding import embed_image, embed_text, add_to_faiss
+from db.crud_embedding import embed_image
+from db.crud_folder import get_or_create_folder
+
 # from services.embeddings_service import index, faiss_id_to_asset, embed_image, rebuild_faiss,add_embedding_to_faiss, ensure_user_index,search_user
 from services.search.embeddings_service import  embed_image,add_embedding_to_faiss, search_user,ensure_user_index, get_text_embedding, search_by_embedding
 
@@ -97,7 +99,7 @@ def get_signed_url(asset_id: int, session: Session = Depends(get_session)):
     try:
         signed = supabase.storage \
             .from_(BUCKET_NAME) \
-            .create_signed_url(url, expires_in=60 * 60)  # 1 giờ
+            .create_signed_url(url, expires_in=60)  # 1 giờ
         return {"data": signed.get("signedURL")}
     except Exception as e:
         raise HTTPException(500, f"Signed URL creation failed: {e}")
@@ -106,19 +108,32 @@ def get_signed_url(asset_id: int, session: Session = Depends(get_session)):
 @router.post("/upload-images")
 async def upload_assets(
     files: List[UploadFile] = File(...),
+    folder_name: str | None = Form(None), 
     id=Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     results = []
-
-    # Tìm folder mặc định của user
-    folder = session.exec(
-        select(Folders)
-        .join(Projects, Folders.project_id == Projects.id)
-        .where(Projects.user_id == id, Projects.is_default == True, Folders.is_default == True)
+    # Tìm project mặc định của user
+    project = session.exec(
+        select(Projects).where(Projects.user_id == id, Projects.is_default == True)
     ).first()
+    if not project:
+        raise HTTPException(404, "Không tìm thấy project mặc định cho user")
+    
+    if folder_name:
+        folder = get_or_create_folder(session, project.id, folder_name)
+    else:
+        folder = session.exec(
+            select(Folders).where(
+                Folders.project_id == project.id,
+                Folders.is_default == True
+            )
+        ).first()
     if not folder:
-        raise HTTPException(404, "Không tìm thấy folder mặc định cho user")
+        raise HTTPException(404, "Không tìm thấy folder phù hợp")
+    folder_id = folder.id
+    if not folder:
+        raise HTTPException(404, "Không tìm thấy folder phù hợp")
 
     folder_id = folder.id
     try:
@@ -142,7 +157,7 @@ async def upload_assets(
 
             # path trong bucket (mỗi user 1 folder)
             ext = os.path.splitext(file.filename or "")[1].lower() or ".bin"
-            object_path = f"{id}/{uuid4().hex}{ext}"
+            object_path = f"{id}/{project.id}/{folder.name}/{uuid4().hex}{ext}"
 
             # upload (bucket private)
             supabase.storage.from_(BUCKET_NAME).upload(
