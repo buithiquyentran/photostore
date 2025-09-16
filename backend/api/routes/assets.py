@@ -106,19 +106,46 @@ def get_signed_url(asset_id: int, session: Session = Depends(get_session)):
 @router.post("/upload-images")
 async def upload_assets(
     files: List[UploadFile] = File(...),
+    folder_name: str | None = Form(None), 
     id=Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     results = []
-
-    # Tìm folder mặc định của user
-    folder = session.exec(
-        select(Folders)
-        .join(Projects, Folders.project_id == Projects.id)
-        .where(Projects.user_id == id, Projects.is_default == True, Folders.is_default == True)
+    # Tìm project mặc định của user
+    project = session.exec(
+        select(Projects).where(Projects.user_id == id, Projects.is_default == True)
     ).first()
+    if not project:
+        raise HTTPException(404, "Không tìm thấy project mặc định cho user")
+    
+    if folder_name:
+        # tìm folder theo tên trong project
+        folder = session.exec(
+            select(Folders).where(Folders.project_id == project.id, Folders.name == folder_name)
+        ).first()
+
+        if not folder:
+            # nếu chưa có thì tạo mới
+            folder = Folders(
+                project_id=project.id,
+                parent_id=None,       # root folder
+                name=folder_name,
+                is_default=False
+            )
+            session.add(folder)
+            session.commit()
+            session.refresh(folder)
+    else:
+        # dùng folder mặc định
+        folder = session.exec(
+            select(Folders).where(
+                Folders.project_id == project.id,
+                Folders.is_default == True
+            )
+        ).first()
+
     if not folder:
-        raise HTTPException(404, "Không tìm thấy folder mặc định cho user")
+        raise HTTPException(404, "Không tìm thấy folder phù hợp")
 
     folder_id = folder.id
     try:
@@ -142,7 +169,7 @@ async def upload_assets(
 
             # path trong bucket (mỗi user 1 folder)
             ext = os.path.splitext(file.filename or "")[1].lower() or ".bin"
-            object_path = f"{id}/{uuid4().hex}{ext}"
+            object_path = f"{id}/{project.id}/{folder.name}/{uuid4().hex}{ext}"
 
             # upload (bucket private)
             supabase.storage.from_(BUCKET_NAME).upload(
