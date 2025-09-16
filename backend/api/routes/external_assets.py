@@ -1,30 +1,32 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from PIL import Image
 from sqlalchemy.orm import Session
 from db.session import get_session
 from sqlmodel import Session, select
 from uuid import uuid4
 import io
+import os
 from dependencies.external_auth import verify_external_request
 from db.supabase_client import supabase
 from db.session import get_session
-from models import  Projects, Folders
+from models import  Projects, Folders, Users
 from db.crud_asset import add_asset
 from db.crud_embedding import add_embedding
 from services.api_client.api_client_service import get_client_by_key
 from services.api_client.signature import generate_signature
 
-router = APIRouter(prefix="/api/v1/external/assets", tags=["External Assets"])
+router = APIRouter(prefix="/external/assets", tags=["External Assets"])
 BUCKET_NAME = "photostore"
 
 @router.post("/signature")
-def get_signature(api_key: str, session: Session = Depends(get_session)):
+def get_signature(api_key: str, api_secret: str, session: Session = Depends(get_session)):
     client = get_client_by_key(api_key=api_key, session=session)
     if not client:
         raise HTTPException(status_code=401, detail="Invalid api_key")
-    result = generate_signature(params={}, api_secret = client.api_secret, add_timestamp=True)
+    result = generate_signature(params={}, api_secret = api_secret, add_timestamp=True)
 
     return {
+        "status_code": 200,
         "api_key": api_key,
         "signature": result["signature"],
         "params": result["params"]
@@ -33,19 +35,40 @@ def get_signature(api_key: str, session: Session = Depends(get_session)):
 @router.post("/upload")
 async def upload_asset_external(
     file: UploadFile = File(...),
+    folder_name: str | None = Form(None), 
     client=Depends(verify_external_request),  # Check API key + signature
     session: Session = Depends(get_session)
 ):
     results = []
-    # Tìm folder mặc định của user
-    folder = session.exec(
-        select(Folders)
-        .join(Projects, Folders.project_id == Projects.id)
-        .where(Projects.id == client.id, Folders.is_default == True)
-    ).first()
+    if folder_name:
+        # tìm folder theo tên trong project
+        folder = session.exec(
+            select(Folders).where(Folders.project_id == client.id, Folders.name == folder_name)
+        ).first()
+
+        if not folder:
+            # nếu chưa có thì tạo mới
+            folder = Folders(
+                project_id=client.id,
+                parent_id=None,       # root folder
+                name=folder_name,
+                is_default=False
+            )
+            session.add(folder)
+            session.commit()
+            session.refresh(folder)
+    else:
+        # dùng folder mặc định
+        folder = session.exec(
+            select(Folders).where(
+                Folders.project_id == client.id,
+                Folders.is_default == True
+            )
+        ).first()
+
     if not folder:
-        raise HTTPException(404, "Không tìm thấy folder mặc định cho user")
-    print(client.id)
+        raise HTTPException(404, "Không tìm thấy folder phù hợp")
+
     folder_id = folder.id
     try:
         # for file in files:
@@ -68,7 +91,7 @@ async def upload_asset_external(
 
         # path trong bucket (mỗi user 1 folder)
         ext = os.path.splitext(file.filename or "")[1].lower() or ".bin"
-        object_path = f"{client.user_id}/{uuid4().hex}{ext}"
+        object_path = f"{client.user_id}/{client.id}/{folder.name}/{uuid4().hex}{ext}"
 
         # upload (bucket private)
         supabase.storage.from_(BUCKET_NAME).upload(
