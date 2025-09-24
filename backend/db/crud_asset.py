@@ -16,7 +16,7 @@ def add_asset(
     height: int = None,
     file_size: int = None,
     folder_id: int = None,
-    access_control: bool = True,
+    is_private: bool = False,
     is_image: bool = True
 ):
     asset = Assets(
@@ -29,7 +29,7 @@ def add_asset(
         height=height,
         file_size=file_size,
         is_image=is_image,
-        access_control=access_control,
+        is_private=is_private,
     )
     session.add(asset)
     session.commit()

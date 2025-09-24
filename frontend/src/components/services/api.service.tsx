@@ -1,4 +1,5 @@
 import axios from "axios";
+import keycloak from "@/keycloak";
 const commonConfig = {
   headers: {
     "Content-Type": "application/json",
@@ -10,6 +11,7 @@ const createApiClient = (baseURL: string) => {
     baseURL,
     ...commonConfig,
   });
+  
 
   return api;
 };

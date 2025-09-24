@@ -9,6 +9,7 @@ class Users(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     username: str = Field(max_length=50, nullable=False)
     email: str = Field(max_length=100, nullable=False, unique=True)
+    sub_id: str = Field(max_length=1024, nullable=False, unique=True)
     password_hash: str = Field(max_length=255, nullable=False)
     is_superuser: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)

@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.11.0",
+    "keycloak-js": "^26.2.0",
     "lucide-react": "^0.542.0",
     "path": "^0.12.7",
     "react": "^19.1.1",

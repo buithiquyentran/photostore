@@ -23,9 +23,9 @@ const Layout = () => {
     }
   };
   // chạy khi app load
-  useEffect(() => {
-    fetchAssets();
-  }, []);
+  // useEffect(() => {
+  //   fetchAssets();
+  // }, []);
   const handleSearchByFile = async (e) => {
     const file = e.target.files?.[0];
 

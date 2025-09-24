@@ -12,13 +12,9 @@ class LoginService {
   async Register(data: any) {
     return (await this.api.post("/register", data)).data;
   }
-  async resetLocalStorage() {
-    localStorage.removeItem("access_token");
-    localStorage.clear();
-    return;
-  }
   async LogOut() {
-    this.resetLocalStorage();
+    return (await this.api.post("/logout")).data;
+
   }
 }
 export default new LoginService();

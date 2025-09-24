@@ -6,6 +6,7 @@ import FormGroup from "@/components/ui/FormGroup";
 // import ModalThongBao from "@/components/TracNghiem9231/shared/ModalThongBao";
 import path from "@/resources/path";
 import LoginService from "@/components/services/login.service";
+import keycloak from "@/keycloak";
 const DangNhapPage: React.FC = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -17,14 +18,14 @@ const DangNhapPage: React.FC = () => {
     success: boolean; // Dùng để xác định trạng thái
   } | null>(null);
 
-  useEffect(() => {
-    // Kiểm tra xem người dùng đã đăng nhập hay chưa
-    const accessToken = localStorage.getItem("access_token");
-    if (accessToken) {
-      // Nếu đã đăng nhập, chuyển hướng đến trang
-      navigate(path.HOME);
-    }
-  }, [navigate]);
+  // useEffect(() => {
+  //   // Kiểm tra xem người dùng đã đăng nhập hay chưa
+  //   const accessToken = localStorage.getItem("access_token");
+  //   if (accessToken) {
+  //     // Nếu đã đăng nhập, chuyển hướng đến trang
+  //     navigate(path.HOME);
+  //   }
+  // }, [navigate]);
 
   const handleSubmit = async () => {
     if (!email) {
@@ -45,15 +46,13 @@ const DangNhapPage: React.FC = () => {
 
     try {
       const response = await LoginService.Login({
-        email: email,
+        username: email,
         password: password,
       });
 
       console.log(response);
-      if (response.user_id && response.access_token) {
+      if (response.access_token) {
         localStorage.setItem("access_token", response.access_token);
-        localStorage.setItem("email", response.email);
-        localStorage.setItem("username", response.username);
         localStorage.setItem("refresh_token", response.refresh_token);
         setIsModalOpen(null);
         // Refresh trang sau khi đăng nhập thành công
@@ -88,7 +87,13 @@ const DangNhapPage: React.FC = () => {
       await handleSubmit();
     }
   };
-
+  const handleFacebookLogin = () => {
+    if (!keycloak) {
+      console.error("Keycloak chưa khởi tạo!");
+      return;
+    }
+    keycloak.login({ idpHint: "facebook", prompt: "login" });
+  };
   return (
     <div className="h-screen bg-bg">
       <div
@@ -138,6 +143,15 @@ const DangNhapPage: React.FC = () => {
             onClick={() => handleSubmit()}
           >
             LOG IN
+          </button>
+
+          {/* Login bằng Facebook */}
+          <button
+            onClick={handleFacebookLogin}
+            className="flex w-full items-center justify-center space-x-2 rounded-lg border-1  border-headline py-2 "
+          >
+            <span>📘</span>
+            <span className="text-headline ">Tiếp tục với Facebook</span>
           </button>
           <p className=" text-headline mt-4 max-w-sm mx-auto">
             New to Photostore?{" "}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Bookmark,
   Play,
@@ -10,9 +10,13 @@ import {
   UserPlus,
   Puzzle,
   HelpCircle,
+  Key,
 } from "lucide-react";
-import AuthService from "@/components/services/auth.service";
+import UserService from "@/components/services/user.service";
 import AssetService from "@/components/services/assets.service";
+import LoginService from "@/components/services/login.service";
+import keycloak from "@/keycloak";
+
 interface MenuItem {
   label: string;
   icon: React.ReactNode;
@@ -22,6 +26,8 @@ interface MenuItem {
 export default function Sidebar() {
   const [openMenus, setOpenMenus] = useState<string[]>([]);
   const [username, setUsername] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+
   const [menuItems, setMenuItems] = useState<MenuItem[]>([
     {
       label: "Assets",
@@ -49,22 +55,19 @@ export default function Sidebar() {
       }
     };
 
-    fetchCounts();
+    // fetchCounts();
   }, []);
   const toggleMenu = (label: string) => {
     setOpenMenus((prev) =>
       prev.includes(label) ? prev.filter((m) => m !== label) : [...prev, label]
     );
   };
+  const toggleUser = () => setOpen(!open);
   const fetchUser = async () => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      return;
-    }
-
     try {
-      const res = await AuthService.GetMe(token);
-      setUsername(res.username);
+      const res = await UserService.GetMe();
+      setUsername(res.user.name);
+      setEmail(res.user.email);
     } catch (error) {
       console.error("Lỗi khi lấy thông tin user:", error);
     }
@@ -74,6 +77,46 @@ export default function Sidebar() {
   useEffect(() => {
     fetchUser();
   }, []);
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleLogout = async () => {
+    // const refreshToken = localStorage.getItem("refresh_token") || 1;
+    // if (refreshToken) {
+    //   try {
+    //     await LoginService.LogOut();
+    //   } catch (err) {
+    //     console.error("Logout failed", err);
+    //   }
+    // }
+    // localStorage.removeItem("access_token");
+    // localStorage.removeItem("refresh_token");
+    // window.location.href = "/login";
+
+    keycloak.logout();
+  };
+
+  // Đóng dropdown khi click bên ngoài
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const initials = username
+    ? (() => {
+        const parts = username.trim().split(" ");
+        if (parts.length === 1) return parts[0][0]?.toUpperCase();
+        return (
+          (parts[0][0]?.toUpperCase() || "") +
+          (parts[parts.length - 1][0]?.toUpperCase() || "")
+        );
+      })()
+    : "";
   return (
     <div className="flex flex-col sticky top-0 h-screen justify-between  w-60 bg-headline text-main p-4  border border-gray-700">
       {/* Top section */}
@@ -142,21 +185,32 @@ export default function Sidebar() {
             <Settings className="w-6 h-6 cursor-pointer hover:text-blue-400" />
             <span>Settings</span>
           </div>
-          <div className="border-t border-gray-700 pt-4 flex items-center gap-2">
+          <div
+            // className="border-t border-gray-700 pt-4 flex items-center gap-2"
+            onClick={toggleUser}
+            className="flex items-center gap-2 cursor-pointer border-t border-gray-700 pt-4"
+          >
             <div className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow-500 text-black font-bold">
-              {username
-                ? (() => {
-                    const parts = username.trim().split(" ");
-                    if (parts.length === 1) return parts[0][0]?.toUpperCase();
-                    return (
-                      (parts[0][0]?.toUpperCase() || "") +
-                      (parts[parts.length - 1][0]?.toUpperCase() || "")
-                    );
-                  })()
-                : ""}
+              {initials}
             </div>
             <span>{username}</span>
           </div>
+          {open && (
+            <div className="absolute left-14 bottom-0 bg-white shadow-lg rounded-md py-2 z-50">
+              <div className="px-4 py-2 text-sm text-gray-700 border-b flex">
+                <span className="font-bold"> Name: </span> {username}
+              </div>
+              <div className="px-4 py-2 text-sm text-gray-700 border-b flex">
+                <span className="font-bold"> Email: </span> {email}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+              >
+                Đăng xuất
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

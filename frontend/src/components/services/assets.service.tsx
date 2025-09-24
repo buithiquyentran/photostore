@@ -1,29 +1,27 @@
 import createApiClient from "./api.service";
 import axios from "axios";
-
 class AssetService {
   private api: any;
 
   constructor(baseUrl = "/api/v1/assets") {
     // Khởi tạo api
     this.api = createApiClient(baseUrl);
-
+    // Interceptor để gắn token vào header
+    this.api.interceptors.request.use((config) => {
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
     // Gắn interceptor sau khi api đã khởi tạo
     this.api.interceptors.response.use(
       (res: any) => res,
       async (error: any) => {
         const originalRequest = error.config;
 
-        // Tránh lặp vô hạn
-        if (
-          error.response &&
-          error.response.status === 401 &&
-          !originalRequest._retry
-        ) {
-          originalRequest._retry = true; // đánh dấu đã retry
-
+        if (error.response && error.response.status === 401) {
           const refreshToken = localStorage.getItem("refresh_token");
-
           if (refreshToken) {
             try {
               const res = await axios.post("/api/v1/auth/refresh", {
@@ -36,28 +34,13 @@ class AssetService {
                 "Authorization"
               ] = `Bearer ${res.data.access_token}`;
 
-              return this.api(originalRequest); // retry 1 lần duy nhất
+              return this.api(originalRequest);
             } catch (refreshError) {
               console.error("Refresh token failed", refreshError);
               localStorage.removeItem("access_token");
               localStorage.removeItem("refresh_token");
               window.location.href = "/login";
             }
-          }
-        }
-
-        // Nếu lỗi signed URL (403/404) thì refetch list
-        if (
-          error.response &&
-          (error.response.status === 403 || error.response.status === 404) &&
-          error.config.url.includes("supabase.co/storage")
-        ) {
-          console.warn("Signed URL expired. Refreshing asset list...");
-          try {
-            const refreshed = await this.GetAll();
-            return Promise.resolve({ data: refreshed });
-          } catch (e) {
-            console.error("Failed to refresh signed URLs", e);
           }
         }
 
