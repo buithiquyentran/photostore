@@ -3,8 +3,8 @@ from sqlmodel import Session, select
 from db.session import get_session
 from models.users import Users  
 from dependencies.dependencies import get_current_user
-
-router = APIRouter(prefix="/user", tags=["Users"])
+from db.crud_user import add_user_with_assets
+router = APIRouter(prefix="/users/users", tags=["Users"])
 
 
 @router.delete("/{user_id}")
@@ -24,19 +24,16 @@ def read_me(current_user: dict = Depends(get_current_user)):
     return {"user": current_user}
 
 @router.post("/social-login")
-def social_login(user: dict = Depends(get_current_user), session: Session = Depends(get_session)):
+async def social_login(user: dict = Depends(get_current_user), session: Session = Depends(get_session)):
     # user lấy ra từ token Keycloak (đã decode trong middleware)
     sub_id = user["sub"]
     email = user.get("email")
-    name = user.get("name")
+    username = user.get("name")
 
     db_user = session.exec(select(Users).where(Users.sub_id == sub_id)).first()
 
     if not db_user:
-        # nếu chưa có thì tạo user mới
-        new_user = Users(sub_id=sub_id, email=email, username=name)
-        session.add(new_user)
-        session.commit()
+        new_user = await add_user_with_assets(session=session, email=email, username=username,  sub_id=sub_id)
         return {"msg": "User created", "user": new_user}
     
     return {"msg": "User exists", "user": db_user}

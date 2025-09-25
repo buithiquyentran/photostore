@@ -73,90 +73,90 @@ class RefreshRequest(BaseModel):
 
 # @router.post("/register", response_model=TokenResponse)
 # def register(data: RegisterRequest, session: Session = Depends(get_session)):
-#     try:
-#         # Gọi procedure MySQL
-#         result = session.execute(
-#             text("CALL register(:p_email, :p_password, :p_name)")
-#             .bindparams(p_email=data.email, p_password=data.password, p_name=data.username)
-#         )
-#         print(result)
-#         user = result.mappings().first()
-#         if not user:
-#             raise HTTPException(status_code=401, detail="Register failed")
+    # try:
+        # # Gọi procedure MySQL
+        # result = session.execute(
+        #     text("CALL register(:p_email, :p_password, :p_name)")
+        #     .bindparams(p_email=data.email, p_password=data.password, p_name=data.username)
+        # )
+        # print(result)
+        # user = result.mappings().first()
+        # if not user:
+        #     raise HTTPException(status_code=401, detail="Register failed")
 
-#         user_id = user["user_id"]
-#         folder_id = user["folder_id"]
+        # user_id = user["user_id"]
+        # folder_id = user["folder_id"]
 
-#         # Các file mặc định trong bucket public
-#         default_assets = [
-#             "uploads/0.jpg",
-#             "uploads/1.jpg",
-#             "uploads/2.jpg",
-#             "uploads/3.jpg",
-#             "uploads/4.jpg",
-#             "uploads/5.jpg",
-#             "uploads/6.jpg",
-#             "uploads/7.jpg",
-#             "uploads/8.jpg",
-#             "uploads/9.jpg",
-#             "uploads/10.jpg",
-#             "uploads/11.jpg",
-#             "uploads/12.jpg",
-#             "uploads/13.jpg",
-#             "uploads/14.jpg",
-#             "uploads/15.jpg",
-#             "uploads/16.jpg",
-#             "uploads/17.jpg",
-#             "uploads/18.jpg",
-#             "uploads/19.jpg",
-#         ]
+    #     # Các file mặc định trong bucket public
+    #     default_assets = [
+    #         "uploads/0.jpg",
+    #         "uploads/1.jpg",
+    #         "uploads/2.jpg",
+    #         "uploads/3.jpg",
+    #         "uploads/4.jpg",
+    #         "uploads/5.jpg",
+    #         "uploads/6.jpg",
+    #         "uploads/7.jpg",
+    #         "uploads/8.jpg",
+    #         "uploads/9.jpg",
+    #         "uploads/10.jpg",
+    #         "uploads/11.jpg",
+    #         "uploads/12.jpg",
+    #         "uploads/13.jpg",
+    #         "uploads/14.jpg",
+    #         "uploads/15.jpg",
+    #         "uploads/16.jpg",
+    #         "uploads/17.jpg",
+    #         "uploads/18.jpg",
+    #         "uploads/19.jpg",
+    #     ]
 
-#         for path in default_assets:
-#             public_url = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME_PUBLIC}/{path}"
-#             resp = requests.get(public_url)
-#             file_bytes = resp.content
-#             size = len(file_bytes)
-#             content_type = resp.headers.get("Content-Type")
-#             # lấy dimension nếu là ảnh
-#             width = height = None
-#             if content_type.startswith("image/"):
-#                 try:
-#                     with Image.open(io.BytesIO(file_bytes)) as im:
-#                         width, height = im.size
-#                 except Exception:
-#                     raise HTTPException(400, f"Ảnh {file_bytes.filename} không hợp lệ")
-#             asset_id = add_asset(
-#                 session=session,
-#                 user_id=user_id,
-#                 folder_id=folder_id,
-#                 url=public_url,
-#                 name=path,
-#                 format=content_type,
-#                 width=width, height=height,
-#                 file_size=size,
-#             )
-#             # thêm embedding 
-#             add_embedding(session=session, asset_id=asset_id, file_bytes=file_bytes)
+    #     for path in default_assets:
+    #         public_url = f"{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME_PUBLIC}/{path}"
+    #         resp = requests.get(public_url)
+    #         file_bytes = resp.content
+    #         size = len(file_bytes)
+    #         content_type = resp.headers.get("Content-Type")
+    #         # lấy dimension nếu là ảnh
+    #         width = height = None
+    #         if content_type.startswith("image/"):
+    #             try:
+    #                 with Image.open(io.BytesIO(file_bytes)) as im:
+    #                     width, height = im.size
+    #             except Exception:
+    #                 raise HTTPException(400, f"Ảnh {file_bytes.filename} không hợp lệ")
+    #         asset_id = add_asset(
+    #             session=session,
+    #             user_id=user_id,
+    #             folder_id=folder_id,
+    #             url=public_url,
+    #             name=path,
+    #             format=content_type,
+    #             width=width, height=height,
+    #             file_size=size,
+    #         )
+    #         # thêm embedding 
+    #         add_embedding(session=session, asset_id=asset_id, file_bytes=file_bytes)
 
-#         session.commit()
+    #     session.commit()
 
-#         # Tạo JWT
-#         payload = {"id": str(user_id), "email": user["email"]}
-#         access_token = create_access_token({"sub": str(user_id), "email": user["email"]})
-#         refresh_token = create_refresh_token(session, payload)
+    #     # Tạo JWT
+    #     payload = {"id": str(user_id), "email": user["email"]}
+    #     access_token = create_access_token({"sub": str(user_id), "email": user["email"]})
+    #     refresh_token = create_refresh_token(session, payload)
 
-#         return {
-#             "access_token": access_token,
-#             "refresh_token": refresh_token,
-#             "token_type": "bearer",
-#             "user_id": user_id,
-#             "email": user["email"],
-#             "username": user["username"],
-#             "is_superuser": user["is_superuser"],
-#         }
+    #     return {
+    #         "access_token": access_token,
+    #         "refresh_token": refresh_token,
+    #         "token_type": "bearer",
+    #         "user_id": user_id,
+    #         "email": user["email"],
+    #         "username": user["username"],
+    #         "is_superuser": user["is_superuser"],
+    #     }
 
-#     except Exception as e:
-#         raise HTTPException(status_code=401, detail=str(e))
+    # except Exception as e:
+    #     raise HTTPException(status_code=401, detail=str(e))
 
 # @router.get("/me", response_model=Users)
 # def get_me(id=Depends(get_current_user), session: Session = Depends(get_session)):
@@ -197,27 +197,6 @@ CLIENT_ID = "photostore_client"
 ALGORITHM = "RS256"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 jwks = requests.get(f"{KEYCLOAK_URL}/protocol/openid-connect/certs").json()
-# bin\kc.bat start-dev --http-port=8080
-# def get_key(token):
-#     unverified_header = jwt.get_unverified_header(token)
-#     for key in jwks["keys"]:
-#         if key["kid"] == unverified_header["kid"]:
-#             return key
-#     raise Exception("Public key not found.")
-
-# def verify_token(token: str = Depends(oauth2_scheme)):
-#     try:
-#         key = get_key(token)
-#         payload = jwt.decode(
-#             token,
-#             key,
-#             algorithms=[ALGORITHM],
-#             # audience=CLIENT_ID
-#             options={"verify_aud": False}  
-#         )
-#         return payload
-#     except Exception as e:
-#         raise Exception(f"Invalid token: {str(e)}")
 
 @router.post("/login")
 def login_with_keycloak(data: LoginRequest):
@@ -327,4 +306,4 @@ def register_user(data: RegisterRequest):
     if resp.status_code not in [200, 201]:
         raise HTTPException(status_code=resp.status_code, detail=resp.json())
 
-    return {"msg": "User registered successfully"}
+    return {"msg": "User registered successfully", "status": 200}

@@ -9,6 +9,7 @@ ALGORITHM = "RS256"
 
 # Load JWKS từ Keycloak
 jwks = requests.get(f"{KEYCLOAK_URL}/protocol/openid-connect/certs").json()
+CLIENT_ID = "photostore_client"
 
 def get_key(token: str):
     """Chọn public key theo kid trong header JWT"""
@@ -17,8 +18,13 @@ def get_key(token: str):
         if key["kid"] == unverified_header["kid"]:
             return key
     raise HTTPException(status_code=401, detail="Public key not found")
-def extract_user_roles(payload: dict) -> list:
-    return payload.get("realm_access", {}).get("roles", [])
+# def extract_user_roles(payload: dict) -> list:
+#     return payload.get("realm_access", {}).get("roles", [])
+def has_client_role(payload: dict, required_roles: str) -> bool:
+    client_roles = payload.get("resource_access", {}).get(CLIENT_ID, {}).get("roles", [])
+    print("client_roles", client_roles)
+    print("required_roles", required_roles)
+    return any(r in client_roles for r in required_roles)
 
 class AuthMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, required_roles=None):
@@ -26,6 +32,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         self.required_roles = required_roles or []
         self.public_paths = [
            "/api/v1/auth/*",
+           "/api/v1/users/assets/*",
             "/api/v1/openapi.json",
             "/docs",
             "/redoc",
@@ -75,11 +82,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
             required = self._get_required_roles_for_path(path)
             print("required", required)
             if required:
-                user_roles = extract_user_roles(payload)
-                print("user_roles", user_roles)
-                
-                # if not any(r in user_roles for r izn required):
+                matches = has_client_role(payload, required)
+                print("matches", matches)
+                # if not any(r in user_roles for r in required):
                 #     raise HTTPException(status_code=403, detail="Forbidden: insufficient role")
+                if not matches:
+                    raise HTTPException(status_code=403, detail="Forbidden: insufficient role")
+
             request.state.user = payload
 
         except Exception as e:

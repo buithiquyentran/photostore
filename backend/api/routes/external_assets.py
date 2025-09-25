@@ -40,99 +40,99 @@ UPLOAD_DIR = Path("uploads")
 #         "params": result["params"]
 #     }
 
-# @router.post("/upload")
-# async def upload_asset_external(
-#     files: List[UploadFile] = File(...),
-#     folder_name: str | None = Form(None), 
-#     client=Depends(verify_external_request),  # Check API key + signature
-#     session: Session = Depends(get_session),
-#     is_private: bool = False
-# ):
-#     results = []
-#     if folder_name:
-#         folder = get_or_create_folder(session, client.id, folder_name)
-#     else:
-#         folder = session.exec(
-#             select(Folders).where(
-#                 Folders.project_id == client.id,
-#                 Folders.is_default == True
-#             )
-#         ).first()
-#     if not folder:
-#         raise HTTPException(404, "Không tìm thấy folder phù hợp")
-#     folder_id = folder.id
-#     try:
-#         for file in files:
-#             # validate mime
-#             if not file.content_type or not file.content_type.startswith(("image/", "video/")):
-#                 raise HTTPException(400, f"File {file.filename} không hợp lệ (chỉ hỗ trợ image/video)")
+@router.post("/upload")
+async def upload_asset_external(
+    files: List[UploadFile] = File(...),
+    folder_name: str | None = Form(None), 
+    client=Depends(verify_external_request),  # Check API key + signature
+    session: Session = Depends(get_session),
+    is_private: bool = False
+):
+    results = []
+    if folder_name:
+        folder = get_or_create_folder(session, client.id, folder_name)
+    else:
+        folder = session.exec(
+            select(Folders).where(
+                Folders.project_id == client.id,
+                Folders.is_default == True
+            )
+        ).first()
+    if not folder:
+        raise HTTPException(404, "Không tìm thấy folder phù hợp")
+    folder_id = folder.id
+    try:
+        for file in files:
+            # validate mime
+            if not file.content_type or not file.content_type.startswith(("image/", "video/")):
+                raise HTTPException(400, f"File {file.filename} không hợp lệ (chỉ hỗ trợ image/video)")
 
-#             # đọc bytes
-#             file_bytes = await file.read()
-#             size = len(file_bytes)
+            # đọc bytes
+            file_bytes = await file.read()
+            size = len(file_bytes)
 
-#             # lấy dimension nếu là ảnh
-#             width = height = None
-#             if file.content_type.startswith("image/"):
-#                 try:
-#                     with Image.open(io.BytesIO(file_bytes)) as im:
-#                         width, height = im.size
-#                 except Exception:
-#                     raise HTTPException(400, f"Ảnh {file.filename} không hợp lệ")
+            # lấy dimension nếu là ảnh
+            width = height = None
+            if file.content_type.startswith("image/"):
+                try:
+                    with Image.open(io.BytesIO(file_bytes)) as im:
+                        width, height = im.size
+                except Exception:
+                    raise HTTPException(400, f"Ảnh {file.filename} không hợp lệ")
 
-#             # tên file lưu
-#             ext = os.path.splitext(file.filename or "")[1].lower() or ".bin"
-#             filename = f"{uuid4().hex}{ext}"
+            # tên file lưu
+            ext = os.path.splitext(file.filename or "")[1].lower() or ".bin"
+            filename = f"{uuid4().hex}{ext}"
 
-#             # relative path (lưu trong DB)
-#             object_path = f"{client.user_id}/{client.id}/{folder.name}/{filename}"
+            # relative path (lưu trong DB)
+            object_path = f"{client.user_id}/{client.id}/{folder.name}/{filename}"
 
-#             # absolute path (lưu trong ổ cứng)
-#             save_path = os.path.join(UPLOAD_DIR, object_path).replace("\\", "/")
-#             os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            # absolute path (lưu trong ổ cứng)
+            save_path = os.path.join(UPLOAD_DIR, object_path).replace("\\", "/")
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-#             # Lưu file vào local
-#             with open(save_path, "wb") as f:
-#                 f.write(file_bytes)
+            # Lưu file vào local
+            with open(save_path, "wb") as f:
+                f.write(file_bytes)
 
-#             try:
-#                 asset_id = add_asset(
-#                     session=session,
-#                     user_id=client.user_id,
-#                     folder_id=folder_id,
-#                     url=object_path,
-#                     name=file.filename or filename,
-#                     format=file.content_type,
-#                     width=width, height=height,
-#                     file_size=size,
-#                     is_private=is_private   # 👈 set giá trị từ form (hoặc mặc định False)
-#                 )
-#                 embedding, vec = add_embedding(session=session, asset_id=asset_id, file_bytes=file_bytes)
+            try:
+                asset_id = add_asset(
+                    session=session,
+                    user_id=client.user_id,
+                    folder_id=folder_id,
+                    url=object_path,
+                    name=file.filename or filename,
+                    format=file.content_type,
+                    width=width, height=height,
+                    file_size=size,
+                    is_private=is_private   # 👈 set giá trị từ form (hoặc mặc định False)
+                )
+                embedding, vec = add_embedding(session=session, asset_id=asset_id, file_bytes=file_bytes)
 
-#             except Exception as e:
-#                 if os.path.exists(save_path):
-#                     os.remove(save_path)
-#                 raise HTTPException(status_code=500, detail=f"DB insert failed: {e}")
+            except Exception as e:
+                if os.path.exists(save_path):
+                    os.remove(save_path)
+                raise HTTPException(status_code=500, detail=f"DB insert failed: {e}")
 
-#             preview_url = f"/uploads/{object_path}"
-#             safe_path = object_path.replace("\\", "/")
-#             file_path = (UPLOAD_DIR / safe_path).resolve()
+            preview_url = f"/uploads/{object_path}"
+            safe_path = object_path.replace("\\", "/")
+            file_path = (UPLOAD_DIR / safe_path).resolve()
 
             
-#             results.append({
-#                 "status": 1,
-#                 "id": asset_id,
-#                 "path": object_path,
-#                 "preview_url": FileResponse(file_path),
-#                 "width": width, "height": height, "file_size": size,
-#                 "mime_type": file.content_type,
-#                 "is_private": is_private,   
-#             })
+            results.append({
+                "status": 1,
+                "id": asset_id,
+                "path": object_path,
+                "preview_url": FileResponse(file_path),
+                "width": width, "height": height, "file_size": size,
+                "mime_type": file.content_type,
+                "is_private": is_private,   
+            })
 
-#         return {"status": 1, "data": results}
+        return {"status": 1, "data": results}
 
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     
 # @router.post("/{asset_id}")
 # def get_asset(asset_id: int, session: Session = Depends(get_session), client=Depends(verify_external_request),  # Check API key + signature

@@ -74,6 +74,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 async def get_optional_token(request: Request) -> Optional[str]:
     auth: str = request.headers.get("Authorization")
     scheme, param = get_authorization_scheme_param(auth)
+
+    
     if not auth or scheme.lower() != "bearer":
         return None
     return param
@@ -84,6 +86,8 @@ def get_optional_user(token: str | None = Depends(get_optional_token)) -> Option
         return None
     try:
         payload = decode_access_token(token)
+        print("payload", payload)
+        
         if not payload:
             return None
         return int(payload.get("id"))

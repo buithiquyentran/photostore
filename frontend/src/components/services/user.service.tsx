@@ -3,7 +3,7 @@ import RefreshService from "./refresh_token.service";
 class UserService {
   private api: any;
 
-  constructor(baseUrl = "/api/v1/user") {
+  constructor(baseUrl = "/api/v1/users/users") {
     this.api = createApiClient(baseUrl);
     this.api.interceptors.request.use((config) => {
       const token = localStorage.getItem("access_token");

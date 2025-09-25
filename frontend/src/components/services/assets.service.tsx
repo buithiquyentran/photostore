@@ -3,7 +3,7 @@ import axios from "axios";
 class AssetService {
   private api: any;
 
-  constructor(baseUrl = "/api/v1/assets") {
+  constructor(baseUrl = "/api/v1/users/assets") {
     // Khởi tạo api
     this.api = createApiClient(baseUrl);
     // Interceptor để gắn token vào header
