@@ -17,7 +17,7 @@ class Assets(SQLModel, table=True):
     file_size: int = Field(nullable=False, description="Kích thước file (byte)")
 
     is_private: bool = Field(default=False, description="false nếu file public")
-    url: str = Field(max_length=255, nullable=False)
+    path: str = Field(max_length=255, nullable=False)
 
     created: datetime = Field(default_factory=datetime.utcnow)
     last_created: datetime = Field(default_factory=datetime.utcnow)

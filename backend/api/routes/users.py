@@ -4,7 +4,7 @@ from db.session import get_session
 from models.users import Users  
 from dependencies.dependencies import get_current_user
 from db.crud_user import add_user_with_assets
-router = APIRouter(prefix="/users/users", tags=["Users"])
+router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @router.delete("/{user_id}")
@@ -21,20 +21,20 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
 
 @router.get("/me")
 def read_me(current_user: dict = Depends(get_current_user)):
-    return {"user": current_user}
+    return {"current_user": current_user}
 
 @router.post("/social-login")
-async def social_login(user: dict = Depends(get_current_user), session: Session = Depends(get_session)):
+async def social_login(current_user: dict = Depends(get_current_user), session: Session = Depends(get_session)):
     # user lấy ra từ token Keycloak (đã decode trong middleware)
-    sub_id = user["sub"]
-    email = user.get("email")
-    username = user.get("name")
-
-    db_user = session.exec(select(Users).where(Users.sub_id == sub_id)).first()
-
-    if not db_user:
-        new_user = await add_user_with_assets(session=session, email=email, username=username,  sub_id=sub_id)
+    print("current_user", current_user)
+    if (current_user["sub"]):
+        # return {"msg": "User exists", "user": current_user["sub"]}
+        sub = current_user["sub"] 
+        email = current_user["email"]
+        username = current_user["name"]
+        new_user = await add_user_with_assets(session=session, email=email, username=username,  sub=sub)
         return {"msg": "User created", "user": new_user}
-    
-    return {"msg": "User exists", "user": db_user}
+  
+    # db_user = session.exec(select(Users).where(Users.sub == sub)).first()
+    # return {"msg": "User exists", "user": db_user}
 

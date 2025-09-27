@@ -26,20 +26,6 @@ router = APIRouter(prefix="/external/assets", tags=["External Assets"])
 BUCKET_NAME = "photostore"
 UPLOAD_DIR = Path("uploads")
 
-# @router.post("/signature")
-# def get_signature(api_key: str, api_secret: str, session: Session = Depends(get_session)):
-#     client = get_client_by_key(api_key=api_key, session=session)
-#     if not client:
-#         raise HTTPException(status_code=401, detail="Invalid api_key")
-#     result = generate_signature(params={}, api_secret = api_secret, add_timestamp=True)
-
-#     return {
-#         "status_code": 200,
-#         "api_key": api_key,
-#         "signature": result["signature"],
-#         "params": result["params"]
-#     }
-
 @router.post("/upload")
 async def upload_asset_external(
     files: List[UploadFile] = File(...),
@@ -107,7 +93,7 @@ async def upload_asset_external(
                     file_size=size,
                     is_private=is_private   # 👈 set giá trị từ form (hoặc mặc định False)
                 )
-                embedding, vec = add_embedding(session=session, asset_id=asset_id, file_bytes=file_bytes)
+                # embedding, vec = add_embedding(session=session, asset_id=asset_id, file_bytes=file_bytes)
 
             except Exception as e:
                 if os.path.exists(save_path):
@@ -148,7 +134,7 @@ async def upload_asset_external(
 #     if not project:
 #         raise HTTPException(404, "Owner not found")
 #     # fix path separator
-#     safe_path = asset.url.replace("\\", "/")
+#     safe_path = asset.replace("\\", "/")
 #     file_path = (UPLOAD_DIR / safe_path).resolve()
 #     if not file_path.exists():
 #         raise HTTPException(404, "File not found")

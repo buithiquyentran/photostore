@@ -12,9 +12,8 @@ import {
   HelpCircle,
   Key,
 } from "lucide-react";
-import UserService from "@/components/services/user.service";
-import AssetService from "@/components/services/assets.service";
-import LoginService from "@/components/services/login.service";
+import UserService from "@/components/api/user.service";
+import LoginService from "@/components/api/login.service";
 import keycloak from "@/keycloak";
 
 interface MenuItem {
@@ -43,7 +42,7 @@ export default function Sidebar() {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const assetCount = await AssetService.Count();
+        const assetCount = await UserService.Count();
 
         setMenuItems((prev) =>
           prev.map((item) =>
@@ -55,7 +54,7 @@ export default function Sidebar() {
       }
     };
 
-    // fetchCounts();
+    fetchCounts();
   }, []);
   const toggleMenu = (label: string) => {
     setOpenMenus((prev) =>
@@ -66,8 +65,8 @@ export default function Sidebar() {
   const fetchUser = async () => {
     try {
       const res = await UserService.GetMe();
-      setUsername(res.user.name);
-      setEmail(res.user.email);
+      setUsername(res.current_user.username);
+      setEmail(res.current_user.email);
     } catch (error) {
       console.error("Lỗi khi lấy thông tin user:", error);
     }

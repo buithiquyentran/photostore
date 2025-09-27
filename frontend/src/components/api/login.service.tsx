@@ -7,14 +7,21 @@ class LoginService {
     this.api = createApiClient(baseUrl);
   }
   async Login(data: any) {
-    return (await this.api.post("/login", data)).data;
+    return (
+      await this.api.post("/login", data, {
+        headers: {},
+      })
+    ).data;
   }
   async Register(data: any) {
-    return (await this.api.post("/register", data)).data;
+    return (
+      await this.api.post("/register", data, {
+        headers: {},
+      })
+    ).data;
   }
   async LogOut() {
     return (await this.api.post("/logout")).data;
-
   }
 }
 export default new LoginService();

@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import FormGroup from "@/components/ui/FormGroup";
 // import ModalThongBao from "@/components/TracNghiem9231/shared/ModalThongBao";
 import path from "@/resources/path";
-import LoginService from "@/components/services/login.service";
+import LoginService from "@/components/api/login.service";
 import keycloak from "@/keycloak";
 const DangNhapPage: React.FC = () => {
   const navigate = useNavigate();
@@ -92,7 +92,11 @@ const DangNhapPage: React.FC = () => {
       console.error("Keycloak chưa khởi tạo!");
       return;
     }
-    keycloak.login({ idpHint: "facebook", prompt: "login" });
+    keycloak.login({
+      idpHint: "facebook",
+      prompt: "login",
+      redirectUri: window.location.origin + "/brower",
+    });
   };
   return (
     <div className="h-screen bg-bg">

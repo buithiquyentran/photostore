@@ -1,4 +1,6 @@
 from fastapi import Request, HTTPException
+from jose.exceptions import JWTError, ExpiredSignatureError
+from starlette.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from jose import jwt
 import requests
@@ -17,7 +19,7 @@ def get_key(token: str):
     for key in jwks["keys"]:
         if key["kid"] == unverified_header["kid"]:
             return key
-    raise HTTPException(status_code=401, detail="Public key not found")
+    return HTTPException(status_code=401, detail="Public key not found")
 # def extract_user_roles(payload: dict) -> list:
 #     return payload.get("realm_access", {}).get("roles", [])
 def has_client_role(payload: dict, required_roles: str) -> bool:
@@ -29,69 +31,55 @@ def has_client_role(payload: dict, required_roles: str) -> bool:
 class AuthMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, required_roles=None):
         super().__init__(app)
-        self.required_roles = required_roles or []
+        self.required_roles = required_roles or {}
         self.public_paths = [
            "/api/v1/auth/*",
-           "/api/v1/users/assets/*",
-            "/api/v1/openapi.json",
-            "/docs",
-            "/redoc",
+           "/api/v1/assets/*",
+           "/api/v1/openapi.json",
+           "/docs",
+           "/redoc",
+           "/favicon.ico"
         ]
-   
+
     def _get_required_roles_for_path(self, path: str):
-        """
-        Trả về List roles yêu cầu cho path, hoặc None nếu không yêu cầu roles.
-        Khi có nhiều pattern match, chọn pattern dài nhất (most specific).
-        """
         matches = []
-        print(path)
         for pat, roles in self.required_roles.items():
-            print("pat, roles",pat, roles)  
             if fnmatch.fnmatch(path, pat):
                 matches.append((pat, roles))
         if not matches:
             return None
-        # chọn pattern dài nhất (specific)
         best = max(matches, key=lambda x: len(x[0]))
         return best[1]
-    
-    async def dispatch(self, request: Request, call_next):
-        # Nếu path nằm trong danh sách public thì bỏ qua check
-        import fnmatch
 
+    async def dispatch(self, request: Request, call_next):
+        # bypass public
         if any(fnmatch.fnmatch(request.url.path, pat) for pat in self.public_paths):
             return await call_next(request)
 
-
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Missing token")
+            return JSONResponse(status_code=401, content={"detail": "Missing token"})
 
-        token = auth_header.split(" ")[1]
-
+        token = auth_header.split(" ", 1)[1]
         try:
             key = get_key(token)
-            payload = jwt.decode(
-                token,
-                key,
-                algorithms=[ALGORITHM],
-                options={"verify_aud": False}
-            )
+            payload = jwt.decode(token, key, algorithms=["RS256"], options={"verify_aud": False})
 
-            path = request.url.path
-            required = self._get_required_roles_for_path(path)
-            print("required", required)
-            if required:
-                matches = has_client_role(payload, required)
-                print("matches", matches)
-                # if not any(r in user_roles for r in required):
-                #     raise HTTPException(status_code=403, detail="Forbidden: insufficient role")
-                if not matches:
-                    raise HTTPException(status_code=403, detail="Forbidden: insufficient role")
+            required = self._get_required_roles_for_path(request.url.path)
+            # if required and not has_client_role(payload, required):
+            #     return JSONResponse(status_code=403, content={"detail": "Forbidden: insufficient role"})
 
             request.state.user = payload
 
+        except ExpiredSignatureError:
+            return JSONResponse(status_code=401, content={"detail": "Token expired"})
+        except JWTError as e:
+            return JSONResponse(status_code=401, content={"detail": f"Invalid token: {str(e)}"})
+        except HTTPException:
+            # nếu có HTTPException khác đâu đó, cho nó đi qua
+            raise
         except Exception as e:
-            raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+            # lỗi không liên quan token -> cho FastAPI xử lý (500)
+            raise
 
         return await call_next(request)

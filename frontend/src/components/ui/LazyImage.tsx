@@ -1,10 +1,24 @@
 import React, { useEffect, useState, useRef } from "react";
-import AssetsService from "@/components/services/assets.service";
+import AssetsService from "@/components/api/assets.service";
 
 function LazyImage({ asset }: { asset: any }) {
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLDivElement | null>(null);
+
+  const token = localStorage.getItem("access_token");
+  const fetchImage = async () => {
+    const res = await fetch(asset.url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    console.log(res.url);
+    if (!res.ok) throw new Error("Failed to fetch image");
+    const blob = await res.blob();
+    setImageUrl(URL.createObjectURL(blob));
+    // setImageUrl(res.url);
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -13,8 +27,11 @@ function LazyImage({ asset }: { asset: any }) {
         if (entry.isIntersecting) {
           // Gọi API để lấy signed url
           try {
-            const signed_url = await AssetsService.GetSignedUrl(asset.id);
-            setSignedUrl(signed_url);
+            // const url = await AssetsService.GetOne(asset.id);
+            // console.log(url);
+            if (!asset.is_private) {
+              setImageUrl(asset.url);
+            } else fetchImage();
           } catch (err) {
             console.error("Error fetching signed url", err);
           } finally {
@@ -32,7 +49,7 @@ function LazyImage({ asset }: { asset: any }) {
     return () => {
       observer.disconnect();
     };
-  }, [asset.id]);
+  }, []);
 
   return (
     <div
@@ -46,9 +63,9 @@ function LazyImage({ asset }: { asset: any }) {
           loaded ? "opacity-0" : "opacity-100"
         }`}
       />
-      {signedUrl && (
+      {imageUrl && (
         <img
-          src={signedUrl}
+          src={imageUrl}
           alt={asset.name}
           onLoad={() => setLoaded(true)}
           className={`w-full transition-opacity duration-700 ${

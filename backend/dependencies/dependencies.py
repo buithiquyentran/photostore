@@ -16,12 +16,16 @@ ALGORITHM = "RS256"
 
 # Load JWKS từ Keycloak
 jwks = requests.get(f"{KEYCLOAK_URL}/protocol/openid-connect/certs").json()
-def get_current_user(request: Request):
+
+def get_current_user(request: Request,  session: Session = Depends(get_session)):
     if not hasattr(request.state, "user") or request.state.user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return request.state.user
-
-
+    sub = request.state.user["sub"]
+    current_user = session.exec(select(Users).where(Users.sub == sub)).first()
+    if current_user:
+        return current_user
+    else:
+        return request.state.user
 
 def get_key(token: str):
     """Chọn public key theo kid trong header JWT"""
@@ -55,9 +59,9 @@ def get_optional_user(token: str | None = Depends(get_optional_token),  session:
         print("payload", payload)
         if not payload:
             return None
-        sub_id =  payload.get("sub")
-        if (sub_id):
-            db_user = session.exec(select(Users).where(Users.sub_id == sub_id)).first()
+        sub =  payload.get("sub")
+        if (sub):
+            db_user = session.exec(select(Users).where(Users.sub == sub)).first()
             return db_user
     except JWTError:
         return None

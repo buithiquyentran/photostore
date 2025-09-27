@@ -10,7 +10,7 @@ import REGISTER from "@/components/pages/loginPage/registerPage";
 import BROWER from "@/components/pages/browerPage";
 import keycloak from "@/keycloak";
 import { Loading } from "@/components/ui/Loading";
-import UserService from "@/components/services/user.service";
+import UserService from "@/components/api/user.service";
 
 function App() {
   const [keycloakReady, setKeycloakReady] = useState(false);

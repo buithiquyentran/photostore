@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, use } from "react";
 import Masonry from "react-masonry-css";
-import AssetsService from "@/components/services/assets.service";
+import AssetsService from "@/components/api/assets.service";
 import AdvancedSearchBar from "@/components/ui/AdvancedSearchBar";
 import {
   Search,
@@ -16,7 +16,6 @@ import SortDropdown from "@/components/ui/SortDropdown";
 import { useOutletContext } from "react-router-dom";
 import LazyImage from "@/components/ui/LazyImage";
 type LayoutContext = { assets: any[] };
-
 const Brower = () => {
   const { assets } = useOutletContext<LayoutContext>();
   const [view, setView] = useState("columns");
@@ -26,7 +25,6 @@ const Brower = () => {
     setView(newView);
     if (onViewChange) onViewChange(newView);
   };
-
   return (
     <div className=" bg-[rgb(31,36,46)] min-h-full">
       <div className="flex items-center justify-between px-4 border-b border-gray-700 text-white ">
@@ -89,4 +87,3 @@ const Brower = () => {
 };
 
 export default Brower;
-

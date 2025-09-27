@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import FormGroup from "@/components/ui/FormGroup";
 // import ModalThongBao from "@/components/TracNghiem9231/shared/ModalThongBao";
 import path from "@/resources/path";
-import LoginService from "@/components/services/login.service";
+import LoginService from "@/components/api/login.service";
 
 const DangNhapPage: React.FC = () => {
   const navigate = useNavigate();
