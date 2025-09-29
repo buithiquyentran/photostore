@@ -14,6 +14,7 @@ import numpy as np
 from pathlib import Path
 from typing import Optional
 from fastapi.responses import JSONResponse, FileResponse
+from pydantic import BaseModel
 from db.supabase_client import supabase
 from db.session import get_session
 from models import  Projects, Folders, Assets , Users, Embeddings
@@ -30,6 +31,26 @@ router = APIRouter(prefix="/users/assets",  tags=["User Assets"])
 BUCKET_NAME = "photostore"
 BUCKET_NAME_PUBLIC = "images" 
 UPLOAD_DIR = Path("uploads")
+
+@router.get("/{name}/metadata")
+def get_asset_metadata(name: str, session: Session = Depends(get_session), current_user: dict = Depends(get_optional_user)):
+    asset = session.exec(select(Assets).where(Assets.name == name)).first()
+    folder = session.exec(select(Folders).where(Folders.id == asset.folder_id)).first() if asset else None
+    if not asset:
+        raise HTTPException(404, "Asset not found")
+    user  = session.exec(select(Users)
+            .join(Projects, Users.id == Projects.user_id)
+            .join(Folders, Projects.id == Folders.project_id)
+            .join(Assets, Folders.id == Assets.folder_id)
+            .where(Assets.id == asset.id)
+        ).first()
+    if not user:
+        raise HTTPException(404, "Owner not found")
+    if current_user.id != user.id:
+        raise HTTPException(401, "Unauthorized")
+    result = asset.dict()
+    result["location"] = folder.name
+    return {"status": 1, "data": result}
 
 @router.get("/count",)
 def count(session: Session = Depends(get_session), current_user: dict = Depends(get_current_user)):
@@ -70,7 +91,63 @@ def list_private_assets(
         return {"status": "success", "data": data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi: {str(e)}")
+class AssetUpdate(BaseModel):
+    is_private: Optional[bool] = None
+    is_favorite: Optional[bool] = None
+    is_deleted: Optional[bool] = None
 
+@router.patch("/{id}")
+def update_asset(
+    id: int,
+    update: AssetUpdate,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    try:
+        # 1. Tìm asset
+        asset = session.exec(select(Assets).where(Assets.id == id)).first()
+        if not asset:
+            raise HTTPException(404, "Asset not found")
+
+        # 2. Kiểm tra user sở hữu asset
+        user = session.exec(
+            select(Users)
+            .join(Projects, Users.id == Projects.user_id)
+            .join(Folders, Projects.id == Folders.project_id)
+            .join(Assets, Folders.id == Assets.folder_id)
+            .where(Assets.id == asset.id)
+        ).first()
+
+        if not user:
+            raise HTTPException(404, "Owner not found")
+
+        if current_user.id != user.id:
+            raise HTTPException(401, "Unauthorized")
+
+        # 3. Update các field
+        if update.is_private is not None:
+            asset.is_private = update.is_private
+           
+        if update.is_favorite is not None:
+            asset.is_favorite = update.is_favorite
+            print
+        if update.is_deleted is not None:
+            asset.is_deleted = update.is_deleted
+            print("is_deleted",update.is_deleted)
+
+        session.add(asset)
+        session.commit()
+        session.refresh(asset)
+
+        return {
+            "message": "Asset updated successfully",
+            "asset": asset
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi: {str(e)}")
 
 @router.post("/upload-images")
 async def upload_assets(
@@ -143,7 +220,7 @@ async def upload_assets(
                     user_id=current_user.id,
                     folder_id=folder_id,
                     path=object_path,
-                    name=file.filename or filename,
+                    name=filename,
                     format=file.content_type,
                     width=width, height=height,
                     file_size=size,

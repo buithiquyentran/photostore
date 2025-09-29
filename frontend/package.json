@@ -12,6 +12,8 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.11.0",
+    "date-fns": "^2.0.0-alpha.20",
+    "framer-motion": "^12.23.22",
     "keycloak-js": "^26.2.0",
     "lucide-react": "^0.542.0",
     "path": "^0.12.7",
@@ -23,6 +25,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@types/date-fns": "^2.5.3",
     "@types/node": "^24.2.1",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",

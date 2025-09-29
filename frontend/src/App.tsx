@@ -8,6 +8,7 @@ import HOME from "@/components/pages/welcome/home";
 import LOGIN from "@/components/pages/loginPage/loginPage";
 import REGISTER from "@/components/pages/loginPage/registerPage";
 import BROWER from "@/components/pages/browerPage";
+import VIEWER from "@/components/pages/ViewerPage";
 import keycloak from "@/keycloak";
 import { Loading } from "@/components/ui/Loading";
 import UserService from "@/components/api/user.service";
@@ -25,14 +26,13 @@ function App() {
           UserService.SocialLogin();
           localStorage.setItem("access_token", keycloak.token || "");
           localStorage.setItem("refresh_token", keycloak.refreshToken || "");
-
         }
       })
       .catch((err) => {
         console.error("Keycloak init error", err);
         navigate("/login");
       });
-  }, [navigate]);
+  }, []);
 
   if (!keycloakReady) return <Loading />;
 
@@ -42,10 +42,14 @@ function App() {
         <Route path={path.HOME} element={<PublicLayout />}>
           <Route path={path.HOME} element={<HOME />} />
           <Route path={path.REGISTER} element={<REGISTER />} />
-          <Route path={path.LOGIN} element={<LOGIN />} />        </Route>
+          <Route path={path.LOGIN} element={<LOGIN />} />{" "}
+        </Route>
 
         <Route path="/" element={<DashboardLayout />}>
           <Route path={path.BROWER} element={<BROWER />} />
+        </Route>
+        <Route path="/">
+          <Route path="/photos/:name" element={<VIEWER />} />
         </Route>
       </Routes>
     </>

@@ -58,7 +58,7 @@ async def add_user_with_assets(session: Session, email: str, username: str, sub:
             new_filename = f"{uuid4().hex}{ext}"
 
             # relative path (lưu trong DB)
-            object_path = f"{user_id}/{project_id}/Default Folder/{new_filename}"
+            object_path = f"{user_id}/{project_id}/Home/{new_filename}"
 
             # absolute path (lưu trong ổ cứng)
             save_path = os.path.join(UPLOAD_DIR, object_path).replace("\\", "/")

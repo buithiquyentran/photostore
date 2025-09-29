@@ -13,12 +13,24 @@ class UserService {
     const res = await this.api.post("/social-login");
     return res.data;
   }
-
   async GetAll() {
     return (await this.api.get("assets/all")).data.data;
   }
+  async GetMetadata(name: string | undefined) {
+    return (await this.api.get(`assets/${name}/metadata`)).data.data;
+  }
   async Count() {
     return (await this.api.get("assets/count")).data.data;
+  }
+  async Update(
+    id: number | undefined,
+    payload: Partial<{
+      is_deleted: boolean;
+      is_private: boolean;
+      is_favorite: boolean;
+    }>
+  ) {
+    return (await this.api.patch(`assets/${id}`, payload)).data;
   }
   async Upload(formData: FormData) {
     return (

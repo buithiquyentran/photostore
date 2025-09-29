@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, use } from "react";
+import { useNavigate } from "react-router-dom";
 import Masonry from "react-masonry-css";
 import AssetsService from "@/components/api/assets.service";
 import AdvancedSearchBar from "@/components/ui/AdvancedSearchBar";
@@ -25,6 +26,7 @@ const Brower = () => {
     setView(newView);
     if (onViewChange) onViewChange(newView);
   };
+  const navigate = useNavigate();
   return (
     <div className=" bg-[rgb(31,36,46)] min-h-full">
       <div className="flex items-center justify-between px-4 border-b border-gray-700 text-white ">
@@ -79,7 +81,9 @@ const Brower = () => {
         columnClassName="flex flex-col gap-4"
       >
         {assets.map((asset) => (
-          <LazyImage key={asset.id} asset={asset} />
+          <div onClick={() => navigate(`/photos/${asset.name}`)}>
+            <LazyImage key={asset.id} asset={asset} />
+          </div>
         ))}
       </Masonry>
     </div>

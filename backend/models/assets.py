@@ -15,7 +15,8 @@ class Assets(SQLModel, table=True):
     width: int = Field(nullable=False)
     height: int = Field(nullable=False)
     file_size: int = Field(nullable=False, description="Kích thước file (byte)")
-
+    is_favorite: bool = Field(default=False, description="true nếu file được đánh dấu yêu thích")
+    is_deleted: bool = Field(default=False, description="true nếu file đã bị xóa")
     is_private: bool = Field(default=False, description="false nếu file public")
     path: str = Field(max_length=255, nullable=False)
 

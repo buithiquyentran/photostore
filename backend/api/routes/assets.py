@@ -30,9 +30,9 @@ BUCKET_NAME = "photostore"
 BUCKET_NAME_PUBLIC = "images" 
 UPLOAD_DIR = Path("uploads")
 
-@router.get("/{asset_id}")
-def get_asset(asset_id: int, session: Session = Depends(get_session), current_user: dict = Depends(get_optional_user)):
-    asset = session.exec(select(Assets).where(Assets.id == asset_id)).first()
+@router.get("/{name}")
+def get_asset(name: str, session: Session = Depends(get_session), current_user: dict = Depends(get_optional_user)):
+    asset = session.exec(select(Assets).where(Assets.name == name)).first()
     if not asset:
         raise HTTPException(404, "Asset not found")
     user  = session.exec(select(Users)
