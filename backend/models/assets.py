@@ -11,7 +11,6 @@ class Assets(SQLModel, table=True):
     name: str = Field(max_length=100, nullable=False)
     is_image: Optional[bool] = Field(default=True)
     format: Optional[str] = Field(max_length=100, nullable=True)
-
     width: int = Field(nullable=False)
     height: int = Field(nullable=False)
     file_size: int = Field(nullable=False, description="Kích thước file (byte)")

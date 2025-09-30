@@ -32,7 +32,7 @@ export default function Sidebar() {
       label: "Assets",
       icon: <Bookmark size={18} />,
       count: 0, // mặc định 0
-      subMenu: ["Assets", "Projects", "Folders"],
+      subMenu: ["Projects", "Folders", "Assets"],
     },
     { label: "Videos", icon: <Play size={18} />, count: 0 },
     { label: "People", icon: <User size={18} />, count: 0 },

@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Optional
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
-from db.supabase_client import supabase
 from db.session import get_session
 from models import  Projects, Folders, Assets , Users, Embeddings
 from dependencies.dependencies import get_optional_user, get_current_user

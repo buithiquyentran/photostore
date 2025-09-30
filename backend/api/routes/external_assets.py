@@ -12,7 +12,6 @@ from typing import List
 
 
 from dependencies.external_auth import verify_external_request
-from db.supabase_client import supabase
 from db.session import get_session
 from models import  Projects, Folders, Users, Assets
 from db.crud_asset import add_asset
@@ -91,7 +90,7 @@ async def upload_asset_external(
                     format=file.content_type,
                     width=width, height=height,
                     file_size=size,
-                    is_private=is_private   # 👈 set giá trị từ form (hoặc mặc định False)
+                    is_private=is_private   
                 )
                 # embedding, vec = add_embedding(session=session, asset_id=asset_id, file_bytes=file_bytes)
 

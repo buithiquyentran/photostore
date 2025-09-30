@@ -20,9 +20,9 @@ async function RefreshToken() {
     return access_token;
   } catch (err) {
     console.error("Refresh token failed", err);
-    // localStorage.removeItem("access_token");
-    // localStorage.removeItem("refresh_token");
-    // window.location.href = "/login";
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    window.location.href = "/login";
     return null;
   }
 }

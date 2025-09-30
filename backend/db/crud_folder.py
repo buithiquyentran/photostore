@@ -1,6 +1,5 @@
 from sqlmodel import Session, select
 from models import Folders
-
 def get_or_create_folder(session: Session, project_id: int, path: str) -> Folders:
     parts = [p.strip() for p in path.split("/") if p.strip()]
     parent_id = None

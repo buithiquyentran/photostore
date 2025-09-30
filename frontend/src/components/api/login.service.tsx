@@ -20,7 +20,7 @@ class LoginService {
       })
     ).data;
   }
-  async LogOut() {
+  async LogOut(data: any) {
     return (await this.api.post("/logout")).data;
   }
 }

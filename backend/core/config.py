@@ -1,7 +1,5 @@
-
 from pydantic_settings import BaseSettings
 from typing import List
-
 class Settings(BaseSettings):
     DATABASE_URL: str
     PROJECT_NAME: str = "PhotoStore"
@@ -9,11 +7,11 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "local"          
     SECRET_KEY: str  = "supersecretkey"
     REFR_SECRET_KEY : str = "supersecretkeyrefresh"
-    # CORS
     all_cors_origins: List[str] = ["http://localhost:5173","http://localhost:5174"]
-
-    SUPABASE_URL: str
-    SUPABASE_SERVICE_ROLE_KEY: str
+    KEYCLOAK_URL: str 
+    CLIENT_ID: str 
+    ADMIN_CLIENT_ID: str 
+    ADMIN_CLIENT_SECRET: str 
     class Config:   
         env_file = ".env"
 
