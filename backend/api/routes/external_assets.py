@@ -6,14 +6,18 @@ from sqlmodel import Session, select
 from uuid import uuid4
 import io
 import os
+
 from pathlib import Path
 from fastapi.responses import JSONResponse, FileResponse
 from typing import List
 
 
+
 from dependencies.external_auth import verify_external_request
 from db.session import get_session
+
 from models import  Projects, Folders, Users, Assets
+
 from db.crud_asset import add_asset
 # from db.crud_embedding import add_embedding
 from services.api_client.api_client_service import get_client_by_key
@@ -23,11 +27,13 @@ from core.security import get_current_user, get_optional_user
 
 router = APIRouter(prefix="/external/assets", tags=["External Assets"])
 BUCKET_NAME = "photostore"
+
 UPLOAD_DIR = Path("uploads")
 
 @router.post("/upload")
 async def upload_asset_external(
     files: List[UploadFile] = File(...),
+
     folder_name: str | None = Form(None), 
     client=Depends(verify_external_request),  # Check API key + signature
     session: Session = Depends(get_session),
@@ -37,6 +43,7 @@ async def upload_asset_external(
     if folder_name:
         folder = get_or_create_folder(session, client.id, folder_name)
     else:
+
         folder = session.exec(
             select(Folders).where(
                 Folders.project_id == client.id,
@@ -113,6 +120,7 @@ async def upload_asset_external(
                 "mime_type": file.content_type,
                 "is_private": is_private,   
             })
+
 
         return {"status": 1, "data": results}
 
