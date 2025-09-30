@@ -11,13 +11,13 @@ class Assets(SQLModel, table=True):
     name: str = Field(max_length=100, nullable=False)
     is_image: Optional[bool] = Field(default=True)
     format: Optional[str] = Field(max_length=100, nullable=True)
-
     width: int = Field(nullable=False)
     height: int = Field(nullable=False)
     file_size: int = Field(nullable=False, description="Kích thước file (byte)")
-
-    access_control: bool = Field(default=True, description="true nếu file public")
-    url: str = Field(max_length=255, nullable=False)
+    is_favorite: bool = Field(default=False, description="true nếu file được đánh dấu yêu thích")
+    is_deleted: bool = Field(default=False, description="true nếu file đã bị xóa")
+    is_private: bool = Field(default=False, description="false nếu file public")
+    path: str = Field(max_length=255, nullable=False)
 
     created: datetime = Field(default_factory=datetime.utcnow)
     last_created: datetime = Field(default_factory=datetime.utcnow)

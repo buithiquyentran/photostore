@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+
+sqlmodel
+pillow
+faiss-cpu
+torch
+clip-anytorch
+supabase
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+transformers

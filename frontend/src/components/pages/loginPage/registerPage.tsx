@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import FormGroup from "@/components/ui/FormGroup";
 // import ModalThongBao from "@/components/TracNghiem9231/shared/ModalThongBao";
 import path from "@/resources/path";
-import LoginService from "@/components/services/login.service";
+import LoginService from "@/components/api/login.service";
 
 const DangNhapPage: React.FC = () => {
   const navigate = useNavigate();
@@ -52,14 +52,8 @@ const DangNhapPage: React.FC = () => {
         password: password,
       });
 
-      if (response.user_id && response.access_token) {
-        localStorage.setItem("access_token", response.access_token);
-        localStorage.setItem("email", response.email);
-        localStorage.setItem("username", response.username);
-        localStorage.setItem("refresh_token", response.refresh_token);
-        setIsModalOpen(null);
-        // Refresh trang sau khi đăng nhập thành công
-        navigate("/brower");
+      if (response.status == 200) {
+        navigate(path.LOGIN);
       } else {
         if (response.data.code === "2222") {
           setIsModalOpen({

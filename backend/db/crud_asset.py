@@ -11,12 +11,12 @@ def add_asset(
     user_id: int,
     name: str,
     format: str,
-    url: str,
+    path: str,
     width: int = None,
     height: int = None,
     file_size: int = None,
     folder_id: int = None,
-    access_control: bool = True,
+    is_private: bool = False,
     is_image: bool = True
 ):
     asset = Assets(
@@ -24,12 +24,12 @@ def add_asset(
         folder_id=folder_id,
         name=name,
         format=format,
-        url=url,
+        path=path,
         width=width,
         height=height,
         file_size=file_size,
         is_image=is_image,
-        access_control=access_control,
+        is_private=is_private,
     )
     session.add(asset)
     session.commit()

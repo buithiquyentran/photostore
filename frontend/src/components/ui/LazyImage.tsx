@@ -1,44 +1,37 @@
 import React, { useEffect, useState, useRef } from "react";
-import AssetsService from "@/components/services/assets.service";
+import AssetsService from "@/components/api/assets.service";
 
 function LazyImage({ asset }: { asset: any }) {
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLDivElement | null>(null);
-
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      async (entries) => {
-        const entry = entries[0];
-        if (entry.isIntersecting) {
-          // Gọi API để lấy signed url
-          try {
-            const signed_url = await AssetsService.GetSignedUrl(asset.id);
-            setSignedUrl(signed_url);
-          } catch (err) {
-            console.error("Error fetching signed url", err);
-          } finally {
-            observer.disconnect(); // ngắt sau khi load
-          }
-        }
-      },
-      { threshold: 0.2 } // load khi 20% ảnh vào viewport
-    );
-
-    if (imgRef.current) {
-      observer.observe(imgRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [asset.id]);
+     let objectUrl: string | null = null;
+ 
+     const fetchAndSetImage = async () => {
+       try {
+         const res = await AssetsService.GetOne(asset.name);
+         const blob = res.data as Blob;
+         const url = URL.createObjectURL(blob);
+         setImageUrl(url);
+         objectUrl = url;
+       } catch (err) {
+         console.error("Fetch image failed", err);
+       }
+     };
+ 
+     fetchAndSetImage();
+ 
+     return () => {
+       if (objectUrl) URL.revokeObjectURL(objectUrl); // cleanup tránh leak
+     };
+   }, [asset.name]);
 
   return (
     <div
       ref={imgRef}
       style={{ aspectRatio: `${asset.width} / ${asset.height}` }}
-      className="bg-gray-700 overflow-hidden"
+      className="bg-gray-700 overflow-hidden cursor-pointer"
     >
       {/* Placeholder mờ */}
       <div
@@ -46,9 +39,9 @@ function LazyImage({ asset }: { asset: any }) {
           loaded ? "opacity-0" : "opacity-100"
         }`}
       />
-      {signedUrl && (
+      {imageUrl && (
         <img
-          src={signedUrl}
+          src={imageUrl}
           alt={asset.name}
           onLoad={() => setLoaded(true)}
           className={`w-full transition-opacity duration-700 ${

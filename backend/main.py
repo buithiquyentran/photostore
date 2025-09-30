@@ -1,15 +1,11 @@
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from api.main import api_router
 from core.config import settings
-
-# import thêm
-from sqlalchemy.orm import Session
-from models import Embeddings 
-# from services.embeddings_service import rebuild_faiss  
-from core.security import get_current_user
+from dependencies.auth_middleware import AuthMiddleware
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     tag = route.tags[0] if route.tags else "default"
@@ -31,6 +27,12 @@ if settings.all_cors_origins:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+required_roles = {
+    "/api/v1/admin/*": ["admin"],             # chỉ role admin mới được vào
+    "/api/v1/users/*": ["user", "admin"],     # user hoặc admin đều được
+}
+
+app.add_middleware(AuthMiddleware, required_roles=required_roles)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
@@ -38,6 +40,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 def root():
     return {"message": "Database connected successfully!"}
 
+# app.mount("/static", StaticFiles(directory="uploads"), name="static")
 
 # @app.on_event("startup")
 # def load_faiss():

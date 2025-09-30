@@ -6,7 +6,10 @@ from passlib.context import CryptContext
 from sqlmodel import Session, select
 from uuid import uuid4
 from models.users import Users, RefreshToken
-
+from jose import JWTError
+from typing import Optional
+from fastapi import Request, Depends, HTTPException
+from fastapi.security.utils import get_authorization_scheme_param
 from core.config import settings  # Ensure this path matches your project structure
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -66,3 +69,27 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid token")
     return payload.get("id")
+
+# ✅ Dependency: lấy token từ header nếu có
+async def get_optional_token(request: Request) -> Optional[str]:
+    auth: str = request.headers.get("Authorization")
+    scheme, param = get_authorization_scheme_param(auth)
+
+    
+    if not auth or scheme.lower() != "bearer":
+        return None
+    return param
+
+# ✅ Dependency: parse token thành user_id (có thể None)
+def get_optional_user(token: str | None = Depends(get_optional_token)) -> Optional[int]:
+    if not token:
+        return None
+    try:
+        payload = decode_access_token(token)
+        print("payload", payload)
+        
+        if not payload:
+            return None
+        return int(payload.get("id"))
+    except JWTError:
+        return None

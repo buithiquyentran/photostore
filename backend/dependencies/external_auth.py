@@ -19,7 +19,7 @@ async def verify_external_request(
 
     # check expired 5phut
     now = int(time.time())
-    if now - int(timestamp) > 300:
+    if now - int(timestamp) > 300: # 60*100
         raise HTTPException(status_code=401, detail="Signature expired")
 
     # build lại params đúng như khi ký

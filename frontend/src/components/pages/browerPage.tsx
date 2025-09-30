@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, use } from "react";
+import { useNavigate } from "react-router-dom";
 import Masonry from "react-masonry-css";
-import AssetsService from "@/components/services/assets.service";
+import AssetsService from "@/components/api/assets.service";
 import AdvancedSearchBar from "@/components/ui/AdvancedSearchBar";
 import {
   Search,
@@ -16,7 +17,6 @@ import SortDropdown from "@/components/ui/SortDropdown";
 import { useOutletContext } from "react-router-dom";
 import LazyImage from "@/components/ui/LazyImage";
 type LayoutContext = { assets: any[] };
-
 const Brower = () => {
   const { assets } = useOutletContext<LayoutContext>();
   const [view, setView] = useState("columns");
@@ -26,13 +26,13 @@ const Brower = () => {
     setView(newView);
     if (onViewChange) onViewChange(newView);
   };
-
+  const navigate = useNavigate();
   return (
     <div className=" bg-[rgb(31,36,46)] min-h-full">
       <div className="flex items-center justify-between px-4 border-b border-gray-700 text-white ">
-        <button className="flex  items-center text-gray-400  hover:text-white px-2">
+        <button className="flex  cursor-pointer items-center text-gray-400  hover:text-white px-2">
           <RotateCcw size={20} /> &nbsp;{" "}
-          <div className="text-sm "> Refresh </div>
+          <div className="text-sm"> Refresh </div>
         </button>
         <div className="flex items-center gap-4">
           {/* Sort */}
@@ -81,7 +81,9 @@ const Brower = () => {
         columnClassName="flex flex-col gap-4"
       >
         {assets.map((asset) => (
-          <LazyImage key={asset.id} asset={asset} />
+          <div onClick={() => navigate(`/photos/${asset.name}`)}>
+            <LazyImage key={asset.id} asset={asset} />
+          </div>
         ))}
       </Masonry>
     </div>
@@ -89,4 +91,3 @@ const Brower = () => {
 };
 
 export default Brower;
-

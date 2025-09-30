@@ -8,7 +8,7 @@ export default {
       colors: {
         bg: "#E3F6F5",
         headline: "#272343",
-        paragraph: "#2D334A",
+        paragraph: "#2D334A", 
         highlight: "#FFD803",
         card: "#FFFFFE",
         newsletter: "#BAE8E8",
