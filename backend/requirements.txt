@@ -1,7 +1,9 @@
 fastapi
 uvicorn[standard]
+pydantic-settings
 
 sqlmodel
+pymysql
 pillow
 faiss-cpu
 torch
@@ -11,3 +13,4 @@ python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
 transformers
+requests
