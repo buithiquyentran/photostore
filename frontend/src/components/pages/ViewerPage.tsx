@@ -10,6 +10,8 @@ import {
   StarOff,
   Trash2,
   MoreVertical,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import AssetService from "@/components/api/assets.service";
 import UserService from "@/components/api/user.service";
@@ -22,6 +24,8 @@ export default function ViewerPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [meta, setMeta] = useState<any>(null);
   const [toggleStar, setToggleStar] = useState<any>(null);
+  const [nextName, setNextName] = useState<string>();
+  const [prevName, setPrevName] = useState<string>();
 
   useEffect(() => {
     let objectUrl: string | null = null;
@@ -36,6 +40,9 @@ export default function ViewerPage() {
         setImageUrl(url);
         setToggleStar(metaResponse.is_favorite);
         objectUrl = url;
+        const nextPreName = await UserService.GetNextPre(name);
+        setNextName(nextPreName.next?.name);
+        setPrevName(nextPreName.prev?.name);
       } catch (err) {
         console.error("Fetch image failed", err);
       }
@@ -47,6 +54,7 @@ export default function ViewerPage() {
       if (objectUrl) URL.revokeObjectURL(objectUrl); // cleanup tránh leak
     };
   }, [name]);
+
   const handleDelete = async () => {
     try {
       await UserService.Update(meta.id, { is_deleted: true });
@@ -76,44 +84,48 @@ export default function ViewerPage() {
       <div className="flex items-center justify-between bg-black/50 px-4">
         <button
           onClick={() => navigate(-1)}
-          className="p-2 rounded-full hover:bg-white/20 text-white"
+          className="p-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
         >
           <X size={24} />
         </button>
         <div className="flex items-center justify-between bg-black/50 ">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 m-2 rounded-full hover:bg-white/20 text-white"
+            className="p-2 m-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
           >
             <Share2 size={24} />
           </button>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 m-2 rounded-full hover:bg-white/20 text-white"
+            className="p-2 m-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
           >
             <SlidersHorizontal size={24} />
           </button>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 m-2 rounded-full hover:bg-white/20 text-white"
+            className="p-2 m-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
           >
             <ZoomIn size={24} />
           </button>
           <button
             onClick={() => handleToggleStar()}
-            className="p-2 rounded-full hover:bg-white/20 text-white"
+            className="p-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
           >
-            {toggleStar ? <Star size={24} className="text-highlight" /> : <StarOff size={24} />}
+            {toggleStar ? (
+              <Star size={24} className="text-highlight" />
+            ) : (
+              <StarOff size={24} />
+            )}
           </button>
           <button
             onClick={() => handleDelete()}
-            className="p-2 rounded-full hover:bg-white/20 text-white"
+            className="p-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
           >
             <Trash2 size={24} />
           </button>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-full hover:bg-white/20 text-white"
+            className="p-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
           >
             <Info size={24} />
           </button>
@@ -124,17 +136,45 @@ export default function ViewerPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Ảnh */}
         <div className="flex-1 flex items-center justify-center overflow-hidden">
-          {imageUrl && (
-            <img
-              src={imageUrl || ""}
-              alt="meta.name"
-              className="max-h-full max-w-full object-contain"
-            />
-          )}
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Nút Prev */}
+            <button
+              onClick={() => {
+                navigate(`/photos/${prevName}`);
+              }}
+              disabled={!prevName}
+              className="absolute left-4 top-[50%] p-3 bg-white/20 hover:bg-white/40 rounded-full text-white disabled:opacity-0 "
+            >
+              <ChevronLeft size={32} />
+            </button>
+            {imageUrl && (
+              <img
+                src={imageUrl || ""}
+                alt="meta.name"
+                className="max-h-full max-w-full object-contain"
+              />
+            )}
+            {/* Nút Next */}
+            <button
+              onClick={() => {
+                navigate(`/photos/${nextName}`);
+              }}
+              disabled={!nextName}
+              className="absolute right-4 top-[50%] p-3 bg-white/20 hover:bg-white/40 rounded-full text-white disabled:opacity-0"
+            >
+              <ChevronRight size={32} />
+            </button>
+          </div>
         </div>
 
         {/* Sidebar */}
-        {sidebarOpen && <SidebarMetadata open={sidebarOpen} meta={meta} onsave ={handleChangeAccessControl}/>}
+        {sidebarOpen && (
+          <SidebarMetadata
+            open={sidebarOpen}
+            meta={meta}
+            onsave={handleChangeAccessControl}
+          />
+        )}
       </div>
     </div>
   );

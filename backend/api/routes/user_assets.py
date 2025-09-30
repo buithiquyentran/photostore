@@ -51,7 +51,41 @@ def get_asset_metadata(name: str, session: Session = Depends(get_session), curre
     result = asset.dict()
     result["location"] = folder.name
     return {"status": 1, "data": result}
+@router.get("/{name}/nextprev/metadata")
+def get_next_prev(name: str, session: Session = Depends(get_session), current_user: dict = Depends(get_optional_user)):
+    asset = session.query(Assets).filter(Assets.name == name).first()
+    if not asset:
+        raise HTTPException(status_code=404, detail="Assets not found")
+    user  = session.exec(select(Users)
+            .join(Projects, Users.id == Projects.user_id)
+            .join(Folders, Projects.id == Folders.project_id)
+            .join(Assets, Folders.id == Assets.folder_id)
+            .where(Assets.id == asset.id)
+        ).first()
+    if not user:
+        raise HTTPException(404, "Owner not found")
+    if current_user.id != user.id:
+        raise HTTPException(401, "Unauthorized")
+    statement = (
+            select(Assets)
+            .join(Folders, Assets.folder_id == Folders.id)
+            .join(Projects, Folders.project_id == Projects.id)
+            .where(Projects.user_id == current_user.id)
+        )
+   # prev: ảnh có id nhỏ hơn trong cùng project
+    prev_asset = session.exec(
+        statement.where(Assets.id < asset.id).order_by(Assets.id.desc()).limit(1)
+    ).first()
 
+    # next: ảnh có id lớn hơn trong cùng project
+    next_asset = session.exec(
+        statement.where(Assets.id > asset.id).order_by(Assets.id.asc()).limit(1)
+    ).first()
+
+    return {
+        "prev": {"name": prev_asset.name} if prev_asset else None,
+        "next": {"name": next_asset.name} if next_asset else None,
+    }
 @router.get("/count",)
 def count(session: Session = Depends(get_session), current_user: dict = Depends(get_current_user)):
     try:

@@ -30,9 +30,9 @@ const Brower = () => {
   return (
     <div className=" bg-[rgb(31,36,46)] min-h-full">
       <div className="flex items-center justify-between px-4 border-b border-gray-700 text-white ">
-        <button className="flex  items-center text-gray-400  hover:text-white px-2">
+        <button className="flex  cursor-pointer items-center text-gray-400  hover:text-white px-2">
           <RotateCcw size={20} /> &nbsp;{" "}
-          <div className="text-sm "> Refresh </div>
+          <div className="text-sm"> Refresh </div>
         </button>
         <div className="flex items-center gap-4">
           {/* Sort */}

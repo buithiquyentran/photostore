@@ -19,6 +19,9 @@ class UserService {
   async GetMetadata(name: string | undefined) {
     return (await this.api.get(`assets/${name}/metadata`)).data.data;
   }
+  async GetNextPre(name: string | undefined) {
+    return (await this.api.get(`assets/${name}/nextprev/metadata`)).data;
+  }
   async Count() {
     return (await this.api.get("assets/count")).data.data;
   }
