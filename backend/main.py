@@ -2,10 +2,19 @@ from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlmodel import SQLModel
 
 from api.main import api_router
 from core.config import settings
 from dependencies.auth_middleware import AuthMiddleware
+from db.session import engine
+
+# Import models để SQLModel biết
+from models.users import Users, RefreshToken
+from models.projects import Projects
+from models.folders import Folders
+from models.assets import Assets
+from models.embeddings import Embeddings
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     tag = route.tags[0] if route.tags else "default"
@@ -42,7 +51,18 @@ def root():
 
 # app.mount("/static", StaticFiles(directory="uploads"), name="static")
 
-# @app.on_event("startup")
-# def load_faiss():
-#     with next(get_session()) as session:   # nhớ dùng next()
-#         rebuild_faiss(session)
+@app.on_event("startup")
+def startup_event():
+    """Initialize database tables on startup"""
+    print("🚀 Starting up PhotoStore...")
+    
+    # Create all tables if not exist
+    SQLModel.metadata.create_all(engine)
+    print("✅ Database tables initialized")
+    
+    # TODO: Load FAISS indices for active projects
+    # from db.session import get_session
+    # from services.search.embeddings_service import rebuild_project_embeddings
+    # with next(get_session()) as session:
+    #     # Rebuild indices for active projects
+    #     pass

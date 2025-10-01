@@ -26,3 +26,6 @@ class Folders(SQLModel, table=True):
 
     # Quan hệ với Asset (1 folder có nhiều assets)
     assets: List["Assets"] = Relationship(back_populates="folders")
+    
+    # Quan hệ với Embeddings (1 folder có nhiều embeddings)
+    embeddings: List["Embeddings"] = Relationship(back_populates="folders")

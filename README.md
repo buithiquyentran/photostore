@@ -1,4 +1,4 @@
-# 📸 PhotoStore - Hệ thống Quản lý và Tìm kiếm Ảnh
+# PhotoStore - Hệ thống Quản lý và Tìm kiếm Ảnh
 
 Hệ thống quản lý ảnh với tính năng tìm kiếm thông minh sử dụng AI.
 

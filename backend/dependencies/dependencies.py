@@ -29,14 +29,40 @@ def get_jwks():
     return _jwks_cache
 
 def get_current_user(request: Request,  session: Session = Depends(get_session)):
+    """
+    Lấy current user từ token.
+    Trả về Users object từ database.
+    """
     if not hasattr(request.state, "user") or request.state.user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    sub = request.state.user["sub"]
+    
+    sub = request.state.user.get("sub")
+    if not sub:
+        raise HTTPException(status_code=401, detail="Invalid token: missing sub")
+    
+    # Tìm user trong database
     current_user = session.exec(select(Users).where(Users.sub == sub)).first()
-    if current_user:
-        return current_user
-    else:
-        return request.state.user
+    
+    if not current_user:
+        # User chưa tồn tại trong database, tạo mới từ token info
+        email = request.state.user.get("email")
+        username = request.state.user.get("preferred_username") or email
+        
+        if not email:
+            raise HTTPException(status_code=401, detail="Invalid token: missing email")
+        
+        current_user = Users(
+            sub=sub,
+            email=email,
+            username=username,
+            is_superuser=False
+        )
+        session.add(current_user)
+        session.commit()
+        session.refresh(current_user)
+        print(f"✅ Created new user in DB: {current_user.email} (id: {current_user.id})")
+    
+    return current_user
 
 def get_key(token: str):
     """Chọn public key theo kid trong header JWT"""

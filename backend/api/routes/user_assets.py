@@ -19,8 +19,7 @@ from db.session import get_session
 from models import  Projects, Folders, Assets , Users, Embeddings
 from dependencies.dependencies import get_optional_user, get_current_user
 from db.crud_asset import add_asset
-# from db.crud_embedding import add_embedding
-# from db.crud_embedding import embed_image
+from db.crud_embedding import create_embedding_for_asset
 from db.crud_folder import get_or_create_folder
 
 # from services.embeddings_service import index, faiss_id_to_asset, embed_image, rebuild_faiss,add_embedding_to_faiss, ensure_user_index,search_user
@@ -248,6 +247,7 @@ async def upload_assets(
                 f.write(file_bytes)
 
             try:
+                # Lưu asset vào database
                 asset_id = add_asset(
                     session=session,
                     user_id=current_user.id,
@@ -259,7 +259,24 @@ async def upload_assets(
                     file_size=size,
                     is_private=is_private   # 👈 set giá trị từ form (hoặc mặc định False)
                 )
-                # embedding, vec = add_embedding(session=session, asset_id=asset_id, file_bytes=file_bytes)
+                
+                # 🔥 TỰ ĐỘNG TẠO EMBEDDING cho ảnh
+                # Chỉ tạo embedding nếu là file IMAGE (không phải video)
+                if file.content_type.startswith("image/"):
+                    try:
+                        embedding = create_embedding_for_asset(
+                            session=session,
+                            asset_id=asset_id,
+                            image_bytes=file_bytes
+                        )
+                        if embedding:
+                            print(f"✅ Created embedding for asset {asset_id}")
+                        else:
+                            print(f"⚠️ Failed to create embedding for asset {asset_id}")
+                    except Exception as emb_err:
+                        # Không raise error, chỉ log warning
+                        # Upload vẫn thành công nhưng không có embedding
+                        print(f"⚠️ Embedding creation failed for asset {asset_id}: {emb_err}")
 
             except Exception as e:
                 if os.path.exists(save_path):
