@@ -6,6 +6,36 @@ Hệ thống tự động tạo **embeddings** (vector representations) cho mọ
 - 🔍 Tìm kiếm ảnh bằng ảnh tương tự
 - 📝 Tìm kiếm ảnh bằng text mô tả (semantic search)
 - 📁 Tìm kiếm trong phạm vi project hoặc folder cụ thể
+- 🔒 **Bảo mật**: Chỉ search trong projects của user hiện tại
+- ⚡ **Đơn giản**: Không cần truyền project_id (optional)
+
+## 🚀 Quick Start
+
+### 1. Upload ảnh (Auto tạo embeddings)
+```bash
+POST /api/v1/users/assets/upload-images
+files: [ảnh1.jpg, ảnh2.jpg]
+folder_name: "my_photos"
+```
+
+### 2. Search đơn giản nhất
+```bash
+# Search tất cả projects của user
+POST /api/v1/search/text
+query: "cat"
+k: 5
+
+POST /api/v1/search/image  
+file: [upload ảnh]
+k: 5
+```
+
+### 3. Check stats
+```bash
+GET /api/v1/search/stats/1
+```
+
+**✅ Xong! Embeddings tự động được tạo và search hoạt động ngay!**
 
 ## Cơ chế hoạt động
 
@@ -93,7 +123,20 @@ folder_name: "uploads"  # optional
 
 ### Search APIs
 
-#### 1. Search bằng Image
+#### 1. Search bằng Image (Similarity Search)
+
+**🔍 Đơn giản nhất - Search tất cả projects của user:**
+```bash
+POST /api/v1/search/image
+
+# Form data
+file: query_image.jpg
+k: 10         # số lượng kết quả
+
+# ✅ Tự động search trong TẤT CẢ projects của user!
+```
+
+**🎯 Search trong project/folder cụ thể:**
 ```bash
 POST /api/v1/search/image
 
@@ -102,25 +145,44 @@ file: query_image.jpg
 project_id: 1
 folder_id: 5  # optional, để tìm trong folder cụ thể
 k: 10         # số lượng kết quả
+```
 
-# Response
+**Response:**
+```json
 {
   "status": 1,
   "data": [
     {
       "id": 456,
       "name": "photo.jpg",
-      "path": "...",
-      "similarity": 0.95
-    },
-    ...
+      "path": "1/1/vacation_photos/abc123.jpg",
+      "width": 800,
+      "height": 600,
+      "format": "image/jpeg",
+      "folder_id": 1,
+      "is_favorite": false,
+      "created": "2025-10-01T04:15:56"
+    }
   ],
-  "total": 10,
+  "total": 1,
   "query_type": "image"
 }
 ```
 
-#### 2. Search bằng Text
+#### 2. Search bằng Text (Semantic Search)
+
+**🔍 Đơn giản nhất - Search tất cả projects của user:**
+```bash
+POST /api/v1/search/text
+
+# Form data
+query: "a cat sitting on the sofa"
+k: 10
+
+# ✅ Tự động search trong TẤT CẢ projects của user!
+```
+
+**🎯 Search trong project/folder cụ thể:**
 ```bash
 POST /api/v1/search/text
 
@@ -129,12 +191,26 @@ query: "a cat sitting on the sofa"
 project_id: 1
 folder_id: 5  # optional
 k: 10
+```
 
-# Response
+**Response:**
+```json
 {
   "status": 1,
-  "data": [...],
-  "total": 10,
+  "data": [
+    {
+      "id": 456,
+      "name": "cat_photo.jpg",
+      "path": "1/1/vacation_photos/cat.jpg",
+      "width": 800,
+      "height": 600,
+      "format": "image/jpeg",
+      "folder_id": 1,
+      "is_favorite": false,
+      "created": "2025-10-01T04:15:56"
+    }
+  ],
+  "total": 1,
   "query": "a cat sitting on the sofa",
   "query_type": "text"
 }
@@ -169,6 +245,77 @@ GET /api/v1/search/stats/1
   "indexed": true,
   "dimension": 512
 }
+```
+
+## cURL Examples
+
+### 1. Search by Image (Đơn giản nhất)
+
+```powershell
+# Search tất cả projects của user
+curl.exe -X POST "http://localhost:8000/api/v1/search/image" `
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" `
+  -F "file=@C:\path\to\your\image.jpg" `
+  -F "k=5"
+```
+
+```powershell
+# Search trong project cụ thể
+curl.exe -X POST "http://localhost:8000/api/v1/search/image" `
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" `
+  -F "file=@C:\path\to\your\image.jpg" `
+  -F "project_id=1" `
+  -F "k=5"
+```
+
+### 2. Search by Text (Đơn giản nhất)
+
+```powershell
+# Search tất cả projects của user
+curl.exe -X POST "http://localhost:8000/api/v1/search/text" `
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" `
+  -F "query=cat sitting on sofa" `
+  -F "k=5"
+```
+
+```powershell
+# Search trong project cụ thể
+curl.exe -X POST "http://localhost:8000/api/v1/search/text" `
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" `
+  -F "query=cat sitting on sofa" `
+  -F "project_id=1" `
+  -F "k=5"
+```
+
+### 3. Get Search Stats
+
+```powershell
+curl.exe -X GET "http://localhost:8000/api/v1/search/stats/1" `
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+### 4. Complete Test Flow
+
+```powershell
+# 1. Login để lấy token
+$loginResponse = curl.exe -X POST "http://localhost:8000/api/v1/auth/login" `
+  -H "Content-Type: application/json" `
+  -d '{"username": "testuser", "password": "123456"}'
+
+# 2. Extract token từ response (manual)
+# Copy access_token từ JSON response
+
+# 3. Search by image
+curl.exe -X POST "http://localhost:8000/api/v1/search/image" `
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..." `
+  -F "file=@C:\Users\YourName\Pictures\cat.jpg" `
+  -F "k=5"
+
+# 4. Search by text
+curl.exe -X POST "http://localhost:8000/api/v1/search/text" `
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..." `
+  -F "query=cat" `
+  -F "k=5"
 ```
 
 ## Code Examples
@@ -293,6 +440,34 @@ const searchByImage = async (file: File, projectId: number) => {
   return response.json();
 };
 ```
+
+## Security Features
+
+### 🔒 User Isolation
+- ✅ **Auto-detect user** từ JWT token
+- ✅ **Search chỉ trong projects của user đó**
+- ✅ **Validate project ownership** nếu có project_id
+- ✅ **Không thể search projects của user khác**
+
+### 🛡️ API Security
+```python
+def validate_project_ownership(session: Session, project_id: int, user_id: int):
+    """Validate project tồn tại và thuộc về user"""
+    project = session.get(Projects, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project không tồn tại")
+    
+    if project.user_id != user_id:
+        raise HTTPException(
+            status_code=403, 
+            detail="Bạn không có quyền truy cập project này"
+        )
+```
+
+### 🔐 Search Behavior
+- **project_id=None**: Search tất cả projects của user
+- **project_id=123**: Search chỉ trong project 123 (nếu user sở hữu)
+- **Unauthorized access**: Return 403 Forbidden
 
 ## Database Migration
 
