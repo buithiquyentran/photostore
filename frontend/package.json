@@ -12,7 +12,8 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.11.0",
-    "date-fns": "^2.0.0-alpha.20",
+    "date-fns": "^3.6.0",
+    "date-fns-tz": "^3.2.0",
     "framer-motion": "^12.23.22",
     "keycloak-js": "^26.2.0",
     "lucide-react": "^0.542.0",
