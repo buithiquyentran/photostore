@@ -23,17 +23,28 @@ from db.crud_asset import add_asset
 from services.api_client.api_client_service import get_client_by_key
 from services.api_client.signature import generate_signature
 from db.crud_folder import get_or_create_folder
-from core.security import get_current_user, get_optional_user
 
 router = APIRouter(prefix="/external/assets", tags=["External Assets"])
 BUCKET_NAME = "photostore"
 
 UPLOAD_DIR = Path("uploads")
 
+@router.post("/signature")
+def get_signature(api_key: str, session: Session = Depends(get_session)):
+    client = get_client_by_key(api_key=api_key, session=session)
+    if not client:
+        raise HTTPException(status_code=401, detail="Invalid api_key")
+    result = generate_signature(params={}, api_secret = client.api_secret, add_timestamp=True)
+
+    return {
+        "api_key": api_key,
+        "signature": result["signature"],
+        "params": result["params"]
+    }
+
 @router.post("/upload")
 async def upload_asset_external(
     files: List[UploadFile] = File(...),
-
     folder_name: str | None = Form(None), 
     client=Depends(verify_external_request),  # Check API key + signature
     session: Session = Depends(get_session),
@@ -92,7 +103,7 @@ async def upload_asset_external(
                     session=session,
                     user_id=client.user_id,
                     folder_id=folder_id,
-                    url=object_path,
+                    path=object_path,
                     name=file.filename or filename,
                     format=file.content_type,
                     width=width, height=height,
@@ -185,7 +196,7 @@ async def upload_asset_external(
 #         results.append({
 #             "id": asset.id,
 #             "name": asset.name,
-#             "url": asset_url,     # 👈 trả URL API thay vì đường dẫn file local
+#             "path": asset_url,     # 👈 trả URL API thay vì đường dẫn file local
 #             "width": asset.width,
 #             "height": asset.height,
 #             "file_size": asset.file_size,
