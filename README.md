@@ -69,10 +69,4 @@ npm run dev
 - User: `photostore_user`
 - Password: `photostore_pass`
 
-## 📧 Contact
 
-[Thêm thông tin liên hệ của bạn]
-
----
-
-Made with ❤️
