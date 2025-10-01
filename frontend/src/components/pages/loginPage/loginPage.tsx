@@ -6,6 +6,8 @@ import FormGroup from "@/components/ui/FormGroup";
 // import ModalThongBao from "@/components/TracNghiem9231/shared/ModalThongBao";
 import path from "@/resources/path";
 import LoginService from "@/components/api/login.service";
+import UserService from "@/components/api/user.service";
+
 import keycloak from "@/keycloak";
 const DangNhapPage: React.FC = () => {
   const navigate = useNavigate();
@@ -55,6 +57,12 @@ const DangNhapPage: React.FC = () => {
         localStorage.setItem("access_token", response.access_token);
         localStorage.setItem("refresh_token", response.refresh_token);
         setIsModalOpen(null);
+        try {
+          const userRes = await UserService.SocialLogin();
+          console.log("SocialLogin response:", userRes);
+        } catch (err) {
+          console.error("SocialLogin error:", err);
+        }
         // Refresh trang sau khi đăng nhập thành công
         navigate("/brower");
       } else {
