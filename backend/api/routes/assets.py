@@ -15,7 +15,9 @@ from typing import Optional
 from fastapi.responses import JSONResponse, FileResponse
 from db.session import get_session
 from models import  Projects, Folders, Assets , Users, Embeddings
-from dependencies.dependencies import get_optional_user, get_current_user
+from dependencies.dependencies import get_optional_user
+from dependencies.external_auth import verify_external_request
+
 from db.crud_asset import add_asset
 # from db.crud_embedding import add_embedding
 # from db.crud_embedding import embed_image
@@ -57,6 +59,37 @@ def get_asset(name: str, session: Session = Depends(get_session), current_user: 
             raise HTTPException(401, "Invalid user id in token")
 
         if current_user_id != user.id:
+            raise HTTPException(401, "Unauthorized")
+
+    return FileResponse(file_path)
+
+@router.post("/{name}")
+def get_asset(name: str, session: Session = Depends(get_session), client=Depends(verify_external_request)):
+    asset = session.exec(select(Assets).where(Assets.name == name)).first()
+    if not asset:
+        raise HTTPException(404, "Asset not found")
+    project = session.exec(select(Projects)
+            .join(Folders, Projects.id == Folders.project_id)
+            .join(Assets, Folders.id == Assets.folder_id)
+            .where(Assets.id == asset.id)
+        ).first()
+    if not project:
+        raise HTTPException(404, "Owner not found")
+    # fix path separator
+    safe_path = asset.path.replace("\\", "/")
+    file_path = (UPLOAD_DIR / safe_path).resolve()
+    if not file_path.exists():
+        raise HTTPException(404, "File not found")
+    # Check quyền
+    if asset.is_private:
+        if client is None:
+            raise HTTPException(401, "Unauthorized")
+        try:
+            current_client_id = int(client.id)   # 👈 convert sang int
+        except ValueError:
+            raise HTTPException(401, "Invalid user id in token")
+
+        if current_client_id != project.id:
             raise HTTPException(401, "Unauthorized")
 
     return FileResponse(file_path)

@@ -95,12 +95,12 @@ def count(session: Session = Depends(get_session), current_user: dict = Depends(
         
         # statement = select(func.count()).select_from(Assets)
         total = session.exec(statement).one()
-        return {"status": "success", "data": total}
+        return {"status": 1, "data": total}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi đếm: {e}")
     
 @router.get("/all")
-def list_private_assets(
+def list_assets(
     request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
@@ -118,10 +118,10 @@ def list_private_assets(
         data = []
         for a in results:
             obj = a.dict()
-            obj["url"] = f"{request.base_url}api/v1/assets/{a.id}"
+            obj["url"] = f"{request.base_url}api/v1/assets/{a.name}"
             data.append(obj)
 
-        return {"status": "success", "data": data}
+        return {"status": 1, "data": data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi: {str(e)}")
 class AssetUpdate(BaseModel):

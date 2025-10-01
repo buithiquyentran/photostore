@@ -13,7 +13,7 @@ def get_projects(session: Session = Depends(get_session)):
     try:
         statement = select(Projects)
         results = session.exec(statement).all()
-        return {"status": "success", "data": results}
+        return {"status": 1, "data": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi truy vấn dữ liệu: {e}")
 
@@ -26,7 +26,7 @@ def create_project(project: Projects, session: Session = Depends(get_session)):
         session.add(project)
         session.commit()
         session.refresh(project)
-        return {"status": "success", "data": project}
+        return {"status": 1, "data": project}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi thêm project: {e}")
 
@@ -45,7 +45,7 @@ def update_project(project_id: int, project_update: Projects, session: Session =
         session.add(project)
         session.commit()
         session.refresh(project)
-        return {"status": "success", "data": project}
+        return {"status": 1, "data": project}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi cập nhật project: {e}")
 
@@ -60,6 +60,6 @@ def delete_project(project_id: int, session: Session = Depends(get_session)):
     try:
         session.delete(project)
         session.commit()
-        return {"status": "success", "message": "Xóa project thành công"}
+        return {"status": 1, "message": "Xóa project thành công"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi xóa project: {e}")

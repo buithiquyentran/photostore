@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from PIL import Image
+from fastapi import Request
+
 from sqlalchemy.orm import Session
 from db.session import get_session
 from sqlmodel import Session, select
@@ -22,18 +24,29 @@ from db.crud_asset import add_asset
 # from db.crud_embedding import add_embedding
 from services.api_client.api_client_service import get_client_by_key
 from services.api_client.signature import generate_signature
-from db.crud_folder import get_or_create_folder
-from core.security import get_current_user, get_optional_user
+from db.crud_folder import get_or_create_folder, get_folder
 
 router = APIRouter(prefix="/external/assets", tags=["External Assets"])
 BUCKET_NAME = "photostore"
 
 UPLOAD_DIR = Path("uploads")
 
+@router.post("/signature")
+def get_signature(api_key: str, api_secret: str, session: Session = Depends(get_session)):
+    client = get_client_by_key(api_key=api_key, session=session)
+    if not client:
+        raise HTTPException(status_code=401, detail="Invalid api_key")
+    result = generate_signature(params={}, api_secret = api_secret, add_timestamp=True)
+
+    return {
+        "api_key": api_key,
+        "signature": result["signature"],
+        "params": result["params"]
+    }
+
 @router.post("/upload")
 async def upload_asset_external(
     files: List[UploadFile] = File(...),
-
     folder_name: str | None = Form(None), 
     client=Depends(verify_external_request),  # Check API key + signature
     session: Session = Depends(get_session),
@@ -41,15 +54,15 @@ async def upload_asset_external(
 ):
     results = []
     if folder_name:
-        folder = get_or_create_folder(session, client.id, folder_name)
-    else:
+       folder = get_or_create_folder(session, client.id, folder_name)
+    # else:
 
-        folder = session.exec(
-            select(Folders).where(
-                Folders.project_id == client.id,
-                Folders.is_default == True
-            )
-        ).first()
+    #     folder = session.exec(
+    #         select(Folders).where(
+    #             Folders.project_id == client.id,
+    #             Folders.is_default == True
+    #         )
+    #     ).first()
     if not folder:
         raise HTTPException(404, "Không tìm thấy folder phù hợp")
     folder_id = folder.id
@@ -92,8 +105,8 @@ async def upload_asset_external(
                     session=session,
                     user_id=client.user_id,
                     folder_id=folder_id,
-                    url=object_path,
-                    name=file.filename or filename,
+                    path=object_path,
+                    name= filename,
                     format=file.content_type,
                     width=width, height=height,
                     file_size=size,
@@ -127,37 +140,38 @@ async def upload_asset_external(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-# @router.post("/{asset_id}")
-# def get_asset(asset_id: int, session: Session = Depends(get_session), client=Depends(verify_external_request),  # Check API key + signature
-# ):
-#     asset = session.exec(select(Assets).where(Assets.id == asset_id)).first()
-#     if not asset:
-#         raise HTTPException(404, "Asset not found")
-#     project= session.exec(select(Projects)
-#             .join(Folders, Projects.id == Folders.project_id)
-#             .join(Assets, Folders.id == Assets.folder_id)
-#             .where(Projects.id == client.id)
-#         ).first()
-#     if not project:
-#         raise HTTPException(404, "Owner not found")
-#     # fix path separator
-#     safe_path = asset.replace("\\", "/")
-#     file_path = (UPLOAD_DIR / safe_path).resolve()
-#     if not file_path.exists():
-#         raise HTTPException(404, "File not found")
-#     # 🔒 Check quyền
-#     if asset.is_private:
-#         if client is None:
-#             raise HTTPException(401, "Unauthorized")
-#         try:
-#             current_project_id = int(client.id)   # 👈 convert sang int
-#         except ValueError:
-#             raise HTTPException(401, "Invalid user id in token")
+@router.post("/{folder_name}")
+def get_asset(
+    request: Request,
+    folder_name: str, session: Session = Depends(get_session), client=Depends(verify_external_request),  # Check API key + signature
+):
+    try:
+        if not client:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        if folder_name:
+            folder = get_folder(session, client.id, folder_name)
+            if not folder:
+                raise HTTPException(404, "Folder không tồn tại")
+        assets = (
+            select(Assets)
+            .join(Folders, Assets.folder_id == Folders.id)
+            .join(Projects, Folders.project_id == Projects.id)
+            .where(Projects.id == client.id, Folders.id == folder.id)
+        )
+        results = session.exec(assets).all()
+        # ensure_user_index(session, id)
+        
+        data = []
+        for a in results:
+            obj = a.dict()
+            obj["url"] = f"{request.base_url}api/v1/assets/{a.name}"
+            data.append(obj)
 
-#         if current_project_id != project.id:
-#             raise HTTPException(401, "Unauthorized")
+        return {"status": 1, "data": data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi: {str(e)}")
 
-#     return FileResponse(file_path)
+
 
 # from fastapi import Request
 
@@ -185,7 +199,7 @@ async def upload_asset_external(
 #         results.append({
 #             "id": asset.id,
 #             "name": asset.name,
-#             "url": asset_url,     # 👈 trả URL API thay vì đường dẫn file local
+#             "path": asset_url,     # 👈 trả URL API thay vì đường dẫn file local
 #             "width": asset.width,
 #             "height": asset.height,
 #             "file_size": asset.file_size,

@@ -15,7 +15,7 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
     try:
         session.delete(user)
         session.commit()
-        return {"status": "success", "message": "Xóa user thành công"}
+        return {"status": 1, "message": "Xóa user thành công"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi xóa user: {e}")
 

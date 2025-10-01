@@ -21,7 +21,7 @@ def create_api_client(user_id: int, name: str, session: Session = Depends(get_se
 
     # Tạo folder mặc định cho project vừa tạo
     default_folder = Folders(
-        name="Default",
+        name="Home",
         project_id=client.id,
         is_default=True
     )
@@ -32,7 +32,7 @@ def create_api_client(user_id: int, name: str, session: Session = Depends(get_se
 def get_all_clients(session: Session = Depends(get_session)):
     statement = select(Projects)
     results = session.exec(statement).all()
-    return {"status": "success", "data": results}
+    return {"status": 1, "data": results}
 
 def get_client_by_key(api_key: str, session: Session = Depends(get_session)):
     statement = select(Projects).where(Projects.api_key == api_key)
