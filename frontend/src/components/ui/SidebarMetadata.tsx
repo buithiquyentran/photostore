@@ -2,7 +2,7 @@ import { useState } from "react";
 import AccessControlModal from "./AccessControlModal";
 import { motion } from "framer-motion";
 import { Globe, Lock } from "lucide-react";
-import { formatted, formatFileSize } from "@/components/utils/format";
+import { formatFileSize, formattedDate } from "@/components/utils/format";
 import { div } from "framer-motion/client";
 import UserService from "@/components/api/user.service";
 interface SidebarMetadataProps {
@@ -66,12 +66,12 @@ export default function SidebarMetadata({
 
         <div>
           <p className="text-gray-400 text-sm">Created</p>
-          <p className="font-medium">{formatted(meta.created)}</p>
+          <p className="font-medium">{formattedDate(meta.created)}</p>
         </div>
 
         <div>
           <p className="text-gray-400 text-sm">Last replaced</p>
-          <p className="font-medium">{formatted(meta.last_created)}</p>
+          <p className="font-medium">{formattedDate(meta.last_created)}</p>
         </div>
 
         <div>

@@ -20,12 +20,17 @@ function App() {
   useEffect(() => {
     keycloak
       .init({ onLoad: "check-sso", pkceMethod: "S256" })
-      .then((auth) => {
+      .then(async (auth) => {
         setKeycloakReady(true);
         if (auth) {
-          UserService.SocialLogin();
           localStorage.setItem("access_token", keycloak.token || "");
           localStorage.setItem("refresh_token", keycloak.refreshToken || "");
+          try {
+            const userRes = await UserService.SocialLogin();
+            console.log("SocialLogin response:", userRes);
+          } catch (err) {
+            console.error("SocialLogin error:", err);
+          }
         }
       })
       .catch((err) => {

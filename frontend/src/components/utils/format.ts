@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, toZonedTime } from "date-fns-tz";
 
 // Chuyển đổi kích thước tệp từ bytes sang định dạng dễ đọc hơn
 function formatFileSize(size: number): string {
@@ -12,8 +12,10 @@ function formatFileSize(size: number): string {
   return `${formatted} ${units[i]}`;
 }
 
-const formatted = (dt: string) => {
-  return format(new Date(dt), "MMM dd, yyyy h:mm a");
-  // 👉 "Sep 29, 2025 1:29 AM"
-};
-export { formatFileSize, formatted };
+function formattedDate(dt: string) {
+  const timeZone = "Asia/Ho_Chi_Minh"; // múi giờ VN
+  const localDate = toZonedTime(new Date(dt), timeZone);
+  return format(localDate, "MMM dd, yyyy h:mm a", { timeZone });
+}
+
+export { formatFileSize, formattedDate };

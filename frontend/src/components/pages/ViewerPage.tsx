@@ -16,7 +16,7 @@ import {
 import AssetService from "@/components/api/assets.service";
 import UserService from "@/components/api/user.service";
 import SidebarMetadata from "@/components/ui/SidebarMetadata";
-
+import path from "@/resources/path";
 export default function ViewerPage() {
   const { name } = useParams();
   const navigate = useNavigate();
@@ -83,7 +83,7 @@ export default function ViewerPage() {
       {/* Header */}
       <div className="flex items-center justify-between bg-black/50 px-4">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(path.BROWER)}
           className="p-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
         >
           <X size={24} />
