@@ -1,9 +1,207 @@
-# import faiss
-             
-# 1 FAISS index cho mỗi user
-# USER_INDICES: dict[int, faiss.Index] = {}
-# mapping theo user: faiss_id -> asset_id
-# USER_FAISS_MAP: dict[int, dict[int, int]] = {}       # {user_id: {faiss_id: asset_id}}
-# (tuỳ chọn) asset_id -> faiss_id để xoá/cập nhật nhanh
-# USER_ASSET_MAP: dict[int, dict[int, int]] = {}       # {user_id: {asset_id: faiss_id}}
-# DIM = 512  # dimension embedding
+"""
+FAISS Index Management - Project-based Architecture
+
+Mỗi project có 1 FAISS index riêng:
+- PROJECT_INDICES: {project_id: faiss.Index}
+- PROJECT_FAISS_MAP: {project_id: {faiss_id: (asset_id, folder_id)}}
+- PROJECT_ASSET_MAP: {project_id: {asset_id: faiss_id}}
+"""
+
+import faiss
+import numpy as np
+from typing import Dict, Tuple, Optional
+
+# Dimension của CLIP ViT-B/32
+DIM = 512
+
+# Lưu trữ FAISS index theo project_id
+PROJECT_INDICES: Dict[int, faiss.Index] = {}
+
+# Mapping: project_id -> {faiss_id: (asset_id, folder_id)}
+PROJECT_FAISS_MAP: Dict[int, Dict[int, Tuple[int, Optional[int]]]] = {}
+
+# Reverse mapping: project_id -> {asset_id: faiss_id} (để xóa/update nhanh)
+PROJECT_ASSET_MAP: Dict[int, Dict[int, int]] = {}
+
+
+def get_or_create_project_index(project_id: int) -> faiss.Index:
+    """
+    Lấy hoặc tạo FAISS index cho project.
+    Sử dụng IndexFlatIP (Inner Product) vì CLIP vectors đã được normalized.
+    """
+    if project_id not in PROJECT_INDICES:
+        print(f"[FAISS] Creating new index for project {project_id}")
+        idx = faiss.IndexFlatIP(DIM)  # Inner Product cho cosine similarity
+        PROJECT_INDICES[project_id] = idx
+        PROJECT_FAISS_MAP[project_id] = {}
+        PROJECT_ASSET_MAP[project_id] = {}
+    
+    return PROJECT_INDICES[project_id]
+
+
+def add_vector_to_project(
+    project_id: int,
+    asset_id: int,
+    folder_id: Optional[int],
+    embedding: np.ndarray
+):
+    """
+    Thêm vector vào FAISS index của project.
+    
+    Args:
+        project_id: ID của project
+        asset_id: ID của asset
+        folder_id: ID của folder (có thể None)
+        embedding: Vector embedding (shape: 512)
+    """
+    idx = get_or_create_project_index(project_id)
+    
+    # Chuẩn hóa vector (nếu chưa)
+    vec = np.array(embedding, dtype="float32").reshape(1, -1)
+    faiss.normalize_L2(vec)
+    
+    # Thêm vào FAISS
+    idx.add(vec)
+    
+    # Lấy faiss_id mới (index cuối cùng)
+    faiss_id = idx.ntotal - 1
+    
+    # Lưu mapping
+    PROJECT_FAISS_MAP[project_id][faiss_id] = (asset_id, folder_id)
+    PROJECT_ASSET_MAP[project_id][asset_id] = faiss_id
+    
+    print(f"[FAISS] Added asset {asset_id} to project {project_id}, total vectors: {idx.ntotal}")
+
+
+def remove_vector_from_project(project_id: int, asset_id: int):
+    """
+    Xóa vector khỏi FAISS index.
+    
+    Note: FAISS không hỗ trợ xóa trực tiếp, cần rebuild index.
+    Đánh dấu asset_id trong mapping để bỏ qua khi search.
+    """
+    if project_id not in PROJECT_ASSET_MAP:
+        return
+    
+    if asset_id in PROJECT_ASSET_MAP[project_id]:
+        faiss_id = PROJECT_ASSET_MAP[project_id][asset_id]
+        
+        # Xóa khỏi mapping (đánh dấu đã xóa)
+        del PROJECT_FAISS_MAP[project_id][faiss_id]
+        del PROJECT_ASSET_MAP[project_id][asset_id]
+        
+        print(f"[FAISS] Marked asset {asset_id} as deleted in project {project_id}")
+
+
+def search_in_project(
+    project_id: int,
+    query_vector: np.ndarray,
+    k: int = 10,
+    folder_id: Optional[int] = None
+) -> list[int]:
+    """
+    Tìm kiếm trong project bằng vector query.
+    
+    Args:
+        project_id: ID của project
+        query_vector: Vector query (shape: 512)
+        k: Số lượng kết quả trả về
+        folder_id: Nếu có, chỉ tìm trong folder này
+    
+    Returns:
+        List asset_ids tìm được
+    """
+    if project_id not in PROJECT_INDICES:
+        print(f"[FAISS] Project {project_id} has no index")
+        return []
+    
+    idx = PROJECT_INDICES[project_id]
+    mapping = PROJECT_FAISS_MAP[project_id]
+    
+    if idx.ntotal == 0:
+        print(f"[FAISS] Project {project_id} index is empty")
+        return []
+    
+    # Chuẩn hóa query vector
+    q = np.array(query_vector, dtype="float32").reshape(1, -1)
+    faiss.normalize_L2(q)
+    
+    # Tìm kiếm (lấy nhiều hơn k để filter theo folder)
+    search_k = k * 10 if folder_id else k
+    D, I = idx.search(q, min(search_k, idx.ntotal))
+    
+    # Lấy asset_ids
+    asset_ids = []
+    for fid in I[0]:
+        if fid == -1:  # FAISS trả về -1 nếu không đủ kết quả
+            continue
+        
+        if fid not in mapping:  # Vector đã bị xóa
+            continue
+        
+        asset_id, f_id = mapping[fid]
+        
+        # Filter theo folder nếu có
+        if folder_id and f_id != folder_id:
+            continue
+        
+        asset_ids.append(asset_id)
+        
+        if len(asset_ids) >= k:
+            break
+    
+    return asset_ids
+
+
+def rebuild_project_index(project_id: int, embeddings_data: list[Tuple[int, Optional[int], list[float]]]):
+    """
+    Rebuild toàn bộ FAISS index cho project từ database.
+    
+    Args:
+        project_id: ID của project
+        embeddings_data: List of (asset_id, folder_id, embedding_vector)
+    """
+    print(f"[FAISS] Rebuilding index for project {project_id} with {len(embeddings_data)} vectors")
+    
+    # Tạo index mới
+    idx = faiss.IndexFlatIP(DIM)
+    faiss_map = {}
+    asset_map = {}
+    
+    if embeddings_data:
+        vectors = []
+        for asset_id, folder_id, embedding in embeddings_data:
+            vec = np.array(embedding, dtype="float32")
+            vectors.append(vec)
+        
+        # Convert to numpy array và normalize
+        X = np.array(vectors, dtype="float32")
+        faiss.normalize_L2(X)
+        
+        # Add vào index
+        idx.add(X)
+        
+        # Tạo mapping
+        for i, (asset_id, folder_id, _) in enumerate(embeddings_data):
+            faiss_map[i] = (asset_id, folder_id)
+            asset_map[asset_id] = i
+    
+    # Cập nhật global state
+    PROJECT_INDICES[project_id] = idx
+    PROJECT_FAISS_MAP[project_id] = faiss_map
+    PROJECT_ASSET_MAP[project_id] = asset_map
+    
+    print(f"[FAISS] Project {project_id} index rebuilt with {idx.ntotal} vectors")
+
+
+def get_project_stats(project_id: int) -> dict:
+    """Lấy thống kê về FAISS index của project."""
+    if project_id not in PROJECT_INDICES:
+        return {"total_vectors": 0, "indexed": False}
+    
+    idx = PROJECT_INDICES[project_id]
+    return {
+        "total_vectors": idx.ntotal,
+        "indexed": True,
+        "dimension": DIM
+    }

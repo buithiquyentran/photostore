@@ -5,21 +5,35 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from jose import jwt
 import requests
 import fnmatch
+from core.config import settings
 
-KEYCLOAK_URL = "http://localhost:8080/realms/photostore_realm"
+# Sử dụng KEYCLOAK_URL từ environment variables
+KEYCLOAK_URL = settings.KEYCLOAK_URL
 ALGORITHM = "RS256"
+CLIENT_ID = settings.CLIENT_ID
 
-# Load JWKS từ Keycloak
-jwks = requests.get(f"{KEYCLOAK_URL}/protocol/openid-connect/certs").json()
-CLIENT_ID = "photostore_client"
+# Lazy load JWKS - chỉ load khi cần để tránh crash khi Keycloak chưa sẵn sàng
+_jwks_cache = None
+
+def get_jwks():
+    """Lazy load và cache JWKS từ Keycloak"""
+    global _jwks_cache
+    if _jwks_cache is None:
+        try:
+            _jwks_cache = requests.get(f"{KEYCLOAK_URL}/protocol/openid-connect/certs", timeout=5).json()
+        except Exception as e:
+            print(f"Warning: Cannot load JWKS from Keycloak: {e}")
+            raise HTTPException(status_code=503, detail="Authentication service unavailable")
+    return _jwks_cache
 
 def get_key(token: str):
     """Chọn public key theo kid trong header JWT"""
     unverified_header = jwt.get_unverified_header(token)
+    jwks = get_jwks()  # Lazy load JWKS
     for key in jwks["keys"]:
         if key["kid"] == unverified_header["kid"]:
             return key
-    return HTTPException(status_code=401, detail="Public key not found")
+    raise HTTPException(status_code=401, detail="Public key not found")
 # def extract_user_roles(payload: dict) -> list:
 #     return payload.get("realm_access", {}).get("roles", [])
 def has_client_role(payload: dict, required_roles: str) -> bool:

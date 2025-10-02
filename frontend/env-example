@@ -1,0 +1,15 @@
+# Copy file này thành .env hoặc .env.local để sử dụng
+# Command: cp env-example .env
+
+# API Configuration
+VITE_API_BASE_URL=http://localhost:8000
+VITE_API_VERSION=/api/v1
+
+# Keycloak Configuration
+VITE_KEYCLOAK_URL=http://localhost:8080/
+VITE_KEYCLOAK_REALM=photostore_realm
+VITE_KEYCLOAK_CLIENT_ID=photostore-client
+
+# App Configuration
+VITE_APP_TITLE=PhotoStore
+

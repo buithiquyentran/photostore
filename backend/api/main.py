@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from api.routes import assets,projects,folders,login, users, api_clients, external_assets, user_assets
+from api.routes import assets,projects,folders,login, users, api_clients, external_assets, user_assets, search
 # , login, private, users, utils
 from core.config import settings
 
@@ -13,6 +13,7 @@ api_router.include_router(user_assets.router)
 api_router.include_router(users.router)
 api_router.include_router(api_clients.router)
 api_router.include_router(external_assets.router)
+api_router.include_router(search.router)  # Search API
 
 
 

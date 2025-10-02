@@ -1,68 +1,94 @@
-# # from sqlmodel import Session
-# from sqlalchemy.orm import Session
-# from fastapi import Depends
-# from datetime import datetime
-# import io, faiss, json
+"""
+CRUD operations for Embeddings
 
-# from models import Embeddings
-# from PIL import Image
-# import io
-# import json
-# from PIL import Image
-# import numpy as np
-# from transformers import CLIPProcessor, CLIPModel
-# import torch
+Helper functions để tạo/xóa embeddings khi upload/delete assets
+"""
 
-# # from services.embeddings_service import index, faiss_id_to_asset, embed_image, rebuild_faiss
-# from services.search.embeddings_service import embed_image
+from sqlmodel import Session
+from PIL import Image
+import io
+from typing import Optional
 
-# clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-# clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-
-# device = "cuda" if torch.cuda.is_available() else "cpu"
-# clip_model = clip_model.to(device)
-
-# def embed_image(image: Image.Image) -> np.ndarray:
-#     inputs = clip_processor(images=image, return_tensors="pt").to(device)
-#     with torch.no_grad():
-#         emb = clip_model.get_image_features(**inputs)
-#     emb = emb / emb.norm(dim=-1, keepdim=True)  # chuẩn hoá vector
-#     return emb.cpu().numpy().astype("float32")
-
-# def embed_text(text: str) -> np.ndarray:
-#     inputs = clip_processor(text=[text], return_tensors="pt").to(device)
-#     with torch.no_grad():
-#         emb = clip_model.get_text_features(**inputs)
-#     emb = emb / emb.norm(dim=-1, keepdim=True)
-#     return emb.cpu().numpy().astype("float32")
-
-# def add_to_faiss(asset_id: int, embedding: list[float]):
-#     global next_faiss_id, faiss_id_to_asset
-
-#     vec = np.array([embedding], dtype="float32")
-#     faiss.normalize_L2(vec)
-
-#     index.add(vec)  # add vào FAISS
-#     faiss_id_to_asset[next_faiss_id] = asset_id
-#     next_faiss_id += 1
-
-#     print(f"[FAISS] Added asset {asset_id}, current total {index.ntotal}")
+from models import Embeddings, Assets, Folders
+from services.search.embeddings_service import (
+    embed_image,
+    add_embedding_to_db,
+    remove_embedding_from_db
+)
 
 
-# def add_embedding(session: Session, asset_id: int, file_bytes: bytes):
-#     """
-#     Sinh vector embedding từ ảnh và lưu vào bảng Embeddings.
-#     """
-#     # chuyển bytes -> PIL image
-#     image = Image.open(io.BytesIO(file_bytes)).convert("RGB")
+def create_embedding_for_asset(
+    session: Session,
+    asset_id: int,
+    image_bytes: bytes
+) -> Optional[Embeddings]:
+    """
+    Tạo embedding cho asset từ image bytes.
+    
+    Tự động lấy project_id và folder_id từ asset.
+    
+    Args:
+        session: Database session
+        asset_id: ID của asset
+        image_bytes: Bytes của ảnh
+    
+    Returns:
+        Embeddings object hoặc None nếu không tạo được
+    """
+    # Lấy asset info
+    asset = session.get(Assets, asset_id)
+    if not asset:
+        print(f"[CRUD] Asset {asset_id} not found")
+        return None
+    
+    # Lấy folder để biết project_id
+    folder = session.get(Folders, asset.folder_id) if asset.folder_id else None
+    if not folder:
+        print(f"[CRUD] Folder not found for asset {asset_id}")
+        return None
+    
+    try:
+        # Convert bytes to PIL Image
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        
+        # Tạo embedding vector
+        embedding_vector = embed_image(image)
+        
+        # Lưu vào DB và FAISS
+        embedding = add_embedding_to_db(
+            session=session,
+            asset_id=asset_id,
+            project_id=folder.project_id,
+            folder_id=asset.folder_id,
+            embedding_vector=embedding_vector
+        )
+        
+        return embedding
+        
+    except Exception as e:
+        print(f"[CRUD] Error creating embedding for asset {asset_id}: {e}")
+        return None
 
-#     # vector hóa CLIP 
-#     vector = embed_image(image)  # numpy (1,512)
 
-#     # lưu vào DB
-#     embedding = Embeddings(asset_id=asset_id, embedding=json.dumps(vector[0].tolist()))
-#     session.add(embedding)
-#     session.commit()
-#     session.refresh(embedding)
-
-#     return embedding, vector[0].tolist()
+def delete_embedding_for_asset(session: Session, asset_id: int):
+    """
+    Xóa embedding của asset.
+    
+    Args:
+        session: Database session
+        asset_id: ID của asset
+    """
+    # Lấy asset info
+    asset = session.get(Assets, asset_id)
+    if not asset:
+        return
+    
+    # Lấy folder để biết project_id
+    folder = session.get(Folders, asset.folder_id) if asset.folder_id else None
+    if not folder:
+        return
+    
+    try:
+        remove_embedding_from_db(session, asset_id, folder.project_id)
+    except Exception as e:
+        print(f"[CRUD] Error deleting embedding for asset {asset_id}: {e}")

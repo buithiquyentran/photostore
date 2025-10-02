@@ -21,7 +21,7 @@ from db.session import get_session
 from models import  Projects, Folders, Users, Assets
 
 from db.crud_asset import add_asset
-# from db.crud_embedding import add_embedding
+from db.crud_embedding import create_embedding_for_asset
 from services.api_client.api_client_service import get_client_by_key
 from services.api_client.signature import generate_signature
 from db.crud_folder import get_or_create_folder, get_folder
@@ -101,6 +101,7 @@ async def upload_asset_external(
                 f.write(file_bytes)
 
             try:
+                # Lưu asset vào database
                 asset_id = add_asset(
                     session=session,
                     user_id=client.user_id,
@@ -112,7 +113,23 @@ async def upload_asset_external(
                     file_size=size,
                     is_private=is_private   
                 )
-                # embedding, vec = add_embedding(session=session, asset_id=asset_id, file_bytes=file_bytes)
+                
+                # 🔥 TỰ ĐỘNG TẠO EMBEDDING cho ảnh (External API)
+                # Chỉ tạo embedding nếu là file IMAGE (không phải video)
+                if file.content_type.startswith("image/"):
+                    try:
+                        embedding = create_embedding_for_asset(
+                            session=session,
+                            asset_id=asset_id,
+                            image_bytes=file_bytes
+                        )
+                        if embedding:
+                            print(f"✅ [External API] Created embedding for asset {asset_id}")
+                        else:
+                            print(f"⚠️ [External API] Failed to create embedding for asset {asset_id}")
+                    except Exception as emb_err:
+                        # Không raise error, chỉ log warning
+                        print(f"⚠️ [External API] Embedding creation failed for asset {asset_id}: {emb_err}")
 
             except Exception as e:
                 if os.path.exists(save_path):

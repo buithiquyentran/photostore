@@ -11,6 +11,7 @@ class Folders(SQLModel, table=True):
     parent_id: Optional[int] = Field(default=None, foreign_key="folders.id")
 
     name: str = Field(max_length=100, nullable=False)
+    slug: str = Field(max_length=150, nullable=False, index=True)  # URL-friendly version of name
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_default: bool = Field(default=False)
 
@@ -26,3 +27,6 @@ class Folders(SQLModel, table=True):
 
     # Quan hệ với Asset (1 folder có nhiều assets)
     assets: List["Assets"] = Relationship(back_populates="folders")
+    
+    # Quan hệ với Embeddings (1 folder có nhiều embeddings)
+    embeddings: List["Embeddings"] = Relationship(back_populates="folders")
