@@ -7,6 +7,7 @@ from db.session import get_session
 from models import  Projects, Folders, Assets , Users, Embeddings
 from dependencies.dependencies import get_current_user
 from utils.build_tree import build_tree
+from utils.slug import create_slug
 router = APIRouter(prefix="/users/folders", tags=["Folders"])
 
 @router.get("/all")
@@ -92,10 +93,38 @@ def create_folder(
             detail=f"Folder '{req.name}' đã tồn tại trong cùng cấp"
         )
     
-    # 4. Tạo folder mới
+    # 4. Tạo slug từ name
+    folder_slug = create_slug(req.name)
+    
+    # Check duplicate slug trong cùng level
+    existing_folder = session.exec(
+        select(Folders)
+        .where(Folders.project_id == req.project_id)
+        .where(Folders.parent_id == req.parent_id)
+        .where(Folders.slug == folder_slug)
+    ).first()
+    
+    if existing_folder:
+        # Thêm suffix nếu slug đã tồn tại
+        counter = 1
+        while existing_folder:
+            new_slug = f"{folder_slug}-{counter}"
+            existing_folder = session.exec(
+                select(Folders)
+                .where(Folders.project_id == req.project_id)
+                .where(Folders.parent_id == req.parent_id)
+                .where(Folders.slug == new_slug)
+            ).first()
+            if not existing_folder:
+                folder_slug = new_slug
+                break
+            counter += 1
+    
     try:
+        # 5. Tạo folder mới
         new_folder = Folders(
             name=req.name,
+            slug=folder_slug,
             parent_id=req.parent_id,
             project_id=req.project_id,
             is_default=False

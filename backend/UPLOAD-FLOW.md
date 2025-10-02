@@ -19,11 +19,11 @@ Khi người dùng upload ảnh (qua Web UI hoặc API), hệ thống tự độ
 ```
 User Upload File
     ↓
-Xác định Project (default project của user)
+Xác định Project (theo project_slug hoặc default)
     ↓
-Xác định/Tạo Folder (folder_name hoặc default folder)
+Xác định/Tạo Folder (theo folder_slug path hoặc default)
     ↓
-Lưu file vào: uploads/{user_id}/{project_id}/{folder_name}/{filename}
+Lưu file vào: uploads/{project_slug}/{folder_path}/{filename}
     ↓
 Tạo Asset record trong DB
     ↓

@@ -19,6 +19,7 @@ class Projects(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id")
     name: str = Field(max_length=100, nullable=False)
+    slug: str = Field(max_length=150, nullable=False, index=True)  # URL-friendly version of name
     description: Optional[str] = Field(default=None)
     is_default: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)

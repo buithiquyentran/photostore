@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "PhotoStore"
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "local"
+    BASE_URL: str = "http://localhost:8000"
     
     # Security
     SECRET_KEY: str = "supersecretkey"

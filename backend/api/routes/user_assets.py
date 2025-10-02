@@ -3,7 +3,7 @@ from sqlmodel import Session, select, func
 from fastapi import UploadFile, File, Form
 from typing import List
 from PIL import Image
-import io, os
+import io, os, time
 from uuid import uuid4
 from datetime import datetime, timedelta
 import io, faiss, json
@@ -20,6 +20,9 @@ from models import  Projects, Folders, Assets , Users, Embeddings
 from dependencies.dependencies import get_optional_user, get_current_user
 from db.crud_asset import add_asset
 from db.crud_embedding import create_embedding_for_asset
+from utils.path_builder import build_full_path, build_file_url
+from utils.folder_finder import find_folder_by_path
+from core.config import settings
 from db.crud_folder import get_or_create_folder
 
 # from services.embeddings_service import index, faiss_id_to_asset, embed_image, rebuild_faiss,add_embedding_to_faiss, ensure_user_index,search_user
@@ -185,30 +188,70 @@ def update_asset(
 async def upload_assets(
     current_user: dict = Depends(get_current_user),
     files: List[UploadFile] = File(...),
-    folder_name: str | None = Form(None), 
+    folder_slug: str | None = Form(None),  # Sử dụng slug thay vì name
+    project_slug: str | None = Form(None),  # Optional: Chỉ định project bằng slug
     is_private: bool = Form(False),  
     session: Session = Depends(get_session)
 ):
     results = []
-    print("current_user.id",current_user.id)
-    # Tìm project mặc định của user
-    project = session.exec(
-        select(Projects).where(Projects.user_id == current_user.id, Projects.is_default == True)
-    ).first()
-    if not project:
-        raise HTTPException(404, "Không tìm thấy project mặc định cho user")
     
-    if folder_name:
-        folder = get_or_create_folder(session, project.id, folder_name)
-    else:
-        folder = session.exec(
-            select(Folders).where(
-                Folders.project_id == project.id,
-                Folders.is_default == True
-            )
+    # Tìm project (theo slug hoặc default)
+    if project_slug:
+        project = session.exec(
+            select(Projects)
+            .where(Projects.user_id == current_user.id)
+            .where(Projects.slug == project_slug)
         ).first()
-    if not folder:
-        raise HTTPException(404, "Không tìm thấy folder phù hợp")
+        if not project:
+            raise HTTPException(404, f"Không tìm thấy project với slug '{project_slug}'")
+    else:
+        project = session.exec(
+            select(Projects)
+            .where(Projects.user_id == current_user.id)
+            .where(Projects.is_default == True)
+        ).first()
+        if not project:
+            raise HTTPException(404, "Không tìm thấy project mặc định cho user")
+    
+    # Tìm folder theo path slugs hoặc default
+    if folder_slug:
+        # folder_slug có thể là path: "parent-slug/child-slug"
+        try:
+            folder = find_folder_by_path(session, project.id, folder_slug)
+        except HTTPException as e:
+            # Nếu không tìm thấy và là single slug, thử tạo mới ở root
+            if "/" not in folder_slug:
+                folder = Folders(
+                    name=folder_slug.replace("-", " ").title(),  # thu-muc-moi → Thu Muc Moi
+                    slug=folder_slug,
+                    project_id=project.id,
+                    parent_id=None,  # Root folder
+                    is_default=False
+                )
+                session.add(folder)
+                session.commit()
+                session.refresh(folder)
+            else:
+                raise e
+    else:
+        # Tìm default folder
+        folder = session.exec(
+            select(Folders)
+            .where(Folders.project_id == project.id)
+            .where(Folders.is_default == True)
+        ).first()
+        if not folder:
+            # Tạo default folder nếu chưa có
+            folder = Folders(
+                name="Default",
+                slug="default",
+                project_id=project.id,
+                parent_id=None,
+                is_default=True
+            )
+            session.add(folder)
+            session.commit()
+            session.refresh(folder)
     
     folder_id = folder.id
 
@@ -235,8 +278,11 @@ async def upload_assets(
             ext = os.path.splitext(file.filename or "")[1].lower() or ".bin"
             filename = f"{uuid4().hex}{ext}"
 
+            # Build full path từ project và folder slugs
+            full_path = build_full_path(session, project.id, folder.id)
+            
             # relative path (lưu trong DB)
-            object_path = f"{current_user.id}/{project.id}/{folder.name}/{filename}"
+            object_path = f"{full_path}/{filename}"
 
             # absolute path (lưu trong ổ cứng)
             save_path = os.path.join(UPLOAD_DIR, object_path).replace("\\", "/")
@@ -288,17 +334,53 @@ async def upload_assets(
             file_path = (UPLOAD_DIR / safe_path).resolve()
 
             
+            # Build full path từ project và folder slugs
+            full_path = build_full_path(session, project.id, folder_id)
+            
+            # Build file URL với full path
+            base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+            file_url = build_file_url(session, project.id, folder_id, filename, base_url)
+            
+            # Get file extension
+            file_extension = os.path.splitext(file.filename or "")[1].lstrip('.')
+            
             results.append({
                 "status": 1,
                 "id": asset_id,
-                "path": object_path,
-                "preview_url": FileResponse(file_path),
-                "width": width, "height": height, "file_size": size,
-                "mime_type": file.content_type,
-                "is_private": is_private,   
+                "name": file.filename or f"file_{asset_id}.{file_extension}",
+                "file_url": file_url,
+                "file_extension": file_extension,
+                "file_type": file.content_type,
+                "file_size": size,
+                "width": width,
+                "height": height,
+                "project_slug": project.slug,
+                "folder_path": full_path,  # Full path từ project → parent folders → current folder
+                "is_private": is_private,
+                "created_at": int(time.time()),
+                "updated_at": int(time.time())
             })
 
-        return {"status": 1, "data": results}
+        # Format response theo GraphQL style
+        upload_results = []
+        for result in results:
+            upload_results.append({
+                "file": result,
+                "message": "File uploaded successfully",
+                "result": True
+            })
+        
+        return {
+            "data": {
+                "uploadFile": upload_results[0] if len(upload_results) == 1 else upload_results
+            },
+            "extensions": {
+                "cost": {
+                    "requestedQueryCost": 0,
+                    "maximumAvailable": 50000
+                }
+            }
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
