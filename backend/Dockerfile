@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy toàn bộ backend code
 COPY . .
 
+# Create uploads directory and set permissions
+RUN mkdir -p uploads && chown -R root:root uploads && chmod -R 777 uploads
+
 # Expose port
 EXPOSE 8000
 

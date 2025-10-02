@@ -1,0 +1,161 @@
+"""
+Middleware để kiểm tra quyền truy cập static files
+"""
+from fastapi import Request, HTTPException
+from fastapi.responses import FileResponse, JSONResponse
+from sqlmodel import Session, select
+from pathlib import Path
+import os
+
+from models import Assets, Projects, Folders
+from dependencies.dependencies import get_optional_user
+from db.session import engine
+
+UPLOAD_DIR = Path("uploads")
+
+async def verify_static_access(request: Request, call_next):
+    """
+    Middleware để kiểm tra quyền truy cập static files.
+    - Nếu path không bắt đầu bằng /uploads -> bypass
+    - Nếu file is_private=false -> cho phép truy cập
+    - Nếu file is_private=true -> kiểm tra token
+    """
+    # Bypass non-uploads paths
+    if not request.url.path.startswith("/uploads/"):
+        return await call_next(request)
+        
+    try:
+        # Extract path components
+        path_parts = request.url.path.split("/")
+        if len(path_parts) < 4:  # /uploads/project/file
+            return JSONResponse(
+                status_code=404,
+                content={
+                    "status": "error",
+                    "message": "File not found"
+                }
+            )
+            
+        project_slug = path_parts[2]
+        filename = path_parts[-1]
+        folder_path = "/".join(path_parts[3:-1])
+        
+        # Check if file exists
+        file_path = UPLOAD_DIR / project_slug / folder_path / filename
+        if not file_path.exists():
+            return JSONResponse(
+                status_code=404,
+                content={
+                    "status": "error",
+                    "message": "File not found"
+                }
+            )
+            
+        # Find asset in database
+        with Session(engine) as session:
+            try:
+                # Get asset with project info
+                asset = session.exec(
+                    select(Assets)
+                    .join(Folders, Assets.folder_id == Folders.id)
+                    .join(Projects, Folders.project_id == Projects.id)
+                    .where(Assets.system_name == filename)
+                    .where(Projects.slug == project_slug)
+                ).first()
+                
+                if not asset:
+                    return JSONResponse(
+                        status_code=404,
+                        content={
+                            "status": "error",
+                            "message": "File not found"
+                        }
+                    )
+                
+                # Get project for access control
+                project = session.get(Projects, asset.project_id)
+                if not project:
+                    return JSONResponse(
+                        status_code=404,
+                        content={
+                            "status": "error",
+                            "message": "File not found"
+                        }
+                    )
+                
+                # Public file - allow access
+                if not asset.is_private:
+                    return FileResponse(
+                        file_path,
+                        media_type=asset.file_type,
+                        filename=asset.name
+                    )
+                
+                # Private file - check token
+                token = request.headers.get("Authorization")
+                if not token:
+                    return JSONResponse(
+                        status_code=401,
+                        content={
+                            "status": "error",
+                            "message": "This file is private and requires authentication"
+                        }
+                    )
+                
+                # Validate token
+                try:
+                    token_value = token.replace("Bearer ", "").strip()
+                    current_user = await get_optional_user(token_value, session)
+                    
+                    if not current_user:
+                            return JSONResponse(
+                                status_code=401,
+                                content={
+                                    "status": "error",
+                                    "message": "Invalid or expired token"
+                                }
+                            )
+                    
+                    # Check ownership
+                    if project.user_id != current_user.id:
+                        return JSONResponse(
+                            status_code=403,
+                            content={
+                                "status": "error",
+                                "message": "You don't have permission to access this file"
+                            }
+                        )
+                    
+                    # Owner access - serve file
+                    return FileResponse(
+                        file_path,
+                        media_type=asset.file_type,
+                        filename=asset.name
+                    )
+                    
+                except Exception:
+                    return JSONResponse(
+                        status_code=401,
+                        content={
+                            "status": "error",
+                            "message": "Invalid token format"
+                        }
+                    )
+                    
+            except Exception:
+                return JSONResponse(
+                    status_code=500,
+                    content={
+                        "status": "error",
+                        "message": "Internal server error"
+                    }
+                )
+                
+    except Exception:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "Internal server error"
+            }
+        )

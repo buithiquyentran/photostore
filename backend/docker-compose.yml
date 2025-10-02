@@ -72,6 +72,7 @@ services:
     volumes:
       - .:/app
       - /app/__pycache__
+      - ./uploads:/app/uploads  # Mount local uploads directory
     networks:
       - photostore_network
     depends_on:
