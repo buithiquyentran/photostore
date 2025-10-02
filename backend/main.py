@@ -49,16 +49,24 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 def root():
     return {"message": "Database connected successfully!"}
 
-# app.mount("/static", StaticFiles(directory="uploads"), name="static")
+# Add static files middleware
+from dependencies.static_middleware import verify_static_access
+app.middleware("http")(verify_static_access)
 
 @app.on_event("startup")
 def startup_event():
-    """Initialize database tables on startup"""
+    """Initialize database tables and uploads directory on startup"""
     print("🚀 Starting up PhotoStore...")
     
     # Create all tables if not exist
     SQLModel.metadata.create_all(engine)
     print("✅ Database tables initialized")
+    
+    # Create uploads directory if not exists
+    from pathlib import Path
+    uploads_dir = Path("uploads")
+    uploads_dir.mkdir(exist_ok=True)
+    print(f"✅ Uploads directory initialized at {uploads_dir.absolute()}")
     
     # TODO: Load FAISS indices for active projects
     # from db.session import get_session

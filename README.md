@@ -14,10 +14,13 @@ Hệ thống quản lý ảnh với tính năng tìm kiếm thông minh sử d�
 - Hỗ trợ tiếng Việt trong slugs
 - Phân cấp thư mục: `thu-muc-cha/thu-muc-con/anh.jpg`
 
-### 🔒 Bảo mật
+### 🔒 Bảo mật & Quyền truy cập
 - Keycloak Authentication
 - Project-based Access Control
 - API Key & Secret cho external access
+- File Access Control:
+  + Public files: Truy cập trực tiếp qua URL
+  + Private files: Yêu cầu token và kiểm tra ownership
 
 ### 🚀 API Hiện đại
 - RESTful API với GraphQL-style responses
@@ -71,6 +74,10 @@ npm run dev
 - CLIP - AI model cho image/text embeddings
 - FAISS - Vector similarity search
 - Docker - Containerization
+- File Storage:
+  + Local storage với URL-friendly paths
+  + Access control middleware
+  + Automatic file organization
 
 **Frontend:**
 - Next.js / React - UI framework
@@ -84,18 +91,20 @@ npm run dev
 - [API Documentation](http://localhost:8000/docs) - Swagger UI (sau khi chạy backend)
 - [Image Search Guide](backend/README-EMBEDDINGS.md) - Hướng dẫn sử dụng AI Search
 - [Upload Flow](backend/UPLOAD-FLOW.md) - Chi tiết về upload và auto-embedding
+- [Folder Structure](backend/FOLDER-STRUCTURE.md) - Cấu trúc thư mục và file access control
 
 ## 📝 API Examples
 
-### Upload ảnh (GraphQL-style response)
+### Upload & Truy cập file
 ```bash
+# Upload file
 POST /api/v1/users/assets/upload-images
 Content-Type: multipart/form-data
 
 files: [photo.jpg]
 folder_slug: thu-muc-cha/thu-muc-con  # Hỗ trợ nested folders
 project_slug: my-project  # Optional: Chỉ định project
-is_private: false
+is_private: false  # true = private, false = public
 
 Response:
 {
@@ -103,10 +112,12 @@ Response:
     "uploadFile": {
       "file": {
         "id": 123,
-        "name": "photo.jpg",
+        "name": "photo.jpg",  # Original filename
+        "system_name": "abc123.jpg",  # UUID filename
         "file_url": "http://localhost:8000/uploads/my-project/thu-muc-cha/thu-muc-con/abc123.jpg",
         "file_extension": "jpg",
         "file_type": "image/jpeg",
+        "format": "image/jpeg",
         "file_size": 352525,
         "width": 800,
         "height": 600,
@@ -119,14 +130,17 @@ Response:
       "message": "File uploaded successfully",
       "result": true
     }
-  },
-  "extensions": {
-    "cost": {
-      "requestedQueryCost": 0,
-      "maximumAvailable": 50000
-    }
   }
 }
+
+# Truy cập file public (is_private = false)
+GET /uploads/my-project/thu-muc-cha/thu-muc-con/abc123.jpg
+# -> Truy cập trực tiếp, không cần token
+
+# Truy cập file private (is_private = true)
+GET /api/v1/uploads/my-project/thu-muc-cha/thu-muc-con/abc123.jpg
+Authorization: Bearer YOUR_TOKEN
+# -> Yêu cầu token và kiểm tra ownership
 ```
 
 ### Tìm kiếm ảnh
