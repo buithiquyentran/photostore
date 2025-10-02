@@ -7,8 +7,9 @@ from sqlmodel import Session, select
 from pathlib import Path
 import os
 
-from models import Assets, Projects, Folders
-from dependencies.dependencies import get_optional_user
+from models import Assets, Projects, Folders, Users
+from dependencies.dependencies import get_key, ALGORITHM
+from jose import jwt, JWTError
 from db.session import engine
 
 UPLOAD_DIR = Path("uploads")
@@ -103,18 +104,64 @@ async def verify_static_access(request: Request, call_next):
                     )
                 
                 # Validate token
+                # Validate token format
+                token_value = token.replace("Bearer ", "").strip()
+                if not token_value:
+                    return JSONResponse(
+                        status_code=401,
+                        content={
+                            "status": "error",
+                            "message": "Invalid token format"
+                        }
+                    )
+
                 try:
-                    token_value = token.replace("Bearer ", "").strip()
-                    current_user = await get_optional_user(token_value, session)
+                    # Parse token thành payload
+                    key = get_key(token_value)
+                    payload = jwt.decode(
+                        token_value,
+                        key,
+                        algorithms=[ALGORITHM],
+                        options={"verify_aud": False}
+                    )
+                    
+                    if not payload or not payload.get("sub"):
+                        return JSONResponse(
+                            status_code=401,
+                            content={
+                                "status": "error",
+                                "message": "Invalid or expired token"
+                            }
+                        )
+                    
+                    # Tìm user trong database
+                    sub = payload.get("sub")
+                    current_user = session.exec(select(Users).where(Users.sub == sub)).first()
                     
                     if not current_user:
+                        # User chưa tồn tại trong database, tạo mới từ token info
+                        email = payload.get("email")
+                        username = payload.get("preferred_username") or email
+                        
+                        if not email:
                             return JSONResponse(
                                 status_code=401,
                                 content={
                                     "status": "error",
-                                    "message": "Invalid or expired token"
+                                    "message": "Invalid token: missing email"
                                 }
                             )
+                            
+                        current_user = Users(
+                            sub=sub,
+                            email=email,
+                            username=username,
+                            is_superuser=False
+                        )
+                        session.add(current_user)
+                        session.commit()
+                        session.refresh(current_user)
+                        print(f"✅ Created new user in DB: {current_user.email} (id: {current_user.id})")
                     
                     # Check ownership
                     if project.user_id != current_user.id:
@@ -133,12 +180,21 @@ async def verify_static_access(request: Request, call_next):
                         filename=asset.name
                     )
                     
-                except Exception:
+                except JWTError:
                     return JSONResponse(
                         status_code=401,
                         content={
                             "status": "error",
-                            "message": "Invalid token format"
+                            "message": "Invalid or expired token"
+                        }
+                    )
+                except Exception as e:
+                    print(f"❌ Error validating token: {e}")
+                    return JSONResponse(
+                        status_code=500,
+                        content={
+                            "status": "error",
+                            "message": "Internal server error"
                         }
                     )
                     

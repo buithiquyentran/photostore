@@ -83,7 +83,11 @@ async def get_optional_token(request: Request) -> Optional[str]:
     return param
 
 # ✅ Dependency: parse token thành user_id (có thể None)
-def get_optional_user(token: str | None = Depends(get_optional_token),  session: Session = Depends(get_session)) -> Optional[int]:
+async def get_optional_user(token: str | None = Depends(get_optional_token), session: Session = Depends(get_session)) -> Optional[Users]:
+    """
+    Parse token và trả về Users object từ database.
+    Nếu user chưa tồn tại trong DB, tạo mới từ token info.
+    """
     if not token:
         return None
     try:
@@ -97,9 +101,33 @@ def get_optional_user(token: str | None = Depends(get_optional_token),  session:
         print("payload", payload)
         if not payload:
             return None
-        sub =  payload.get("sub")
-        if (sub):
-            db_user = session.exec(select(Users).where(Users.sub == sub)).first()
-            return db_user
+            
+        sub = payload.get("sub")
+        if not sub:
+            return None
+            
+        # Tìm user trong database
+        db_user = session.exec(select(Users).where(Users.sub == sub)).first()
+        
+        if not db_user:
+            # User chưa tồn tại trong database, tạo mới từ token info
+            email = payload.get("email")
+            username = payload.get("preferred_username") or email
+            
+            if not email:
+                return None
+                
+            db_user = Users(
+                sub=sub,
+                email=email,
+                username=username,
+                is_superuser=False
+            )
+            session.add(db_user)
+            session.commit()
+            session.refresh(db_user)
+            print(f"✅ Created new user in DB: {db_user.email} (id: {db_user.id})")
+            
+        return db_user
     except JWTError:
         return None
