@@ -22,8 +22,12 @@ from db.crud_asset import add_asset
 from db.crud_embedding import create_embedding_for_asset
 from utils.path_builder import build_full_path, build_file_url
 from utils.folder_finder import find_folder_by_path
+from utils.filename_utils import truncate_filename, split_filename, sanitize_filename
 from core.config import settings
 from db.crud_folder import get_or_create_folder
+
+# Constants
+MAX_FILENAME_LENGTH = 255  # Maximum length for filename in DB
 
 # from services.embeddings_service import index, faiss_id_to_asset, embed_image, rebuild_faiss,add_embedding_to_faiss, ensure_user_index,search_user
 # from services.search.embeddings_service import  embed_image,add_embedding_to_faiss, search_user,ensure_user_index, get_text_embedding, search_by_embedding
@@ -274,15 +278,35 @@ async def upload_assets(
                 except Exception:
                     raise HTTPException(400, f"Ảnh {file.filename} không hợp lệ")
 
-            # tên file lưu
-            ext = os.path.splitext(file.filename or "")[1].lower() or ".bin"
-            filename = f"{uuid4().hex}{ext}"
-
+            # Xử lý filename
+            original_filename = file.filename or f"file_{uuid4().hex}"
+            original_filename = sanitize_filename(original_filename)  # Remove invalid chars
+            
+            # Split filename và extension
+            name, ext = split_filename(original_filename)
+            if not ext:  # Nếu không có extension, dùng mime type
+                if file.content_type == "image/jpeg":
+                    ext = "jpg"
+                elif file.content_type == "image/png":
+                    ext = "png"
+                elif file.content_type == "image/gif":
+                    ext = "gif"
+                elif file.content_type == "image/webp":
+                    ext = "webp"
+                else:
+                    ext = "bin"
+            
+            # Tạo filename an toàn cho storage
+            storage_filename = f"{uuid4().hex}.{ext}"
+            
+            # Truncate original filename nếu quá dài
+            safe_filename = truncate_filename(original_filename, MAX_FILENAME_LENGTH)
+            
             # Build full path từ project và folder slugs
             full_path = build_full_path(session, project.id, folder.id)
             
             # relative path (lưu trong DB)
-            object_path = f"{full_path}/{filename}"
+            object_path = f"{full_path}/{storage_filename}"
 
             # absolute path (lưu trong ổ cứng)
             save_path = os.path.join(UPLOAD_DIR, object_path).replace("\\", "/")
@@ -293,17 +317,28 @@ async def upload_assets(
                 f.write(file_bytes)
 
             try:
+                # Build file URL với full path
+                base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                file_url = build_file_url(session, project.id, folder.id, storage_filename, base_url)
+                
                 # Lưu asset vào database
                 asset_id = add_asset(
                     session=session,
-                    user_id=current_user.id,
+                    project_id=project.id,
                     folder_id=folder_id,
-                    path=object_path,
-                    name=filename,
-                    format=file.content_type,
-                    width=width, height=height,
+                    name=safe_filename,  # Tên file gốc đã được truncate
+                    system_name=storage_filename,  # UUID filename
+                    file_extension=ext,
+                    file_type=file.content_type,
+                    format=file.content_type,  # Sử dụng MIME type làm format
                     file_size=size,
-                    is_private=is_private   # 👈 set giá trị từ form (hoặc mặc định False)
+                    path=object_path,
+                    file_url=file_url,
+                    folder_path=full_path,
+                    width=width,
+                    height=height,
+                    is_private=is_private,
+                    is_image=file.content_type.startswith("image/")
                 )
                 
                 # 🔥 TỰ ĐỘNG TẠO EMBEDDING cho ảnh
@@ -334,23 +369,16 @@ async def upload_assets(
             file_path = (UPLOAD_DIR / safe_path).resolve()
 
             
-            # Build full path từ project và folder slugs
-            full_path = build_full_path(session, project.id, folder_id)
-            
-            # Build file URL với full path
-            base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
-            file_url = build_file_url(session, project.id, folder_id, filename, base_url)
-            
-            # Get file extension
-            file_extension = os.path.splitext(file.filename or "")[1].lstrip('.')
-            
             results.append({
                 "status": 1,
                 "id": asset_id,
-                "name": file.filename or f"file_{asset_id}.{file_extension}",
+                "name": safe_filename,  # Tên file gốc đã được truncate
+                "original_name": original_filename,  # Tên file gốc trước khi truncate
+                "system_name": storage_filename,  # UUID filename
                 "file_url": file_url,
-                "file_extension": file_extension,
+                "file_extension": ext,
                 "file_type": file.content_type,
+                "format": file.content_type,  # Sử dụng MIME type làm format
                 "file_size": size,
                 "width": width,
                 "height": height,
