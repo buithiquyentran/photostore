@@ -42,7 +42,7 @@ async def verify_static_access(request: Request, call_next):
         folder_path = "/".join(path_parts[3:-1])
         
         # Check if file exists
-        file_path = UPLOAD_DIR / project_slug / folder_path / filename
+        file_path = (UPLOAD_DIR / project_slug / folder_path / filename).resolve()
         if not file_path.exists():
             return JSONResponse(
                 status_code=404,
@@ -89,7 +89,7 @@ async def verify_static_access(request: Request, call_next):
                     return FileResponse(
                         file_path,
                         media_type=asset.file_type,
-                        filename=asset.name
+                        # filename=asset.name
                     )
                 
                 # Private file - check token
@@ -177,7 +177,7 @@ async def verify_static_access(request: Request, call_next):
                     return FileResponse(
                         file_path,
                         media_type=asset.file_type,
-                        filename=asset.name
+                        # filename=asset.name
                     )
                     
                 except JWTError:
