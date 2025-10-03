@@ -15,12 +15,13 @@ Hệ thống quản lý ảnh với tính năng tìm kiếm thông minh sử d�
 - Phân cấp thư mục: `thu-muc-cha/thu-muc-con/anh.jpg`
 
 ### 🔒 Bảo mật & Quyền truy cập
-- Keycloak Authentication
-- Project-based Access Control
-- API Key & Secret cho external access
-- File Access Control:
+- **Keycloak Authentication**: Đăng nhập SSO cho users
+- **Project-based Access Control**: Mỗi user có nhiều projects riêng biệt
+- **External API**: API key & secret cho third-party integration
+- **File Access Control**:
   + Public files: Truy cập trực tiếp qua URL
   + Private files: Yêu cầu token và kiểm tra ownership
+- **HMAC Signature**: Bảo mật API calls với chữ ký số đơn giản
 
 ### 🚀 API Hiện đại
 - RESTful API với GraphQL-style responses
@@ -89,6 +90,8 @@ npm run dev
 
 - [Backend Setup Guide](backend/README.md) - Hướng dẫn setup backend với Docker
 - [API Documentation](http://localhost:8000/docs) - Swagger UI (sau khi chạy backend)
+- [External API Guide](backend/EXTERNAL-API.md) - **API key authentication cho third-party**
+- [Simple API Guide](backend/SIMPLE-API-GUIDE.md) - **Phiên bản đơn giản hóa của External API**
 - [Image Search Guide](backend/README-EMBEDDINGS.md) - Hướng dẫn sử dụng AI Search
 - [Upload Flow](backend/UPLOAD-FLOW.md) - Chi tiết về upload và auto-embedding
 - [Folder Structure](backend/FOLDER-STRUCTURE.md) - Cấu trúc thư mục và file access control
@@ -145,16 +148,54 @@ Authorization: Bearer YOUR_TOKEN
 
 ### Tìm kiếm ảnh
 ```bash
-# Tìm bằng text
+# Tìm bằng text (User API - cần Keycloak token)
 POST /api/v1/search/text
+Authorization: Bearer YOUR_TOKEN
 query: "cat sitting on sofa"
 k: 5
 
-# Tìm bằng ảnh tương tự
+# Tìm bằng ảnh tương tự (User API - cần Keycloak token)
 POST /api/v1/search/image
+Authorization: Bearer YOUR_TOKEN
 file: [upload ảnh]
 k: 5
 ```
+
+### External API (Third-party Integration)
+```bash
+# Lấy API credentials
+GET /api/v1/projects/123/api-key
+Authorization: Bearer YOUR_KEYCLOAK_TOKEN
+
+Response:
+{
+  "api_key": "pk_xxx",
+  "api_secret": "sk_xxx"
+}
+
+# Tạo folder (External API - Đơn giản hóa)
+POST /api/v1/external/folders
+X-API-Key: pk_xxx
+X-Timestamp: 1696204800
+X-Signature: hmac_sha256(timestamp:api_key, api_secret)
+Content-Type: application/json
+
+{
+  "name": "thư mục của bảo",
+  "parent_id": null
+}
+
+# Search bằng text (External API - Đơn giản hóa)
+POST /api/v1/external/search/text
+X-API-Key: pk_xxx
+X-Timestamp: 1696204800
+X-Signature: hmac_sha256(timestamp:api_key, api_secret)
+
+query: cat sitting on sofa
+k: 5
+```
+
+Chi tiết xem: [Simple API Guide](backend/SIMPLE-API-GUIDE.md)
 
 ## 🔐 Default Credentials
 

@@ -49,6 +49,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         self.public_paths = [
            "/api/v1/auth/*",
            "/api/v1/assets/*",
+           "/api/v1/external/*",  # External API with API key auth
            "/api/v1/openapi.json",
            "/docs",
            "/redoc",
