@@ -2,7 +2,8 @@ from fastapi import APIRouter
 
 from api.routes import (
     assets, projects, folders, login, users, api_clients,
-    external_assets, user_assets, search, static_files
+    external_assets, user_assets, search, static_files,
+    external_api
 )
 # , login, private, users, utils
 from core.config import settings
@@ -18,6 +19,7 @@ api_router.include_router(api_clients.router)
 api_router.include_router(external_assets.router)
 api_router.include_router(search.router)  # Search API
 api_router.include_router(static_files.router)  # Static files with access control
+api_router.include_router(external_api.router)  # External API with API key authentication
 
 
 

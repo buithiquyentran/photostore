@@ -50,6 +50,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
            "/api/v1/auth/*",
            "/api/v1/external/*",
            "/api/v1/assets/*",
+           "/api/v1/external/*",  # External API with API key auth
            "/api/v1/openapi.json",
            "/docs",
            "/redoc",
