@@ -92,6 +92,7 @@ npm run dev
 - [API Documentation](http://localhost:8000/docs) - Swagger UI (sau khi chạy backend)
 - [External API Guide](backend/EXTERNAL-API.md) - **API key authentication cho third-party**
 - [Simple API Guide](backend/SIMPLE-API-GUIDE.md) - **Phiên bản đơn giản hóa của External API**
+- [API Signature Generator](backend/README-API-SIGNATURE.md) - **Công cụ tạo signature cho API**
 - [Image Search Guide](backend/README-EMBEDDINGS.md) - Hướng dẫn sử dụng AI Search
 - [Upload Flow](backend/UPLOAD-FLOW.md) - Chi tiết về upload và auto-embedding
 - [Folder Structure](backend/FOLDER-STRUCTURE.md) - Cấu trúc thư mục và file access control
