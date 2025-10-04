@@ -32,65 +32,12 @@ MAX_FILENAME_LENGTH = 255  # Maximum length for filename in DB
 # from services.embeddings_service import index, faiss_id_to_asset, embed_image, rebuild_faiss,add_embedding_to_faiss, ensure_user_index,search_user
 # from services.search.embeddings_service import  embed_image,add_embedding_to_faiss, search_user,ensure_user_index, get_text_embedding, search_by_embedding
 
-router = APIRouter(prefix="/users/assets",  tags=["User Assets"])
+router = APIRouter(prefix="/assets",  tags=["User Assets"])
 BUCKET_NAME = "photostore"
 BUCKET_NAME_PUBLIC = "images" 
 UPLOAD_DIR = Path("uploads")
 
-@router.get("/{name}/metadata")
-def get_asset_metadata(name: str, session: Session = Depends(get_session), current_user: dict = Depends(get_optional_user)):
-    asset = session.exec(select(Assets).where(Assets.name == name)).first()
-    folder = session.exec(select(Folders).where(Folders.id == asset.folder_id)).first() if asset else None
-    if not asset:
-        raise HTTPException(404, "Asset not found")
-    user  = session.exec(select(Users)
-            .join(Projects, Users.id == Projects.user_id)
-            .join(Folders, Projects.id == Folders.project_id)
-            .join(Assets, Folders.id == Assets.folder_id)
-            .where(Assets.id == asset.id)
-        ).first()
-    if not user:
-        raise HTTPException(404, "Owner not found")
-    if current_user.id != user.id:
-        raise HTTPException(401, "Unauthorized")
-    result = asset.dict()
-    result["location"] = folder.name
-    return {"status": 1, "data": result}
-@router.get("/{name}/nextprev/metadata")
-def get_next_prev(name: str, session: Session = Depends(get_session), current_user: dict = Depends(get_optional_user)):
-    asset = session.query(Assets).filter(Assets.name == name).first()
-    if not asset:
-        raise HTTPException(status_code=404, detail="Assets not found")
-    user  = session.exec(select(Users)
-            .join(Projects, Users.id == Projects.user_id)
-            .join(Folders, Projects.id == Folders.project_id)
-            .join(Assets, Folders.id == Assets.folder_id)
-            .where(Assets.id == asset.id)
-        ).first()
-    if not user:
-        raise HTTPException(404, "Owner not found")
-    if current_user.id != user.id:
-        raise HTTPException(401, "Unauthorized")
-    statement = (
-            select(Assets)
-            .join(Folders, Assets.folder_id == Folders.id)
-            .join(Projects, Folders.project_id == Projects.id)
-            .where(Projects.user_id == current_user.id)
-        )
-   # prev: ảnh có id nhỏ hơn trong cùng project
-    prev_asset = session.exec(
-        statement.where(Assets.id < asset.id).order_by(Assets.id.desc()).limit(1)
-    ).first()
 
-    # next: ảnh có id lớn hơn trong cùng project
-    next_asset = session.exec(
-        statement.where(Assets.id > asset.id).order_by(Assets.id.asc()).limit(1)
-    ).first()
-
-    return {
-        "prev": {"name": prev_asset.name} if prev_asset else None,
-        "next": {"name": next_asset.name} if next_asset else None,
-    }
 @router.get("/count",)
 def count(session: Session = Depends(get_session), current_user: dict = Depends(get_current_user)):
     try:
@@ -124,7 +71,7 @@ def list_assets(
         data = []
         for a in results:
             obj = a.dict()
-            obj["url"] = f"{request.base_url}api/v1/assets/{a.name}"
+            obj["url"] = f"{request.base_url}/api/v1/assets/{a.name}"
             data.append(obj)
 
         return {"status": 1, "data": data}

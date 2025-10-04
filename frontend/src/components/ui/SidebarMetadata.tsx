@@ -9,14 +9,15 @@ interface SidebarMetadataProps {
   open: boolean;
   meta: {
     id: number;
-    location: string;
+    folder_path: string;
     format: string;
     file_size: number;
     width: string;
     height: string;
-    created: string;
-    last_created: string;
+    created_at: string;
+    updated_at: string;
     name: string;
+    system_name: string;
     is_private: boolean;
   };
   onsave: (is_private: boolean) => void;
@@ -45,8 +46,8 @@ export default function SidebarMetadata({
       <div className="p-4 space-y-4 overflow-y-auto">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-gray-400 text-sm">Location</p>
-            <p className="font-medium">{meta.location}</p>
+            <p className="text-gray-400 text-sm">File name</p>
+            <p className="font-medium">{meta.name}</p>
           </div>
           <div>
             <p className="text-gray-400 text-sm">Format</p>
@@ -66,17 +67,20 @@ export default function SidebarMetadata({
 
         <div>
           <p className="text-gray-400 text-sm">Created</p>
-          <p className="font-medium">{formattedDate(meta.created)}</p>
+          <p className="font-medium">{formattedDate(meta.created_at)}</p>
         </div>
 
         <div>
           <p className="text-gray-400 text-sm">Last replaced</p>
-          <p className="font-medium">{formattedDate(meta.last_created)}</p>
+          <p className="font-medium">{formattedDate(meta.updated_at)}</p>
         </div>
-
+        <div>
+          <p className="text-gray-400 text-sm">Location</p>
+          <p className="font-medium">{meta.folder_path}</p>
+        </div>
         <div>
           <p className="text-gray-400 text-sm">Public ID</p>
-          <p className="font-mono text-sm break-all">{meta.name}</p>
+          <p className="font-medium">{meta.system_name}</p>
         </div>
 
         <div>

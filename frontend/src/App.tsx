@@ -26,8 +26,8 @@ function App() {
           localStorage.setItem("access_token", keycloak.token || "");
           localStorage.setItem("refresh_token", keycloak.refreshToken || "");
           try {
-            const userRes = await UserService.SocialLogin();
-            console.log("SocialLogin response:", userRes);
+            // const userRes = await UserService.SocialLogin();
+            // console.log("SocialLogin response:", userRes);
           } catch (err) {
             console.error("SocialLogin error:", err);
           }
@@ -54,7 +54,7 @@ function App() {
           <Route path={path.BROWER} element={<BROWER />} />
         </Route>
         <Route path="/">
-          <Route path="/photos/:name" element={<VIEWER />} />
+          <Route path="/photos/*" element={<VIEWER />} />
         </Route>
       </Routes>
     </>

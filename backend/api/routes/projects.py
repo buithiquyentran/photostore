@@ -153,26 +153,6 @@ def regenerate_project_api_key(
         session.add(project)
         session.commit()
         session.refresh(project)
-<<<<<<< HEAD
-        return {"status": 1, "data": project}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi khi cập nhật project: {e}")
-
-@router.delete("/projects/{project_id}")
-def delete_project(project_id: int, session: Session = Depends(get_session)):
-    """
-    Xóa một project
-    """
-    project = session.get(Projects, project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project không tồn tại")
-    try:
-        session.delete(project)
-        session.commit()
-        return {"status": 1, "message": "Xóa project thành công"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi khi xóa project: {e}")
-=======
             
         return APIKeyResponse(
             api_key=project.api_key,
@@ -189,4 +169,3 @@ def delete_project(project_id: int, session: Session = Depends(get_session)):
                 "message": "Internal server error"
             }
         )
->>>>>>> fix_db

@@ -33,7 +33,7 @@ async def verify_static_access(request: Request, call_next):
                 status_code=404,
                 content={
                     "status": "error",
-                    "message": "File not found"
+                    "message": "File not found 1"
                 }
             )
             
@@ -48,7 +48,7 @@ async def verify_static_access(request: Request, call_next):
                 status_code=404,
                 content={
                     "status": "error",
-                    "message": "File not found"
+                    "message": "File not found 2"
                 }
             )
             
@@ -69,7 +69,7 @@ async def verify_static_access(request: Request, call_next):
                         status_code=404,
                         content={
                             "status": "error",
-                            "message": "File not found"
+                            "message": "File not found 3"
                         }
                     )
                 
@@ -80,7 +80,7 @@ async def verify_static_access(request: Request, call_next):
                         status_code=404,
                         content={
                             "status": "error",
-                            "message": "File not found"
+                            "message": "File not found 4"
                         }
                     )
                 

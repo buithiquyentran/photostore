@@ -1,31 +1,30 @@
 import React, { useEffect, useState, useRef } from "react";
 import AssetsService from "@/components/api/assets.service";
-
 function LazyImage({ asset }: { asset: any }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const imgRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-     let objectUrl: string | null = null;
- 
-     const fetchAndSetImage = async () => {
-       try {
-         const res = await AssetsService.GetOne(asset.name);
-         const blob = res.data as Blob;
-         const url = URL.createObjectURL(blob);
-         setImageUrl(url);
-         objectUrl = url;
-       } catch (err) {
-         console.error("Fetch image failed", err);
-       }
-     };
- 
-     fetchAndSetImage();
- 
-     return () => {
-       if (objectUrl) URL.revokeObjectURL(objectUrl); // cleanup tránh leak
-     };
-   }, [asset.name]);
+    let objectUrl: string | null = null;
+
+    const fetchAndSetImage = async () => {
+      try {
+        const res = await AssetsService.GetAsset(asset.path);
+        const blob = res.data as Blob;
+        const url = URL.createObjectURL(blob);
+        setImageUrl(url);
+        objectUrl = url;
+      } catch (err) {
+        console.error("Fetch image failed", err);
+      }
+    };
+
+    fetchAndSetImage();
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl); // cleanup tránh leak
+    };
+  }, [asset.file_url]);
 
   return (
     <div

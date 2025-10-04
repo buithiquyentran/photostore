@@ -18,7 +18,7 @@ import UserService from "@/components/api/user.service";
 import SidebarMetadata from "@/components/ui/SidebarMetadata";
 import path from "@/resources/path";
 export default function ViewerPage() {
-  const { name } = useParams();
+  const { "*": file_url } = useParams();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -29,18 +29,26 @@ export default function ViewerPage() {
 
   useEffect(() => {
     let objectUrl: string | null = null;
-
     const fetchAndSetImage = async () => {
       try {
-        const res = await AssetService.GetOne(name);
-        const metaResponse = await UserService.GetMetadata(name);
-        setMeta(metaResponse);
+        if (!file_url) {
+          console.error("No image path provided");
+          alert(file_url);
+
+          return;
+        }
+        
+        const res = await AssetService.GetAsset(file_url);
         const blob = res.data as Blob;
         const url = URL.createObjectURL(blob);
         setImageUrl(url);
+
+        const metaResponse = await AssetService.GetMetadata(file_url);
+        setMeta(metaResponse);
+
         setToggleStar(metaResponse.is_favorite);
         objectUrl = url;
-        const nextPreName = await UserService.GetNextPre(name);
+        const nextPreName = await AssetService.GetNextPre(name);
         setNextName(nextPreName.next?.name);
         setPrevName(nextPreName.prev?.name);
       } catch (err) {
@@ -53,18 +61,18 @@ export default function ViewerPage() {
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl); // cleanup tránh leak
     };
-  }, [name]);
+  }, []);
 
   const handleDelete = async () => {
     try {
-      await UserService.Update(meta.id, { is_deleted: true });
+      await AssetService.Update(meta.id, { is_deleted: true });
     } catch (err) {
       console.error("Delete failed", err);
     }
   };
   const handleToggleStar = async () => {
     try {
-      await UserService.Update(meta.id, { is_favorite: !toggleStar });
+      await AssetService.Update(meta.id, { is_favorite: !toggleStar });
       setToggleStar(!toggleStar);
     } catch (err) {
       console.error("Toggle star failed", err);
@@ -72,7 +80,7 @@ export default function ViewerPage() {
   };
   const handleChangeAccessControl = async (is_private: boolean) => {
     try {
-      await UserService.Update(meta.id, { is_private: is_private });
+      await AssetService.Update(meta.id, { is_private: is_private });
       setMeta((prev: any) => ({ ...prev, is_private })); // cập nhật lại state ngay
     } catch (err) {
       console.error("Toggle star failed", err);

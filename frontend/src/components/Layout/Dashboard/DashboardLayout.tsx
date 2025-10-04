@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "@/components/Layout/Dashboard/Sidebar";
 import SearchBar from "@/components/Layout/Dashboard/SearchBar";
 import UserService from "@/components/api/user.service";
+import AssetsService from "@/components/api/assets.service";
 const Layout = () => {
   // const [searchResults, setSearchResults] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
@@ -15,7 +16,7 @@ const Layout = () => {
 
   const fetchAssets = async () => {
     try {
-      const user_assets = await UserService.GetAll();
+      const user_assets = await AssetsService.GetAll();
       const response = [...user_assets];
       setAssets(response);
     } catch (error) {

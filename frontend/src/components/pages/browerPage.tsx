@@ -81,7 +81,7 @@ const Brower = () => {
         columnClassName="flex flex-col gap-4"
       >
         {assets.map((asset) => (
-          <div onClick={() => navigate(`/photos/${asset.name}`)}>
+          <div onClick={() => navigate(`/photos/${asset.path}`)}>
             <LazyImage key={asset.id} asset={asset} />
           </div>
         ))}
