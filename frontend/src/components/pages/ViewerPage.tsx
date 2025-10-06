@@ -24,8 +24,8 @@ export default function ViewerPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [meta, setMeta] = useState<any>(null);
   const [toggleStar, setToggleStar] = useState<any>(null);
-  const [nextName, setNextName] = useState<string>();
-  const [prevName, setPrevName] = useState<string>();
+  const [nextPath, setNextPath] = useState<string>();
+  const [prevPath, setPrevPath] = useState<string>();
 
   useEffect(() => {
     let objectUrl: string | null = null;
@@ -37,7 +37,7 @@ export default function ViewerPage() {
 
           return;
         }
-        
+
         const res = await AssetService.GetAsset(file_url);
         const blob = res.data as Blob;
         const url = URL.createObjectURL(blob);
@@ -48,9 +48,9 @@ export default function ViewerPage() {
 
         setToggleStar(metaResponse.is_favorite);
         objectUrl = url;
-        const nextPreName = await AssetService.GetNextPre(name);
-        setNextName(nextPreName.next?.name);
-        setPrevName(nextPreName.prev?.name);
+        const nextPreName = await AssetService.GetNextPre(file_url);
+        setNextPath(nextPreName.next?.path);
+        setPrevPath(nextPreName.prev?.path);
       } catch (err) {
         console.error("Fetch image failed", err);
       }
@@ -61,7 +61,7 @@ export default function ViewerPage() {
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl); // cleanup tránh leak
     };
-  }, []);
+  }, [file_url]);
 
   const handleDelete = async () => {
     try {
@@ -148,9 +148,9 @@ export default function ViewerPage() {
             {/* Nút Prev */}
             <button
               onClick={() => {
-                navigate(`/photos/${prevName}`);
+                navigate(`/photos/${prevPath}`);
               }}
-              disabled={!prevName}
+              disabled={!prevPath}
               className="absolute left-4 top-[50%] p-3 bg-white/20 hover:bg-white/40 rounded-full text-white disabled:opacity-0 "
             >
               <ChevronLeft size={32} />
@@ -165,9 +165,9 @@ export default function ViewerPage() {
             {/* Nút Next */}
             <button
               onClick={() => {
-                navigate(`/photos/${nextName}`);
+                navigate(`/photos/${nextPath}`);
               }}
-              disabled={!nextName}
+              disabled={!nextPath}
               className="absolute right-4 top-[50%] p-3 bg-white/20 hover:bg-white/40 rounded-full text-white disabled:opacity-0"
             >
               <ChevronRight size={32} />

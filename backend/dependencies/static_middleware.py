@@ -36,13 +36,13 @@ async def verify_static_access(request: Request, call_next):
                     "message": "File not found 1"
                 }
             )
-            
-        project_slug = path_parts[2]
+        user_id = path_parts[2]
+        project_slug = path_parts[3]
         filename = path_parts[-1]
-        folder_path = "/".join(path_parts[3:-1])
+        folder_path = "/".join(path_parts[4:-1])
         
         # Check if file exists
-        file_path = (UPLOAD_DIR / project_slug / folder_path / filename).resolve()
+        file_path = (UPLOAD_DIR / user_id / project_slug / folder_path / filename).resolve()
         if not file_path.exists():
             return JSONResponse(
                 status_code=404,

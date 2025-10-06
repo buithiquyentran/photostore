@@ -58,8 +58,8 @@ const DangNhapPage: React.FC = () => {
         localStorage.setItem("refresh_token", response.refresh_token);
         setIsModalOpen(null);
         try {
-          const userRes = await UserService.SocialLogin();
-          console.log("SocialLogin response:", userRes);
+          // const userRes = await UserService.SocialLogin();
+          // console.log("SocialLogin response:", userRes);
         } catch (err) {
           console.error("SocialLogin error:", err);
         }

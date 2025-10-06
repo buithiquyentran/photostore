@@ -16,14 +16,14 @@ def build_full_path(session: Session, project_id: int, folder_id: int) -> str:
         folder_id: ID của folder
         
     Returns:
-        Full path dạng: "project-slug/parent-folder-slug/child-folder-slug"
+        Full path dạng: "user_id/project-slug/parent-folder-slug/child-folder-slug"
     """
     # Get project slug
     project = session.get(Projects, project_id)
     if not project:
         return ""
     
-    path_parts = [project.slug]
+    path_parts = [str(project.user_id), project.slug]
     
     # Build folder path
     current_folder = session.get(Folders, folder_id)
@@ -36,7 +36,7 @@ def build_full_path(session: Session, project_id: int, folder_id: int) -> str:
             current_folder = session.get(Folders, current_folder.parent_id)
         else:
             break
-    
+
     path_parts.extend(folder_slugs)
     return "/".join(path_parts)
 
@@ -53,7 +53,7 @@ def build_file_url(session: Session, project_id: int, folder_id: int, filename: 
         base_url: Base URL (e.g., http://localhost:8000)
         
     Returns:
-        Full URL: "http://localhost:8000/uploads/project-slug/folder-path/file.jpg"
+        Full URL: "http://localhost:8000/uploads/user_id/project-slug/folder-path/file.jpg"
     """
     full_path = build_full_path(session, project_id, folder_id)
     if not full_path:

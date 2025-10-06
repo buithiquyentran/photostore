@@ -162,7 +162,14 @@ async def upload_assets(
             .where(Projects.is_default == True)
         ).first()
         if not project:
-            raise HTTPException(404, "Không tìm thấy project mặc định cho user")
+            project = Projects(
+            user_id=current_user.id,
+            name="Default Project",
+            slug=f"default-project-{current_user.id}",
+            is_default=True
+        )
+        session.add(project)
+        session.flush()
     
     # Tìm folder theo path slugs hoặc default
     if folder_slug:
@@ -194,8 +201,8 @@ async def upload_assets(
         if not folder:
             # Tạo default folder nếu chưa có
             folder = Folders(
-                name="Default",
-                slug="default",
+                name="Home",
+                slug="home",
                 project_id=project.id,
                 parent_id=None,
                 is_default=True
@@ -204,8 +211,6 @@ async def upload_assets(
             session.commit()
             session.refresh(folder)
     
-    folder_id = folder.id
-
     try:
         for file in files:
             # validate mime
@@ -272,7 +277,7 @@ async def upload_assets(
                 asset_id = add_asset(
                     session=session,
                     project_id=project.id,
-                    folder_id=folder_id,
+                    folder_id=folder.id,
                     name=safe_filename,  # Tên file gốc đã được truncate
                     system_name=storage_filename,  # UUID filename
                     file_extension=ext,

@@ -46,13 +46,13 @@ const Layout = () => {
       try {
         const formData = new FormData();
         formData.append("query_text", text);
-        const res = await UserService.UploadImageForSearch(formData);
+        const res = await AssetsService.UploadImageForSearch(formData);
         setAssets(res); // Lưu kết quả tìm kiếm vào state
       } catch (err) {
         console.error("Search failed", err);
       }
     } else {
-      const res = await UserService.GetAll();
+      const res = await AssetsService.GetAll();
       setAssets(res); // Lưu kết quả tìm kiếm vào state
     }
   };
@@ -64,9 +64,12 @@ const Layout = () => {
       for (let i = 0; i < files.length; i++) {
         formData.append("files", files[i]); // phải trùng với tên param trong BE
       }
+      // formData.append("folder_slug", folder_slug)
+      // formData.append("project_slug", project_slug)
+      // formData.append("is_private", is_private)
 
       try {
-        const res = await UserService.Upload(formData);
+        const res = await AssetsService.Upload(formData);
 
         console.log("Upload results:", res.data);
         alert("Upload thành công");

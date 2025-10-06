@@ -1,11 +1,14 @@
 from datetime import datetime
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import UniqueConstraint
 
 
 class Folders(SQLModel, table=True):
     __tablename__ = "folders"
-
+    __table_args__ = (
+        UniqueConstraint("project_id", "parent_id", "name", name="uq_project_parent_name"),
+    )
     id: Optional[int] = Field(default=None, primary_key=True)
     project_id: int = Field(foreign_key="projects.id")
     parent_id: Optional[int] = Field(default=None, foreign_key="folders.id")

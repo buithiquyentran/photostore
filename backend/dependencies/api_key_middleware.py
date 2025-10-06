@@ -64,6 +64,13 @@ def verify_api_key(request: Request, session: Session = Depends(get_session)) ->
                 "message": "Invalid timestamp format"
             }
         )
+     # check expired 5 phút
+    now = int(time.time())
+    if now - int(timestamp) > 3600: #60*5
+        raise HTTPException(status_code=401, detail={
+                "status": "error",
+                "message": "Signature expired"
+            })
 
     # Tạo signature để so sánh
     # Format đơn giản: TIMESTAMP:API_KEY

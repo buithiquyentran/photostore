@@ -8,6 +8,8 @@ from api.main import api_router
 from core.config import settings
 from dependencies.auth_middleware import AuthMiddleware
 from dependencies.api_key_middleware import verify_api_request
+from dependencies.static_middleware import verify_static_access
+
 from db.session import engine
 
 # Import models để SQLModel biết
@@ -43,6 +45,7 @@ required_roles = {
 }
 
 app.add_middleware(AuthMiddleware, required_roles=required_roles)
+app.middleware("http")(verify_static_access)
 
 # Add API key middleware
 app.middleware("http")(verify_api_request)
@@ -54,8 +57,6 @@ def root():
     return {"message": "Database connected successfully!"}
 
 # Add static files middleware
-from dependencies.static_middleware import verify_static_access
-app.middleware("http")(verify_static_access)
 
 @app.on_event("startup")
 def startup_event():

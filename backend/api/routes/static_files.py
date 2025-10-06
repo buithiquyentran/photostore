@@ -87,7 +87,7 @@ async def get_upload(file_path: str):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_path, media_type="image/jpeg")
 
-@router.get("/{file_path:path}/metadata")
+@router.get("/metadata/{file_path:path}")
 async def get_metadata(file_path: str,session: Session = Depends(get_session), current_user: dict = Depends(get_current_user)):
     asset = session.exec(select(Assets).where(Assets.path == file_path)).first()
     if not asset:
@@ -110,9 +110,9 @@ async def get_metadata(file_path: str,session: Session = Depends(get_session), c
     result["location"] = folder.name
     return {"status": 'success', "data": result}
 
-@router.get("/{file_path:path}/nextprev/metadata")
+@router.get("/nextprev/metadata/{file_path:path}")
 def get_next_prev(file_path: str, session: Session = Depends(get_session), current_user: dict = Depends(get_current_user)):
-    asset = session.query(Assets).filter(Assets.path == file_path).first()
+    asset = session.exec(select(Assets).where(Assets.path == file_path)).first()
     if not asset:
         raise HTTPException(status_code=404, detail="Assets not found")
     user  = session.exec(select(Users)
@@ -142,6 +142,6 @@ def get_next_prev(file_path: str, session: Session = Depends(get_session), curre
     ).first()
 
     return {
-        "prev": {"name": prev_asset.name} if prev_asset else None,
-        "next": {"name": next_asset.name} if next_asset else None,
+        "prev": {"path": prev_asset.path} if prev_asset else None,
+        "next": {"path": next_asset.path} if next_asset else None,
     }

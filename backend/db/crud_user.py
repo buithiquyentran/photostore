@@ -9,8 +9,82 @@ from fastapi.responses import JSONResponse, FileResponse
 import mimetypes
 from fastapi import UploadFile
 from io import BytesIO
-
+import traceback
 from db.crud_asset import add_asset
+from sqlmodel import Session, select
+from fastapi import HTTPException
+from models import Users, Projects, Folders  # import các model của em
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import text
+from db.crud_embedding import create_embedding_for_asset
+from utils.path_builder import build_full_path, build_file_url
+from utils.folder_finder import find_folder_by_path
+from utils.filename_utils import truncate_filename, split_filename, sanitize_filename
+from core.config import settings
+
+# Constants
+MAX_FILENAME_LENGTH = 255  # Maximum length for filename in DB
+
+def register_user(session: Session, email: str, sub: str, username: str):
+    """
+    Thay thế hoàn toàn cho thủ tục MySQL register().
+    Tạo user + project + folder mặc định trong 1 transaction.
+    """
+    try:
+        # 1️⃣ Bắt đầu transaction
+        # session.begin()
+
+        # 2️⃣ Kiểm tra email đã tồn tại chưa
+        user_exists = session.exec(select(Users).where(Users.email == email)).first()
+        if user_exists:
+            raise HTTPException(status_code=400, detail="Email already exists")
+
+        # 3️⃣ Thêm user mới
+        new_user = Users(email=email, sub=sub, username=username)
+        session.add(new_user)
+        session.flush()  # flush để có new_user.id mà chưa commit
+        print("🧩 Step 1: create user")
+        # 4️⃣ Thêm project mặc định
+        default_project = Projects(
+            user_id=new_user.id,
+            name="Default Project",
+            slug=f"default-project-{new_user.id}",
+            is_default=True
+        )
+        session.add(default_project)
+        session.flush()
+        print("🧩 Step 2: uploading assets")
+        # 5️⃣ Thêm folder mặc định
+        default_folder = Folders(
+            project_id=default_project.id,
+            name="Home",
+            slug=f"home-{default_project.id}",
+            is_default=True
+        )
+        session.add(default_folder)
+        session.flush()
+        # 6️⃣ Commit nếu mọi thứ ok
+        session.commit()
+
+        # 7️⃣ Trả dữ liệu
+        return {
+            "user_id": new_user.id,
+            "email": new_user.email,
+            "username": new_user.username,
+            "is_superuser": new_user.is_superuser,
+            "project_id": default_project.id,
+            "folder_id": default_folder.id,
+        }
+
+    except HTTPException:
+        session.rollback()
+        raise
+    except SQLAlchemyError as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
 RESOURCE_DIR = "uploads/public_assets"   # Thư mục chứa ảnh mặc định
@@ -19,12 +93,7 @@ UPLOAD_DIR = Path("uploads")
 async def add_user_with_assets(session: Session, email: str, username: str, sub: str):
     try:
         # 1. Tạo user
-        result = session.execute(
-            text("CALL register(:p_email, :p_sub, :p_name)")
-            .bindparams(p_email=email, p_sub=sub, p_name=username)
-        )
-
-        user = result.mappings().first()
+        user = register_user(session, email=email, sub=sub, username=username)
         if not user:
             raise HTTPException(status_code=401, detail="Register failed")
         
@@ -33,7 +102,7 @@ async def add_user_with_assets(session: Session, email: str, username: str, sub:
         
         # 2. Upload 10 ảnh public mặc định
         results = []
-    
+
         for file_path in Path(RESOURCE_DIR).glob("*"):
             filename = file_path.name
             mime_type, _ = mimetypes.guess_type(file_path)
@@ -56,10 +125,10 @@ async def add_user_with_assets(session: Session, email: str, username: str, sub:
 
             # tên file lưu
             ext = os.path.splitext(filename)[1].lower() or ".bin"
-            new_filename = f"{uuid4().hex}{ext}"
-
+            storage_filename = f"{uuid4().hex}{ext}"
+                
             # relative path (lưu trong DB)
-            object_path = f"{user_id}/{project_id}/Home/{new_filename}"
+            object_path = f"{user_id}/{project_id}/home/{storage_filename}"
 
             # absolute path (lưu trong ổ cứng)
             save_path = os.path.join(UPLOAD_DIR, object_path).replace("\\", "/")
@@ -70,17 +139,35 @@ async def add_user_with_assets(session: Session, email: str, username: str, sub:
                 f.write(file_bytes)
 
             try:
+                # Truncate original filename nếu quá dài
+                safe_filename = truncate_filename(filename, MAX_FILENAME_LENGTH)
+            
+                # Build full path từ project và folder slugs
+                full_path = build_full_path(session, project_id, folder_id)
+                
+                base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+                file_url = build_file_url(session, project_id, folder_id, storage_filename, base_url)
+                
+                 # Lưu asset vào database
                 asset_id = add_asset(
                     session=session,
-                    user_id=user_id,
+                    project_id=project_id,
                     folder_id=folder_id,
-                    path=object_path,
-                    name=new_filename,
-                    format=mime_type,
-                    width=width, height=height,
+                    name=safe_filename,  # Tên file gốc đã được truncate
+                    system_name=storage_filename,  # UUID filename
+                    file_extension=ext,
+                    file_type=mime_type,
+                    format=mime_type,  # Sử dụng MIME type làm format
                     file_size=size,
-                    is_private=False  
+                    path=object_path,
+                    file_url=file_url,
+                    folder_path=full_path,
+                    width=width,
+                    height=height,
+                    is_private=True,
+                    is_image= True
                 )
+                
             except Exception as e:
                 if os.path.exists(save_path):
                     os.remove(save_path)
@@ -96,10 +183,13 @@ async def add_user_with_assets(session: Session, email: str, username: str, sub:
                 "mime_type": mime_type,
                 "is_private": False,
             })
+        print("🧩 Step 3: add_asset done ->", asset_id)
 
         session.commit()   # commit 1 lần cuối cùng
         return {"status": 1, "data": results}
 
     except Exception as e:
         session.rollback()
+        print("❌ Error in add_user_with_assets:", repr(e))
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error uploading default assets: {e}")

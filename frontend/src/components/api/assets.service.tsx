@@ -15,10 +15,10 @@ class AssetService {
     return (await this.api.get("/assets/all")).data.data;
   }
   async GetMetadata(file_path: string | undefined) {
-    return (await this.api.get(`/${file_path}/metadata`)).data.data;
+    return (await this.api.get(`/metadata/${file_path}`)).data.data;
   }
-  async GetNextPre(name: string | undefined) {
-    return (await this.api.get(`/${name}/nextprev/metadata`)).data;
+  async GetNextPre(file_path: string | undefined) {
+    return (await this.api.get(`/nextprev/metadata/${file_path}`)).data;
   }
   async Count() {
     return (await this.api.get("assets/count")).data.data;
