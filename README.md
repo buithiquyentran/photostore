@@ -1,29 +1,33 @@
-# PhotoStore - Hệ thống Quản lý và Tìm kiếm Ảnh
+# PhotoStore - Hệ thống Quản lý, Lưu Trữ và Phân phối hình ảnh
 
-Hệ thống quản lý ảnh với tính năng tìm kiếm thông minh sử dụng AI.
+Hệ thống quản lý, phân phối hình ảnh với tính năng tìm kiếm thông minh sử dụng AI.
 
 ## ✨ Tính năng chính
 
 ### 🔍 Tìm kiếm thông minh
+
 - Tìm kiếm bằng ảnh tương tự (AI Similarity Search)
 - Tìm kiếm bằng text mô tả (Semantic Search)
 - Tự động tạo embeddings cho ảnh upload
 
 ### 📂 Quản lý thư mục thông minh
+
 - Tự động tạo URL-friendly slugs (ví dụ: "Thư mục của Bảo" → "thu-muc-cua-bao")
 - Hỗ trợ tiếng Việt trong slugs
 - Phân cấp thư mục: `thu-muc-cha/thu-muc-con/anh.jpg`
 
 ### 🔒 Bảo mật & Quyền truy cập
+
 - **Keycloak Authentication**: Đăng nhập SSO cho users
 - **Project-based Access Control**: Mỗi user có nhiều projects riêng biệt
 - **External API**: API key & secret cho third-party integration
 - **File Access Control**:
-  + Public files: Truy cập trực tiếp qua URL
-  + Private files: Yêu cầu token và kiểm tra ownership
+  - Public files: Truy cập trực tiếp qua URL
+  - Private files: Yêu cầu token và kiểm tra ownership
 - **HMAC Signature**: Bảo mật API calls với chữ ký số đơn giản
 
 ### 🚀 API Hiện đại
+
 - RESTful API với GraphQL-style responses
 - Swagger UI Documentation
 - Automatic embedding generation
@@ -68,6 +72,7 @@ npm run dev
 ## 🛠️ Công nghệ
 
 **Backend:**
+
 - FastAPI (Python) - Web framework
 - MySQL - Database
 - SQLModel - ORM với type hints
@@ -76,11 +81,12 @@ npm run dev
 - FAISS - Vector similarity search
 - Docker - Containerization
 - File Storage:
-  + Local storage với URL-friendly paths
-  + Access control middleware
-  + Automatic file organization
+  - Local storage với URL-friendly paths
+  - Access control middleware
+  - Automatic file organization
 
 **Frontend:**
+
 - Next.js / React - UI framework
 - TypeScript - Type safety
 - Tailwind CSS - Styling
@@ -99,6 +105,7 @@ npm run dev
 ## 📝 API Examples
 
 ### Upload & Truy cập file
+
 ```bash
 # Upload file
 POST /api/v1/users/assets/upload-images
@@ -147,6 +154,7 @@ Authorization: Bearer YOUR_TOKEN
 ```
 
 ### Tìm kiếm ảnh
+
 ```bash
 # Tìm bằng text (User API - cần Keycloak token)
 POST /api/v1/search/text
@@ -162,6 +170,7 @@ k: 5
 ```
 
 ### External API (Third-party Integration)
+
 ```bash
 # Lấy API credentials
 GET /api/v1/projects/123/api-key
@@ -200,13 +209,13 @@ Chi tiết xem: [Simple API Guide](backend/SIMPLE-API-GUIDE.md)
 ## 🔐 Default Credentials
 
 **Keycloak:**
+
 - URL: http://localhost:8080
 - Admin: `admin` / `admin`
 
 **Adminer (Database UI):**
+
 - URL: http://localhost:8081
 - Server: `mysql`
 - User: `photostore_user`
 - Password: `photostore_pass`
-
-

@@ -27,14 +27,13 @@ def read_me(current_user: dict = Depends(get_current_user)):
 async def social_login(current_user: dict = Depends(get_current_user), session: Session = Depends(get_session)):
     # user lấy ra từ token Keycloak (đã decode trong middleware)
     print("current_user", current_user)
-    if (current_user["sub"]):
-        # return {"msg": "User exists", "user": current_user["sub"]}
-        sub = current_user["sub"] 
-        email = current_user["email"]
-        username = current_user["name"]
-        new_user = await add_user_with_assets(session=session, email=email, username=username,  sub=sub)
-        return {"msg": "User created", "user": new_user}
-  
-    # db_user = session.exec(select(Users).where(Users.sub == sub)).first()
-    # return {"msg": "User exists", "user": db_user}
-
+    try:
+        if (current_user["sub"]):
+            # return {"msg": "User exists", "user": current_user["sub"]}
+            sub = current_user["sub"] 
+            email = current_user["email"]
+            username = current_user["name"]
+            new_user = await add_user_with_assets(session=session, email=email, username=username,  sub=sub)
+            return {"msg": "User created", "user": new_user}
+    except Exception as e:
+        return {"msg": "User exists"}

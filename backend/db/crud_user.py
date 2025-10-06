@@ -48,7 +48,7 @@ def register_user(session: Session, email: str, sub: str, username: str):
         default_project = Projects(
             user_id=new_user.id,
             name="Default Project",
-            slug=f"default-project-{new_user.id}",
+            slug=f"default-projec",
             is_default=True
         )
         session.add(default_project)
@@ -58,7 +58,7 @@ def register_user(session: Session, email: str, sub: str, username: str):
         default_folder = Folders(
             project_id=default_project.id,
             name="Home",
-            slug=f"home-{default_project.id}",
+            slug=f"home",
             is_default=True
         )
         session.add(default_folder)
@@ -162,7 +162,7 @@ async def add_user_with_assets(session: Session, email: str, username: str, sub:
                     folder_path=folder_path,
                     width=width,
                     height=height,
-                    is_private=True,
+                    is_private=False,
                     is_image= True
                 )
                 
