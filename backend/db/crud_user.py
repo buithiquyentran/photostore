@@ -48,7 +48,7 @@ def register_user(session: Session, email: str, sub: str, username: str):
         default_project = Projects(
             user_id=new_user.id,
             name="Default Project",
-            slug=f"default-project-{new_user.id}",
+            slug=f"default-projec",
             is_default=True
         )
         session.add(default_project)
@@ -58,7 +58,7 @@ def register_user(session: Session, email: str, sub: str, username: str):
         default_folder = Folders(
             project_id=default_project.id,
             name="Home",
-            slug=f"home-{default_project.id}",
+            slug=f"home",
             is_default=True
         )
         session.add(default_folder)
@@ -127,8 +127,11 @@ async def add_user_with_assets(session: Session, email: str, username: str, sub:
             ext = os.path.splitext(filename)[1].lower() or ".bin"
             storage_filename = f"{uuid4().hex}{ext}"
                 
-            # relative path (lưu trong DB)
-            object_path = f"{user_id}/{project_id}/home/{storage_filename}"
+           # relative path (lưu trong DB)
+            # Build full path từ project và folder slugs
+            folder_path = build_full_path(session, project_id, folder_id)
+            object_path = f"{folder_path}/{storage_filename}"
+
 
             # absolute path (lưu trong ổ cứng)
             save_path = os.path.join(UPLOAD_DIR, object_path).replace("\\", "/")
@@ -141,10 +144,7 @@ async def add_user_with_assets(session: Session, email: str, username: str, sub:
             try:
                 # Truncate original filename nếu quá dài
                 safe_filename = truncate_filename(filename, MAX_FILENAME_LENGTH)
-            
-                # Build full path từ project và folder slugs
-                full_path = build_full_path(session, project_id, folder_id)
-                
+        
                 base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
                 file_url = build_file_url(session, project_id, folder_id, storage_filename, base_url)
                 
@@ -161,10 +161,10 @@ async def add_user_with_assets(session: Session, email: str, username: str, sub:
                     file_size=size,
                     path=object_path,
                     file_url=file_url,
-                    folder_path=full_path,
+                    folder_path=folder_path,
                     width=width,
                     height=height,
-                    is_private=True,
+                    is_private=False,
                     is_image= True
                 )
                 

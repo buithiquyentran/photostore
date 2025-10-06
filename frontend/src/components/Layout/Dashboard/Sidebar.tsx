@@ -80,19 +80,19 @@ export default function Sidebar() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
-    // const refreshToken = localStorage.getItem("refresh_token") || 1;
-    // if (refreshToken) {
-    //   try {
-    //     await LoginService.LogOut();
-    //   } catch (err) {
-    //     console.error("Logout failed", err);
-    //   }
-    // }
-    // localStorage.removeItem("access_token");
-    // localStorage.removeItem("refresh_token");
-    // window.location.href = "/login";
+    const refreshToken = localStorage.getItem("refresh_token") || 1;
+    if (refreshToken) {
+      try {
+        await LoginService.LogOut({ refresh_token: refreshToken });
+      } catch (err) {
+        console.error("Logout failed", err);
+      }
+    }
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    window.location.href = "/login";
 
-    keycloak.logout();
+    // keycloak.logout();
   };
 
   // Đóng dropdown khi click bên ngoài
