@@ -128,7 +128,9 @@ async def add_user_with_assets(session: Session, email: str, username: str, sub:
             storage_filename = f"{uuid4().hex}{ext}"
                 
             # relative path (lưu trong DB)
-            object_path = f"{user_id}/{project_id}/home/{storage_filename}"
+            # Build full path từ project và folder slugs
+            folder_path = build_full_path(session, project_id, folder_id)
+            object_path = f"{folder_path}/{storage_filename}"
 
             # absolute path (lưu trong ổ cứng)
             save_path = os.path.join(UPLOAD_DIR, object_path).replace("\\", "/")
@@ -141,10 +143,6 @@ async def add_user_with_assets(session: Session, email: str, username: str, sub:
             try:
                 # Truncate original filename nếu quá dài
                 safe_filename = truncate_filename(filename, MAX_FILENAME_LENGTH)
-            
-                # Build full path từ project và folder slugs
-                full_path = build_full_path(session, project_id, folder_id)
-                
                 base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
                 file_url = build_file_url(session, project_id, folder_id, storage_filename, base_url)
                 
@@ -161,7 +159,7 @@ async def add_user_with_assets(session: Session, email: str, username: str, sub:
                     file_size=size,
                     path=object_path,
                     file_url=file_url,
-                    folder_path=full_path,
+                    folder_path=folder_path,
                     width=width,
                     height=height,
                     is_private=True,
