@@ -48,7 +48,7 @@ def register_user(session: Session, email: str, sub: str, username: str):
         default_project = Projects(
             user_id=new_user.id,
             name="Default Project",
-            slug=f"default-projec",
+            slug=f"default-project",
             is_default=True
         )
         session.add(default_project)

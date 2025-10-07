@@ -11,17 +11,18 @@ class AssetService {
       responseType: "blob",
     });
   }
-  async GetAll() {
-    return (await this.api.get("/assets/all")).data.data;
+  async GetAll(params: Record<string, any> = {}) {
+    return (await this.api.get("/assets/all", { params })).data.data;
   }
+
   async GetMetadata(file_path: string | undefined) {
     return (await this.api.get(`/metadata/${file_path}`)).data.data;
   }
   async GetNextPre(file_path: string | undefined) {
     return (await this.api.get(`/nextprev/metadata/${file_path}`)).data;
   }
-  async Count() {
-    return (await this.api.get("assets/count")).data.data;
+  async Count(params: Record<string, any> = {}) {
+    return (await this.api.get("assets/count", { params })).data.data;
   }
   async Update(
     id: number | undefined,
