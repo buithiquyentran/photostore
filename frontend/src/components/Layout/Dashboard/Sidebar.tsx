@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+
 import {
   Bookmark,
   Play,
@@ -13,19 +15,22 @@ import {
   Key,
 } from "lucide-react";
 import UserService from "@/components/api/user.service";
+import AssetService from "@/components/api/assets.service";
 import LoginService from "@/components/api/login.service";
-import keycloak from "@/keycloak";
+import path from "@/resources/path";
 
 interface MenuItem {
   label: string;
   icon: React.ReactNode;
   count: number;
   subMenu?: string[];
+  path?: string;
 }
 export default function Sidebar() {
   const [openMenus, setOpenMenus] = useState<string[]>([]);
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([
     {
@@ -33,21 +38,38 @@ export default function Sidebar() {
       icon: <Bookmark size={18} />,
       count: 0, // mặc định 0
       subMenu: ["Projects", "Folders", "Assets"],
+      path: path.BROWER,
     },
     { label: "Videos", icon: <Play size={18} />, count: 0 },
     { label: "People", icon: <User size={18} />, count: 0 },
-    { label: "Favorites", icon: <Star size={18} />, count: 0 },
+    {
+      label: "Favorites",
+      icon: <Star size={18} />,
+      count: 0,
+      path: path.FAVORITE,
+    },
     { label: "Labels", icon: <Tag size={18} />, count: 0 },
   ]);
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const assetCount = await UserService.Count();
-
+        const assetCount = await AssetService.Count({
+          is_deleted: false,
+        });
+        const favoriteCount = await AssetService.Count({
+          is_favorite: true,
+        });
         setMenuItems((prev) =>
-          prev.map((item) =>
-            item.label === "Assets" ? { ...item, count: assetCount } : item
-          )
+          prev.map((item) => {
+            switch (item.label) {
+              case "Assets":
+                return { ...item, count: assetCount };
+              case "Favorites":
+                return { ...item, count: favoriteCount };
+              default:
+                return item;
+            }
+          })
         );
       } catch (err) {
         console.error("Failed to fetch asset count:", err);
@@ -135,7 +157,10 @@ export default function Sidebar() {
             <div key={item.label} className="mb-2 text-white">
               <div
                 className="flex p-4 space-y-2 items-center justify-between px-2 py-1 rounded-lg hover:text-highlight cursor-pointer"
-                onClick={() => item.subMenu && toggleMenu(item.label)}
+                onClick={() => {
+                  if (item.subMenu) toggleMenu(item.label);
+                  if (item.path) navigate(item.path);
+                }}
               >
                 <div className="flex items-center gap-2">
                   {item.icon}

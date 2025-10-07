@@ -9,9 +9,9 @@ import LOGIN from "@/components/pages/loginPage/loginPage";
 import REGISTER from "@/components/pages/loginPage/registerPage";
 import BROWER from "@/components/pages/browerPage";
 import VIEWER from "@/components/pages/ViewerPage";
+import FAVORITE from "@/components/pages/favoritePage"
 import keycloak from "@/keycloak";
 import { Loading } from "@/components/ui/Loading";
-import UserService from "@/components/api/user.service";
 
 function App() {
   const [keycloakReady, setKeycloakReady] = useState(false);
@@ -46,6 +46,7 @@ function App() {
 
         <Route path="/" element={<DashboardLayout />}>
           <Route path={path.BROWER} element={<BROWER />} />
+          <Route path={path.FAVORITE} element={<FAVORITE />} />
         </Route>
         <Route path="/">
           <Route path="/photos/*" element={<VIEWER />} />

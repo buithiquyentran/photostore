@@ -64,7 +64,7 @@ const DangNhapPage: React.FC = () => {
           console.error("SocialLogin error:", err);
         }
         // Refresh trang sau khi đăng nhập thành công
-        navigate("/brower");
+        navigate(path.BROWER);
       } else {
         if (response.data.code === "2222") {
           setIsModalOpen({
@@ -103,7 +103,7 @@ const DangNhapPage: React.FC = () => {
     keycloak.login({
       idpHint: "facebook",
       prompt: "login",
-      redirectUri: window.location.origin + "/brower",
+      redirectUri: window.location.origin + path.BROWER,
     });
   };
   return (

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File,Request,
 from sqlmodel import Session, select, func
 from fastapi import UploadFile, File, Form
 from typing import List
+from fastapi import Query
 from PIL import Image
 import io, os, time
 from uuid import uuid4
@@ -38,25 +39,31 @@ BUCKET_NAME_PUBLIC = "images"
 UPLOAD_DIR = Path("uploads")
 
 
-@router.get("/count",)
-def count(session: Session = Depends(get_session), current_user: dict = Depends(get_current_user)):
+@router.get("/count")
+def count(session: Session = Depends(get_session), current_user: dict = Depends(get_current_user),is_favorite: bool | None = Query(None, description="Lọc ảnh được đánh dấu yêu thích"),
+    is_deleted: bool | None = Query(None, description="Lọc ảnh đã xóa")):
     try:
-        statement = select(func.count()).select_from(select(Assets)
-        .join(Folders, Assets.folder_id == Folders.id)
-        .join(Projects, Folders.project_id == Projects.id)
-        .where(Projects.user_id == current_user.id))
+        statement = (select(Assets)
+            .join(Folders, Assets.folder_id == Folders.id)
+            .join(Projects, Folders.project_id == Projects.id)
+            .where(Projects.user_id == current_user.id))
         
-        # statement = select(func.count()).select_from(Assets)
-        total = session.exec(statement).one()
+        if is_favorite is not None:
+            statement = statement.where(Assets.is_favorite == is_favorite)
+
+        if is_deleted is not None:
+            statement = statement.where(Assets.is_deleted == is_deleted)
+        total = session.exec(select(func.count()).select_from(statement)).one()
         return {"status": 1, "data": total}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi đếm: {e}")
     
 @router.get("/all")
 def list_assets(
-    request: Request,
     current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    is_favorite: bool | None = Query(None, description="Lọc ảnh được đánh dấu yêu thích"),
+    is_deleted: bool | None = Query(None, description="Lọc ảnh đã xóa"),
 ):
     try:
         statement = (
@@ -65,16 +72,16 @@ def list_assets(
             .join(Projects, Folders.project_id == Projects.id)
             .where(Projects.user_id == current_user.id)
         )
+        if is_favorite is not None:
+            statement = statement.where(Assets.is_favorite == is_favorite)
+
+        if is_deleted is not None:
+            statement = statement.where(Assets.is_deleted == is_deleted)
+
         results = session.exec(statement).all()
         # ensure_user_index(session, id)
         
-        data = []
-        for a in results:
-            obj = a.dict()
-            obj["url"] = f"{request.base_url}/api/v1/assets/{a.name}"
-            data.append(obj)
-
-        return {"status": 1, "data": data}
+        return {"status": 1, "data": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi: {str(e)}")
 class AssetUpdate(BaseModel):

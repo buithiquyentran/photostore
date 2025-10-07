@@ -16,7 +16,10 @@ const Layout = () => {
 
   const fetchAssets = async () => {
     try {
-      const user_assets = await AssetsService.GetAll();
+      const user_assets = await AssetsService.GetAll({
+        is_deleted: false,
+      });
+
       const response = [...user_assets];
       setAssets(response);
     } catch (error) {
@@ -64,9 +67,6 @@ const Layout = () => {
       for (let i = 0; i < files.length; i++) {
         formData.append("files", files[i]); // phải trùng với tên param trong BE
       }
-      // formData.append("folder_slug", folder_slug)
-      // formData.append("project_slug", project_slug)
-      // formData.append("is_private", is_private)
 
       try {
         const res = await AssetsService.Upload(formData);

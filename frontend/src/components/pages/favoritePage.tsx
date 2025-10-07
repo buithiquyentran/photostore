@@ -15,16 +15,13 @@ import {
 } from "lucide-react";
 import SortDropdown from "@/components/ui/SortDropdown";
 import LazyImage from "@/components/ui/LazyImage";
-
-
 const Brower = () => {
-  const navigate = useNavigate();
   const [view, setView] = useState("columns");
   const [assets, setAssets] = useState<any[]>([]);
   const fetchAssets = async () => {
     try {
       const user_assets = await AssetsService.GetAll({
-        is_deleted: false,
+        is_favorite: true,
       });
 
       const response = [...user_assets];
@@ -37,11 +34,13 @@ const Brower = () => {
   useEffect(() => {
     fetchAssets();
   }, []);
+
   const breakpointColumns = { default: 4, 1024: 3, 768: 2, 500: 1 };
   const changeView = (newView) => {
     setView(newView);
     if (onViewChange) onViewChange(newView);
   };
+  const navigate = useNavigate();
   return (
     <div className=" bg-[rgb(31,36,46)] min-h-full">
       <div className="flex items-center justify-between px-4 border-b border-gray-700 text-white ">
