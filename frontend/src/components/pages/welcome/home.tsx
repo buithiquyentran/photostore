@@ -69,13 +69,13 @@ function Home() {
         </div>
       </header>
 
-      <section className="py-12 bg-secondary grid gap-4 md:grid-cols-2 lg:grid-cols-3 px-8">
+      <section className="py-12 bg-[#bae8e8] grid gap-4 md:grid-cols-2 lg:grid-cols-3 px-8">
         {features.map((feature, index) => (
           <div
             key={index}
-            className="bg-main rounded-lg shadow-lg p-6 hover:shadow-xl transition"
+            className="bg-[#fff] rounded-lg shadow-lg p-6 hover:shadow-xl transition"
           >
-            <h2 className="text-2xl font-semibold text-primary mb-2">
+            <h2 className="text-2xl font-semibold text-[#272343] mb-2">
               {feature.title}
             </h2>
             <p className="text-paragraph">{feature.description}</p>

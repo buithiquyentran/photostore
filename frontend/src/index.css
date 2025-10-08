@@ -8,7 +8,7 @@
     --foreground: #fff;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
-    --primary: #FFD803;
+    --primary: #ffd803;
     --primary-foreground: 0 0% 98%;
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
@@ -16,6 +16,9 @@
     --input: 240 5.9% 90%;
     --ring: 240 5% 64.9%;
     --radius: 0.5rem;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --sidebar-accent: #000;
   }
 
   /* :root {
@@ -33,7 +36,7 @@
   } */
 
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
 
   body {

@@ -5,7 +5,6 @@ import {
   Bookmark,
   Play,
   User,
-  Star,
   Tag,
   Settings,
   Camera,
@@ -17,8 +16,31 @@ import {
 import UserService from "@/components/api/user.service";
 import AssetService from "@/components/api/assets.service";
 import LoginService from "@/components/api/login.service";
+
+import {
+  ChevronRight,
+  ChevronDown,
+  Folder,
+  Star,
+  Clock,
+  Trash2,
+  Plus,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import path from "@/resources/path";
 
+interface FolderNode {
+  id: string;
+  name: string;
+  icon?: React.ReactNode;
+  children?: FolderNode[];
+}
+
+interface SidebarProps {
+  selectedFolder: string;
+  onFolderSelect: (folderId: string) => void;
+}
 interface MenuItem {
   label: string;
   icon: React.ReactNode;
@@ -26,11 +48,13 @@ interface MenuItem {
   subMenu?: string[];
   path?: string;
 }
-export default function Sidebar() {
+export default function Sidebar({
+  selectedFolder,
+  onFolderSelect,
+}: SidebarProps) {
   const [openMenus, setOpenMenus] = useState<string[]>([]);
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([
     {
@@ -113,8 +137,6 @@ export default function Sidebar() {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     window.location.href = "/login";
-
-    // keycloak.logout();
   };
 
   // Đóng dropdown khi click bên ngoài
@@ -138,8 +160,112 @@ export default function Sidebar() {
         );
       })()
     : "";
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
+    new Set(["projects", "my-project"])
+  );
+  const navigate = useNavigate();
+
+  const folders: FolderNode[] = [
+    {
+      id: "projects",
+      name: "Projects",
+      children: [
+        {
+          id: "my-project",
+          name: "My Project",
+          children: [
+            { id: "designs", name: "Designs" },
+            { id: "marketing", name: "Marketing" },
+            { id: "assets", name: "Assets" },
+          ],
+        },
+        {
+          id: "client-work",
+          name: "Client Work",
+          children: [
+            { id: "branding", name: "Branding" },
+            { id: "web-design", name: "Web Design" },
+          ],
+        },
+      ],
+    },
+  ];
+
+  const quickAccess = [
+    {
+      id: "all",
+      name: "All Files",
+      icon: <Folder className="h-4 w-4" />,
+      path: path.BROWER,
+    },
+    {
+      id: "starred",
+      name: "Starred",
+      icon: <Star className="h-4 w-4" />,
+      path: path.FAVORITE,
+    },
+    { id: "recent", name: "Recent", icon: <Clock className="h-4 w-4" /> },
+    {
+      id: "trash",
+      name: "Trash",
+      icon: <Trash2 className="h-4 w-4" />,
+      path: path.TRASH,
+    },
+  ];
+
+  const toggleFolder = (folderId: string) => {
+    const newExpanded = new Set(expandedFolders);
+    if (newExpanded.has(folderId)) {
+      newExpanded.delete(folderId);
+    } else {
+      newExpanded.add(folderId);
+    }
+    setExpandedFolders(newExpanded);
+  };
+
+  const renderFolder = (folder: FolderNode, level = 0) => {
+    const isExpanded = expandedFolders.has(folder.id);
+    const hasChildren = folder.children && folder.children.length > 0;
+    const isSelected = selectedFolder === folder.id;
+
+    return (
+      <div key={folder.id}>
+        <button
+          onClick={() => {
+            if (hasChildren) {
+              toggleFolder(folder.id);
+            }
+            // onFolderSelect(folder.id);
+          }}
+          className={cn(
+            "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
+            "hover:bg-sidebar-accent text-sidebar-foreground",
+            isSelected && "bg-sidebar-accent text-sidebar-accent-foreground",
+            level > 0 && "ml-4"
+          )}
+          style={{ paddingLeft: `${level * 12 + 12}px` }}
+        >
+          {hasChildren &&
+            (isExpanded ? (
+              <ChevronDown className="h-4 w-4 shrink-0" />
+            ) : (
+              <ChevronRight className="h-4 w-4 shrink-0" />
+            ))}
+          {!hasChildren && <div className="w-4" />}
+          <Folder className="h-4 w-4 shrink-0" />
+          <span className="truncate">{folder.name}</span>
+        </button>
+        {hasChildren && isExpanded && (
+          <div className="mt-0.5">
+            {folder.children!.map((child) => renderFolder(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div className="flex flex-col sticky top-0 h-screen justify-between  w-60 bg-primary text-main p-4  border border-gray-700">
+    <div className="flex flex-col sticky top-0 h-screen justify-between w-60 bg-[#111827] p-4  border border-gray-700">
       {/* Top section */}
       <div>
         <div className="flex items-center justify-center gap-2 mb-8 underline underline-offset-4 decoration-4 decoration-highlight">
@@ -150,69 +276,58 @@ export default function Sidebar() {
             photostore
           </span>
         </div>
-
-        {/* Menu items */}
-        <nav>
-          {menuItems.map((item) => (
-            <div key={item.label} className="mb-2 text-white">
-              <div
-                className="flex p-4 space-y-2 items-center justify-between px-2 py-1 rounded-lg hover:text-highlight cursor-pointer"
+        <div className="flex-1 space-y-6">
+          <div>
+            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
+              Quick Access
+            </h2>
+            {quickAccess.map((item) => (
+              <button
+                key={item.id}
                 onClick={() => {
-                  if (item.subMenu) toggleMenu(item.label);
+                  // onFolderSelect(item.id);
                   if (item.path) navigate(item.path);
                 }}
-              >
-                <div className="flex items-center gap-2">
-                  {item.icon}
-                  <span>{item.label}</span>
-                </div>
-                {item.count !== undefined && (
-                  <span className="text-sm text-gray-400">{item.count}</span>
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-1.5 text-sm rounded-md transition-colors",
+                  "hover:bg-sidebar-accent text-sidebar-foreground",
+                  selectedFolder === item.id &&
+                    "bg-sidebar-accent text-sidebar-accent-foreground"
                 )}
-              </div>
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </button>
+            ))}
+          </div>
 
-              {/* Submenu */}
-              {item.subMenu && openMenus.includes(item.label) && (
-                <div className="ml-8 mt-1 space-y-1 text-sm text-gray-400">
-                  {item.subMenu.map((sub, idx) => (
-                    <div key={idx} className="hover:text-white cursor-pointer">
-                      {sub}
-                    </div>
-                  ))}
-                </div>
-              )}
+          <div>
+            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
+              Folders
+            </h2>
+            <div className="space-y-0.5">
+              {folders.map((folder) => renderFolder(folder))}
             </div>
-          ))}
-        </nav>
+          </div>
+        </div>
       </div>
 
       {/* Bottom storage bar */}
-      <div>
-        <div className="text-xs text-gray-400 mb-1">1 GB of 25 GB used</div>
-        <div className="w-full bg-secondary h-2 rounded-full overflow-hidden mb-4">
-          <div className="bg-purple-500 h-2 " style={{ width: "10%" }}></div>
+
+      <div className="border-t border-gray-700 pt-4">
+        <div className="text-xs text-gray-400 mb-1">2 GB of 10 GB used</div>
+        <div className=" flex w-full bg-secondary h-2 rounded-full overflow-hidden mb-4">
+          <div className="bg-purple-500 h-2 " style={{ width: "20%" }}></div>
+          <div className="bg-black h-2 " style={{ width: "80%" }}></div>
         </div>
         <div className="flex flex-col space-y-6 text-white">
-          <div className="flex items-center gap-4">
-            <UserPlus className="w-6 h-6 cursor-pointer hover:text-blue-400" />
-            <span>Invite new user</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Puzzle className="w-6 h-6 cursor-pointer hover:text-blue-400" />
-            <span>Add-on Marketplace</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <HelpCircle className="w-6 h-6 cursor-pointer hover:text-blue-400" />
-            <span>Help</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Settings className="w-6 h-6 cursor-pointer hover:text-blue-400" />
+          <div className="flex items-center gap-4  cursor-pointer hover:text-blue-400">
+            <Settings className="h-4 w-4" />
             <span>Settings</span>
           </div>
           <div
-            // className="border-t border-gray-700 pt-4 flex items-center gap-2"
             onClick={toggleUser}
-            className="flex items-center gap-2 cursor-pointer border-t border-gray-700 pt-4"
+            className="flex items-center gap-2 cursor-pointer"
           >
             <div className="w-8 h-8 flex items-center justify-center rounded-full bg-yellow-500 text-black font-bold">
               {initials}

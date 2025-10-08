@@ -9,7 +9,9 @@ import LOGIN from "@/components/pages/loginPage/loginPage";
 import REGISTER from "@/components/pages/loginPage/registerPage";
 import BROWER from "@/components/pages/browerPage";
 import VIEWER from "@/components/pages/ViewerPage";
-import FAVORITE from "@/components/pages/favoritePage"
+import FAVORITE from "@/components/pages/favoritePage";
+import TRASH from "@/components/pages/deletedPage";
+
 import TEST from "@/components/pages/Dashboard";
 import { Toaster } from "@/components/ui/toaster";
 import keycloak from "@/keycloak";
@@ -49,6 +51,8 @@ function App() {
         <Route path="/" element={<DashboardLayout />}>
           <Route path={path.BROWER} element={<BROWER />} />
           <Route path={path.FAVORITE} element={<FAVORITE />} />
+          <Route path={path.TRASH} element={<TRASH />} />
+
           <Route path={path.TEST} element={<TEST />} />
         </Route>
         <Route path="/">

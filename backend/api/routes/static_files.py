@@ -2,7 +2,7 @@
 Route để serve static files (uploads) với kiểm tra quyền truy cập
 """
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlmodel import Session, select
 from pathlib import Path
 import os
@@ -87,6 +87,42 @@ async def get_upload(file_path: str):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_path, media_type="image/jpeg")
 
+@router.get("/assets/get-by-folder/{folder_path:path}")
+async def get_upload(folder_path: str, session: Session = Depends(get_session)):
+    abs_path = os.path.join("uploads", folder_path).replace("\\", "/")
+    # Nếu là thư mục → query tất cả assets trong folder đó
+    if os.path.isdir(abs_path):
+        # Bỏ prefix "uploads/" để so khớp với DB path
+        db_folder_path = folder_path.rstrip("/")
+
+        # Truy vấn tất cả asset có folder_path trùng
+        assets = session.exec(
+            select(Assets)
+            .where(Assets.folder_path == db_folder_path)
+            .where(Assets.is_deleted == False)
+        ).all()
+
+        if not assets:
+            raise HTTPException(404, "No assets found in this folder")
+
+        data = []
+        for a in assets:
+            data.append({
+                "id": a.id,
+                "name": a.name,
+                "system_name": a.system_name,
+                "path": a.path,
+                "file_url": a.file_url,
+                "width": a.width,
+                "height": a.height,
+                "file_type": a.file_type,
+                "created_at": a.created_at,
+            })
+
+        return JSONResponse(content={"status": 1, "count": len(data), "data": data})
+
+    # Nếu không phải file hoặc folder → 404
+    raise HTTPException(404, "Invalid file path")
 @router.get("/metadata/{file_path:path}")
 async def get_metadata(file_path: str,session: Session = Depends(get_session), current_user: dict = Depends(get_current_user)):
     asset = session.exec(select(Assets).where(Assets.path == file_path)).first()
