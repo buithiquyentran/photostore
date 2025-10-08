@@ -8,6 +8,9 @@ Hệ thống quản lý ảnh với tính năng tìm kiếm thông minh sử d�
 - Tìm kiếm bằng ảnh tương tự (AI Similarity Search)
 - Tìm kiếm bằng text mô tả (Semantic Search)
 - Tự động tạo embeddings cho ảnh upload
+- **FAISS Index Persistence**: Lưu trữ index trên ổ cứng, tự động tải khi khởi động
+- **Similarity Threshold**: Lọc kết quả theo độ tương tự (mặc định 70%)
+- **Auto-rebuild**: Tự động khôi phục index khi thiếu
 
 ### 📂 Quản lý thư mục thông minh
 - Tự động tạo URL-friendly slugs (ví dụ: "Thư mục của Bảo" → "thu-muc-cua-bao")
@@ -27,6 +30,8 @@ Hệ thống quản lý ảnh với tính năng tìm kiếm thông minh sử d�
 - RESTful API với GraphQL-style responses
 - Swagger UI Documentation
 - Automatic embedding generation
+- **Unified Response Format**: Tất cả search API trả về format giống upload API
+- **Comprehensive File Info**: Đầy đủ thông tin file (URL, path, metadata)
 
 ## 📁 Cấu trúc Project
 
@@ -73,7 +78,7 @@ npm run dev
 - SQLModel - ORM với type hints
 - Keycloak - Authentication & Authorization
 - CLIP - AI model cho image/text embeddings
-- FAISS - Vector similarity search
+- FAISS - Vector similarity search với persistence
 - Docker - Containerization
 - File Storage:
   + Local storage với URL-friendly paths
@@ -96,6 +101,30 @@ npm run dev
 - [Image Search Guide](backend/README-EMBEDDINGS.md) - Hướng dẫn sử dụng AI Search
 - [Upload Flow](backend/UPLOAD-FLOW.md) - Chi tiết về upload và auto-embedding
 - [Folder Structure](backend/FOLDER-STRUCTURE.md) - Cấu trúc thư mục và file access control
+
+## 🔧 FAISS Index Persistence
+
+### Cách hoạt động:
+- **Lưu trữ**: FAISS indices được lưu trong thư mục `faiss_indices/` trên ổ cứng
+- **Tự động tải**: Khi khởi động server, tự động tải tất cả indices từ ổ cứng
+- **Tự động lưu**: Mỗi khi thêm/xóa embeddings, tự động lưu index xuống ổ cứng
+- **Auto-rebuild**: Nếu index không tồn tại, tự động rebuild từ database
+
+### Cấu trúc file:
+```
+faiss_indices/
+├── project_1.index          # FAISS index cho project 1
+├── project_1_mapping.pkl    # Mapping data cho project 1
+├── project_2.index          # FAISS index cho project 2
+└── project_2_mapping.pkl    # Mapping data cho project 2
+```
+
+### Lợi ích:
+- ✅ **Không mất dữ liệu** khi restart server
+- ✅ **Tìm kiếm nhanh** (sử dụng RAM)
+- ✅ **Tự động backup** trên ổ cứng
+- ✅ **Khôi phục tự động** khi có lỗi
+- ✅ **Không cần rebuild** thủ công
 
 ## 📝 API Examples
 
@@ -154,12 +183,75 @@ POST /api/v1/search/text
 Authorization: Bearer YOUR_TOKEN
 query: "cat sitting on sofa"
 k: 5
+similarity_threshold: 0.7  # 70% similarity (optional)
+
+Response:
+{
+  "data": {
+    "searchResults": {
+      "file": {
+        "status": 1,
+        "id": 123,
+        "name": "cat.jpg",
+        "original_name": "cat.jpg",
+        "system_name": "abc123.jpg",
+        "file_url": "http://localhost:8000/uploads/my-project/folder/cat.jpg",
+        "file_extension": "jpg",
+        "file_type": "image/jpeg",
+        "format": "image/jpeg",
+        "file_size": 352525,
+        "width": 800,
+        "height": 600,
+        "project_slug": "my-project",
+        "folder_path": "my-project/folder",
+        "is_private": false,
+        "created_at": 1759373976,
+        "updated_at": 1759373976
+      },
+      "message": "Search result",
+      "result": true
+    }
+  },
+  "extensions": {
+    "cost": {
+      "requestedQueryCost": 0,
+      "maximumAvailable": 50000
+    }
+  }
+}
 
 # Tìm bằng ảnh tương tự (User API - cần Keycloak token)
 POST /api/v1/search/image
 Authorization: Bearer YOUR_TOKEN
 file: [upload ảnh]
 k: 5
+similarity_threshold: 0.7  # 70% similarity (optional)
+
+# Response format giống như text search
+```
+
+### FAISS Index Management
+```bash
+# Rebuild FAISS index cho project cụ thể
+POST /api/v1/search/rebuild
+Authorization: Bearer YOUR_TOKEN
+project_id: 1
+
+# Rebuild tất cả FAISS indices của user
+POST /api/v1/search/rebuild-all
+Authorization: Bearer YOUR_TOKEN
+
+# Kiểm tra thống kê FAISS index
+GET /api/v1/search/stats/1
+Authorization: Bearer YOUR_TOKEN
+
+Response:
+{
+  "project_id": 1,
+  "total_vectors": 150,
+  "indexed": true,
+  "dimension": 512
+}
 ```
 
 ### External API (Third-party Integration)
