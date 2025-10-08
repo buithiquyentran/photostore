@@ -1,85 +1,42 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-  --color-bg: #fffffe;
-  --color-highlight: #ffd803;
-  --color-headline: #272343;
-  --color-main: #fffffe;
-  --color-paragraph: #2d334a;
-  --color-secondary: #e3f6f5;
-  --color-tertiary: #bae8e8;
-}
-
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color-scheme: light dark;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  transition: border-color 0.25s;
-  cursor: pointer;
-}
-
-@media (prefers-color-scheme: light) {
+@layer base {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    --background: #272343;
+    --foreground: #fff;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --primary: #FFD803;
+    --primary-foreground: 0 0% 98%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5% 64.9%;
+    --radius: 0.5rem;
   }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
-.bg-gradient {
-  background: linear-gradient(-45deg, #e3f6f5, #bae8e8, #ffd803, #e3f6f5);
-  background-size: 400% 400%;
-}
-.bg-gradient-btn {
-  background: linear-gradient(-45deg #e3f6f5, #ffd803, #bae8e8, #e3f6f5);
-  background-size: 400% 400%;
-}
-@keyframes gradientMove {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
 
-.animate-gradient {
-  animation: gradientMove 10s ease infinite;
+  /* :root {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --muted: 240 3.8% 46.1%;
+    --muted-foreground: 240 4.8% 95.9%;
+    --border: 240 3.9% 20%;
+    --input: 240 3.9% 20%;
+    --ring: 240 4.9% 34.9%;
+  } */
+
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
 }

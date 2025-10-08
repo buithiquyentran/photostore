@@ -214,7 +214,7 @@ def register_user(user_data: RegisterRequest):
         if resp.status_code == 201:
             return {
                 "message": "User registered successfully",
-                "status": "success",
+                "status": 1,
                 "username": user_data.username,
                 "email": user_data.email
             }

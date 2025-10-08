@@ -5,6 +5,7 @@ const path = {
   BROWER: "/photos",
   FAVORITE: "/photos/favorite",
   VIEWER: "/viewer",
+  TEST: "/test",
 } as const;
 
 export default path;

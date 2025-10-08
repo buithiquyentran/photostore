@@ -139,7 +139,7 @@ export default function Sidebar() {
       })()
     : "";
   return (
-    <div className="flex flex-col sticky top-0 h-screen justify-between  w-60 bg-headline text-main p-4  border border-gray-700">
+    <div className="flex flex-col sticky top-0 h-screen justify-between  w-60 bg-primary text-main p-4  border border-gray-700">
       {/* Top section */}
       <div>
         <div className="flex items-center justify-center gap-2 mb-8 underline underline-offset-4 decoration-4 decoration-highlight">

@@ -1,178 +1,165 @@
-import { useEffect, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
-// import { FaLock } from "react-icons/fa";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import FormGroup from "@/components/ui/FormGroup";
-// import ModalThongBao from "@/components/TracNghiem9231/shared/ModalThongBao";
+import { Eye, EyeOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+// import { toast } from "@/components/ui/use-toast";
 import path from "@/resources/path";
 import LoginService from "@/components/api/login.service";
 
-const DangNhapPage: React.FC = () => {
+export default function RegisterPage() {
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [email, setEmail] = useState<string>("");
-  const [name, setName] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
 
-  const [isModalOpen, setIsModalOpen] = useState<{
-    message: string;
-    warningMessage?: string;
-    success: boolean; // Dùng để xác định trạng thái
-  } | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    firstName: "",
+    lastName: "",
+    password: "",
+    confirmPassword: "",
+  });
 
-  useEffect(() => {
-    // Kiểm tra xem người dùng đã đăng nhập hay chưa
-    const accessToken = localStorage.getItem("access_token");
-    if (accessToken) {
-      navigate(path.HOME);
-    }
-  }, [navigate]);
-  const handleSubmit = async () => {
-    if (!email) {
-      setIsModalOpen({
-        message: "Vui lòng nhập email trước khi xác nhận!",
-        success: false,
-      });
-      return;
-    }
-
-    if (!password) {
-      setIsModalOpen({
-        message: "Vui lòng nhập mật khẩu trước khi xác nhận!",
-        success: false,
-      });
-      return;
-    }
-
-    try {
-      const response = await LoginService.Register({
-        username: name,
-        email: email,
-        password: password,
-      });
-
-      if (response.status == 200) {
-        navigate(path.LOGIN);
-      } else {
-        if (response.data.code === "2222") {
-          setIsModalOpen({
-            message: "Tài khoản hoặc mật khẩu không hợp lệ!",
-            success: false,
-          });
-          return;
-        }
-        setIsModalOpen({
-          message: response.data.mess,
-          success: false,
-        });
-      }
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setIsModalOpen({
-          message:
-            error.message ||
-            "Tài khoản / Mật khẩu không đúng hoặc đã hết hạn. Vui lòng thử lại!",
-          success: false,
-        });
-      }
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setForm((prev) => ({ ...prev, [id]: value.trim() }));
   };
 
-  const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      await handleSubmit();
+  const handleSubmit = async () => {
+    const { name, email, firstName, lastName, password, confirmPassword } =
+      form;
+
+    // if (!email || !password || !name) {
+    //   toast({
+    //     title: "Please fill in all required fields",
+    //     variant: "destructive",
+    //   });
+    //   return;
+    // }
+    // if (password !== confirmPassword) {
+    //   toast({ title: "Passwords do not match", variant: "destructive" });
+    //   return;
+    // }
+
+    try {
+      await LoginService.Register({
+        username: name,
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        password,
+      });
+      toast({ title: "Account created successfully!" });
+      navigate(path.LOGIN);
+    } catch (error: any) {
+      toast({
+        title: "Registration failed",
+        description: error.response?.data?.detail || "Please try again later.",
+        variant: "destructive",
+      });
     }
   };
 
   return (
-    <div className="h-screen bg-bg">
-      <div
-        className="absolute top-1/2 left-1/2 w-[90%] md:w-[564px] h-fit -translate-x-1/2 -translate-y-1/2
-            bg-secondary  rounded-3xl p-8 pt-4 flex flex-col justify-center shadow-2xl"
-      >
-        <div className="w-full sm:w-[425px] h-[84px] self-center text-headline">
-          <h1 className="text-center text-4xl md:text-5xl font-bold underline underline-offset-4 decoration-4 decoration-highlight no-wrap">
+    <div className="min-h-screen flex items-center justify-center bg-[#fff]">
+      <Card className="w-[90%] sm:w-[480px] shadow-2xl rounded-3xl">
+        <CardHeader className="space-y-2 text-center">
+          <CardTitle className="text-4xl font-bold text-[#272343]">
             Register
-          </h1>
-          <p className="text-center text-gray-600 mt-2 text-[14px] md:text-[16px]">
-            Welcome to Photostore!
-          </p>
-        </div>
+          </CardTitle>
+          <CardDescription>Welcome to Photostore!</CardDescription>
+        </CardHeader>
 
-        <div className="w-full flex flex-col gap-[10px] md:gap-4">
-          <FormGroup
-            label="Your name"
-            id="name"
-            type="name"
-            value={name}
-            onChange={(e) => setName(e.target.value.trim())}
-          />
+        <CardContent className="flex flex-col gap-3">
+          <div>
+            <Label htmlFor="name">Username</Label>
+            <Input id="name" value={form.name} onChange={handleChange} />
+          </div>
 
-          <FormGroup
-            label="Email"
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value.trim())}
-          />
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={form.email}
+              onChange={handleChange}
+            />
+          </div>
 
-          <FormGroup
-            label="Password"
-            id="password"
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={handleKeyDown}
-          >
-            <button
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Label htmlFor="firstName">First name</Label>
+              <Input
+                id="firstName"
+                value={form.firstName}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="flex-1">
+              <Label htmlFor="lastName">Last name</Label>
+              <Input
+                id="lastName"
+                value={form.lastName}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="relative">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              value={form.password}
+              onChange={handleChange}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              title={showPassword ? "Show password" : "Hide password"}
-              className="text-headline p-0"
+              className="absolute right-1 top-7"
             >
-              {showPassword ? <EyeOff /> : <Eye />}
-            </button>
-          </FormGroup>
-          <FormGroup
-            label="Confirm password"
-            id="confirm-password"
-            type={showPassword ? "text" : "password"}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            onKeyDown={handleKeyDown}
-          >
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              title={showPassword ? "Show password" : "Hide password"}
-              className="text-headline p-0"
-            >
-              {showPassword ? <EyeOff /> : <Eye />}
-            </button>
-          </FormGroup>
-          <button
-            type="button" // ngăn form submit tự động
-            className="hover:bg-highlight hover:text-headline font-normal rounded-[32px] 
-                text-center bg-headline text-[16px] md:text-xl w-full text-white h-12 md:h-14"
-            onClick={() => handleSubmit()}
-          >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </Button>
+          </div>
+
+          <div className="relative">
+            <Label htmlFor="confirmPassword">Confirm password</Label>
+            <Input
+              id="confirmPassword"
+              type={showPassword ? "text" : "password"}
+              value={form.confirmPassword}
+              onChange={handleChange}
+            />
+          </div>
+        </CardContent>
+
+        <CardFooter className="flex flex-col gap-3">
+          <Button className="w-full h-12 bg-[#272343]" onClick={handleSubmit}>
             REGISTER
-          </button>
-          <p className=" text-headline mt-4 max-w-sm mx-auto">
+          </Button>
+
+          <p className="text-sm text-center text-muted-foreground">
             Already have an account?{" "}
-            <a
-              className="underline hover:text-tertiary cursor-pointer"
+            <span
+              className="text-primary underline hover:text-highlight cursor-pointer"
               onClick={() => navigate(path.LOGIN)}
             >
               Log in
-            </a>
-            .
+            </span>
           </p>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   );
-};
-
-export default DangNhapPage;
+}

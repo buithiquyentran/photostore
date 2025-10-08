@@ -1,6 +1,6 @@
 const Footer = () => {
   return (
-    <section className="bg-headline text-main py-12 text-center px-8 flex">
+    <section className="bg-background text-white py-12 text-center px-8 flex">
       <div>
         <h3 className="text-3xl font-semibold mb-4">
           Subscribe to our newsletter
@@ -16,10 +16,10 @@ const Footer = () => {
           placeholder="Your email address"
           className="w-full p-3 mb-4 rounded-lg border border-main focus:outline-none focus:ring-2 focus:ring-main"
         />
-        <button className="w-full bg-tertiary text-headline p-3 rounded-lg hover:opacity-90 transition">
+        <button className="w-full bg-tertiary text-[#272343] p-3 rounded-lg hover:opacity-90 transition">
           Subscribe
         </button>
-        <p className="text-sm text-main/60 mt-4 max-w-sm mx-auto">
+        <p className="text-sm text-white mt-4 max-w-sm mx-auto">
           We respect your privacy. You can unsubscribe at any time. Read our{" "}
           <a href="/privacy" className="underline hover:text-tertiary">
             Privacy Policy
