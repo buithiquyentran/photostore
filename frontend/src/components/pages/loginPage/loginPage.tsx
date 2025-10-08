@@ -17,6 +17,7 @@ import FormGroup from "@/components/ui/FormGroup";
 import path from "@/resources/path";
 import LoginService from "@/components/api/login.service";
 import UserService from "@/components/api/user.service";
+import { toast } from "@/hooks/use-toast";
 
 import keycloak from "@/keycloak";
 const DangNhapPage: React.FC = () => {
@@ -24,11 +25,6 @@ const DangNhapPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  const [isModalOpen, setIsModalOpen] = useState<{
-    message: string;
-    warningMessage?: string;
-    success: boolean; // Dùng để xác định trạng thái
-  } | null>(null);
 
   // useEffect(() => {
   //   // Kiểm tra xem người dùng đã đăng nhập hay chưa
@@ -39,19 +35,12 @@ const DangNhapPage: React.FC = () => {
   //   }
   // }, [navigate]);
 
-  const handleSubmit = async () => {
-    if (!email) {
-      setIsModalOpen({
-        message: "Vui lòng nhập email trước khi xác nhận!",
-        success: false,
-      });
-      return;
-    }
-
-    if (!password) {
-      setIsModalOpen({
-        message: "Vui lòng nhập mật khẩu trước khi xác nhận!",
-        success: false,
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast({
+        title: "Please fill in all required fields",
+        variant: "destructive",
       });
       return;
     }
@@ -61,12 +50,9 @@ const DangNhapPage: React.FC = () => {
         username: email,
         password: password,
       });
-
-      console.log(response);
       if (response.access_token) {
         localStorage.setItem("access_token", response.access_token);
         localStorage.setItem("refresh_token", response.refresh_token);
-        setIsModalOpen(null);
         try {
           const userRes = await UserService.SocialLogin();
           console.log("SocialLogin response:", userRes);
@@ -75,34 +61,20 @@ const DangNhapPage: React.FC = () => {
         }
         // Refresh trang sau khi đăng nhập thành công
         navigate(path.BROWER);
-      } else {
-        if (response.data.code === "2222") {
-          setIsModalOpen({
-            message: "Tài khoản hoặc mật khẩu không hợp lệ!",
-            success: false,
-          });
-          return;
-        }
-        setIsModalOpen({
-          message: response.data.mess,
-          success: false,
-        });
       }
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setIsModalOpen({
-          message:
-            error.message ||
-            "Tài khoản / Mật khẩu không đúng hoặc đã hết hạn. Vui lòng thử lại!",
-          success: false,
-        });
-      }
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.response?.data?.detail || "Please try again later.",
+        variant: "destructive",
+      });
+      return;
     }
   };
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      await handleSubmit();
+      await handleSubmit(e);
     }
   };
   const handleFacebookLogin = () => {
@@ -162,7 +134,7 @@ const DangNhapPage: React.FC = () => {
           </div>
 
           <Button className="w-full bg-[#272343]" onClick={handleSubmit}>
-            Log in
+            LOG IN
           </Button>
 
           <Button

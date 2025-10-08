@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useState } from "react";
 import {
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import path from "@/resources/path";
 
 interface FolderNode {
   id: string;
@@ -27,10 +29,14 @@ interface SidebarProps {
   onFolderSelect: (folderId: string) => void;
 }
 
-export default function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps) {
+export default function Sidebar({
+  selectedFolder,
+  onFolderSelect,
+}: SidebarProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set(["projects", "my-project"])
   );
+  const navigate = useNavigate();
 
   const folders: FolderNode[] = [
     {
@@ -59,10 +65,25 @@ export default function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps
   ];
 
   const quickAccess = [
-    { id: "all", name: "All Files", icon: <Folder className="h-4 w-4" /> },
-    { id: "starred", name: "Starred", icon: <Star className="h-4 w-4" /> },
+    {
+      id: "all",
+      name: "All Files",
+      icon: <Folder className="h-4 w-4" />,
+      path: path.BROWER,
+    },
+    {
+      id: "starred",
+      name: "Starred",
+      icon: <Star className="h-4 w-4" />,
+      path: path.FAVORITE,
+    },
     { id: "recent", name: "Recent", icon: <Clock className="h-4 w-4" /> },
-    { id: "trash", name: "Trash", icon: <Trash2 className="h-4 w-4" /> },
+    {
+      id: "trash",
+      name: "Trash",
+      icon: <Trash2 className="h-4 w-4" />,
+      path: path.TRASH,
+    },
   ];
 
   const toggleFolder = (folderId: string) => {
@@ -140,7 +161,10 @@ export default function Sidebar({ selectedFolder, onFolderSelect }: SidebarProps
             {quickAccess.map((item) => (
               <button
                 key={item.id}
-                onClick={() => onFolderSelect(item.id)}
+                onClick={() => {
+                  // onFolderSelect(item.id);
+                  if (item.path) navigate(item.path);
+                }}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-1.5 text-sm rounded-md transition-colors",
                   "hover:bg-sidebar-accent text-sidebar-foreground",

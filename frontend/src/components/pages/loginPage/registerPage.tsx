@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-// import { toast } from "@/components/ui/use-toast";
+// Update the import path to match your actual toast utility location
+import { toast } from "@/hooks/use-toast";
 import path from "@/resources/path";
 import LoginService from "@/components/api/login.service";
 
@@ -38,17 +39,17 @@ export default function RegisterPage() {
     const { name, email, firstName, lastName, password, confirmPassword } =
       form;
 
-    // if (!email || !password || !name) {
-    //   toast({
-    //     title: "Please fill in all required fields",
-    //     variant: "destructive",
-    //   });
-    //   return;
-    // }
-    // if (password !== confirmPassword) {
-    //   toast({ title: "Passwords do not match", variant: "destructive" });
-    //   return;
-    // }
+    if (!email || !password || !name) {
+      toast({
+        title: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast({ title: "Passwords do not match", variant: "destructive" });
+      return;
+    }
 
     try {
       await LoginService.Register({
