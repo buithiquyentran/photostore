@@ -19,6 +19,43 @@ from core.config import settings
 
 router = APIRouter(prefix="/external", tags=["External API"])
 
+
+def format_asset_response(asset, session: Session) -> dict:
+    """
+    Format asset data giống như upload-images API response.
+    """
+    # Lấy thông tin project và folder
+    folder = session.get(Folders, asset.folder_id) if asset.folder_id else None
+    project = session.get(Projects, folder.project_id) if folder else None
+    
+    # Build file URL
+    base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+    file_url = build_file_url(session, project.id, folder.id, asset.system_name, base_url) if project and folder else ""
+    
+    # Build folder path using build_full_path function
+    folder_path = build_full_path(session, project.id, folder.id) if project and folder else ""
+    
+    return {
+        "status": 1,
+        "id": asset.id,
+        "name": asset.name,
+        "original_name": asset.name,  # Giả sử name là original_name
+        "system_name": asset.system_name,
+        "file_url": file_url,
+        "file_extension": asset.file_extension,
+        "file_type": asset.file_type,
+        "format": asset.format,
+        "file_size": asset.file_size,
+        "width": asset.width,
+        "height": asset.height,
+        "project_slug": project.slug if project else "",
+        "folder_path": folder_path,
+        "is_private": asset.is_private,
+        "created_at": asset.created_at,
+        "updated_at": asset.updated_at
+    }
+
+
 # ============================================
 # Request/Response Models
 # ============================================
@@ -364,7 +401,7 @@ async def search_by_image_api(
         image = Image.open(io.BytesIO(contents))
         
         # Gọi service với image thay vì file
-        results = search_by_image(
+        assets = search_by_image(
             session=session,
             project_id=project.id,
             image=image,
@@ -372,17 +409,32 @@ async def search_by_image_api(
             k=k,
             user_id=None  # Không cần user_id vì đã có project_id
         )
+        
+        # Format response giống như upload-images API
+        results = []
+        for asset in assets:
+            formatted_asset = format_asset_response(asset, session)
+            results.append({
+                "file": formatted_asset,
+                "message": "Search result",
+                "result": True
+            })
+            
         return {
-            "status": "success",
-            "results": results
+            "data": {
+                "searchResults": results[0] if len(results) == 1 else results
+            },
+            "extensions": {
+                "cost": {
+                    "requestedQueryCost": 0,
+                    "maximumAvailable": 50000
+                }
+            }
         }
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail={
-                "status": "error",
-                "message": "Search failed"
-            }
+            detail=f"Search failed: {str(e)}"
         )
 
 @router.post("/search/text")
@@ -396,7 +448,7 @@ def search_by_text_api(
     """Search bằng text"""
     try:
         print(f"[DEBUG] Text search: query='{query}', project_id={project.id}, folder_id={folder_id}, k={k}")
-        results = search_by_text(
+        assets = search_by_text(
             session=session,
             project_id=project.id,
             query_text=query,  # Đúng tên tham số là query_text, không phải query
@@ -404,9 +456,27 @@ def search_by_text_api(
             folder_id=folder_id,
             user_id=None  # Không cần user_id vì đã có project_id
         )
+        
+        # Format response giống như upload-images API
+        results = []
+        for asset in assets:
+            formatted_asset = format_asset_response(asset, session)
+            results.append({
+                "file": formatted_asset,
+                "message": "Search result",
+                "result": True
+            })
+            
         return {
-            "status": "success",
-            "results": results
+            "data": {
+                "searchResults": results[0] if len(results) == 1 else results
+            },
+            "extensions": {
+                "cost": {
+                    "requestedQueryCost": 0,
+                    "maximumAvailable": 50000
+                }
+            }
         }
     except Exception as e:
         import traceback
@@ -414,8 +484,5 @@ def search_by_text_api(
         print(traceback.format_exc())
         raise HTTPException(
             status_code=500,
-            detail={
-                "status": "error",
-                "message": f"Search failed: {str(e)}"
-            }
+            detail=f"Search failed: {str(e)}"
         )

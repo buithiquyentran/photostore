@@ -72,9 +72,6 @@ def startup_event():
     uploads_dir.mkdir(exist_ok=True)
     print(f"✅ Uploads directory initialized at {uploads_dir.absolute()}")
     
-    # TODO: Load FAISS indices for active projects
-    # from db.session import get_session
-    # from services.search.embeddings_service import rebuild_project_embeddings
-    # with next(get_session()) as session:
-    #     # Rebuild indices for active projects
-    #     pass
+    # Load FAISS indices from disk
+    from services.search.faiss_index import load_all_indices_from_disk
+    load_all_indices_from_disk()

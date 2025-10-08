@@ -33,6 +33,42 @@ MAX_FILENAME_LENGTH = 255  # Maximum length for filename in DB
 # from services.search.embeddings_service import  embed_image,add_embedding_to_faiss, search_user,ensure_user_index, get_text_embedding, search_by_embedding
 
 router = APIRouter(prefix="/users/assets",  tags=["User Assets"])
+
+
+def format_asset_response(asset, session: Session) -> dict:
+    """
+    Format asset data giống như upload-images API response.
+    """
+    # Lấy thông tin project và folder
+    folder = session.get(Folders, asset.folder_id) if asset.folder_id else None
+    project = session.get(Projects, folder.project_id) if folder else None
+    
+    # Build file URL
+    base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+    file_url = build_file_url(session, project.id, folder.id, asset.system_name, base_url) if project and folder else ""
+    
+    # Build folder path using build_full_path function
+    folder_path = build_full_path(session, project.id, folder.id) if project and folder else ""
+    
+    return {
+        "status": 1,
+        "id": asset.id,
+        "name": asset.name,
+        "original_name": asset.name,  # Giả sử name là original_name
+        "system_name": asset.system_name,
+        "file_url": file_url,
+        "file_extension": asset.file_extension,
+        "file_type": asset.file_type,
+        "format": asset.format,
+        "file_size": asset.file_size,
+        "width": asset.width,
+        "height": asset.height,
+        "project_slug": project.slug if project else "",
+        "folder_path": folder_path,
+        "is_private": asset.is_private,
+        "created_at": asset.created_at,
+        "updated_at": asset.updated_at
+    }
 BUCKET_NAME = "photostore"
 BUCKET_NAME_PUBLIC = "images" 
 UPLOAD_DIR = Path("uploads")
@@ -415,35 +451,93 @@ async def upload_assets(
 
 
 # ====== Route search_image ======
-# @router.post("/search")
-# async def search_assets(
-#     query_text: str | None = Form(None), 
-#     file: UploadFile | None = File(None),
-#     id=Depends(get_current_user),
-#     k: int = 5,
-#     session: Session = Depends(get_session),
-# ):
-#     try:
-#         if file:  # search bằng ảnh
-#             content = await file.read()
-#             image = Image.open(io.BytesIO(content)).convert("RGB")
-#             query_vec = embed_image(image)
+@router.post("/search")
+async def search_assets(
+    query_text: str | None = Form(None), 
+    file: UploadFile | None = File(None),
+    project_id: Optional[int] = Form(None),  # Optional - nếu None thì search tất cả projects của user
+    folder_id: Optional[int] = Form(None),
+    k: int = Form(10),
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """
+    Tìm kiếm ảnh bằng hình ảnh hoặc text cho user đã đăng nhập.
+    Endpoint này yêu cầu user authentication.
+    
+    Args:
+        query_text: Text query (e.g., "a cat on the sofa")
+        file: File ảnh upload
+        project_id: (Optional) ID của project cần tìm. Nếu None thì search tất cả projects của user
+        folder_id: (Optional) Chỉ tìm trong folder này
+        k: Số lượng kết quả trả về (default: 10)
+    
+    Returns:
+        {
+            "status": 1,
+            "data": [...assets...],
+            "total": <số lượng>
+        }
+    """
+    try:
+        # 🔒 SECURITY: Validate project ownership (nếu có project_id)
+        if project_id:
+            from api.routes.search import validate_project_ownership
+            validate_project_ownership(session, project_id, current_user.id)
+        
+        # Import search services
+        from services.search.embeddings_service import search_by_image, search_by_text
+        
+        assets = []
+        if file:  # search bằng ảnh
+            content = await file.read()
+            image = Image.open(io.BytesIO(content)).convert("RGB")
+            
+            # Tìm kiếm
+            assets = search_by_image(
+                session=session,
+                project_id=project_id,
+                image=image,
+                k=k,
+                folder_id=folder_id,
+                user_id=current_user.id
+            )
 
-#         elif query_text:  # search bằng text
-#             query_vec = get_text_embedding(query_text)
+        elif query_text:  # search bằng text
+            # Tìm kiếm
+            assets = search_by_text(
+                session=session,
+                project_id=project_id,
+                query_text=query_text,
+                k=k,
+                folder_id=folder_id,
+                user_id=current_user.id
+            )
 
-#         else:
-#             raise HTTPException(status_code=400, detail="Cần gửi query_text hoặc file ảnh")
+        else:
+            raise HTTPException(status_code=400, detail="Cần gửi query_text hoặc file ảnh")
 
-#         # Gọi search chung
-#         asset_ids = search_by_embedding(session=session, user_id=id, query_vec=query_vec, k=k)
+        # Format response giống như upload-images API
+        results = []
+        for asset in assets:
+            formatted_asset = format_asset_response(asset, session)
+            results.append({
+                "file": formatted_asset,
+                "message": "Search result",
+                "result": True
+            })
+        
+        return {
+            "data": {
+                "searchResults": results[0] if len(results) == 1 else results
+            },
+            "extensions": {
+                "cost": {
+                    "requestedQueryCost": 0,
+                    "maximumAvailable": 50000
+                }
+            }
+        }
 
-#         # Lấy metadata asset từ DB
-#         results = session.exec(
-#             select(Assets).where(Assets.id.in_(asset_ids))
-#         ).all()
-
-#         return {"status": 1, "data": results}
-
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
