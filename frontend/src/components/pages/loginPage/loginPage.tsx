@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Facebook } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 // import { FaLock } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import FormGroup from "@/components/ui/FormGroup";
@@ -107,76 +117,76 @@ const DangNhapPage: React.FC = () => {
     });
   };
   return (
-    <div className="h-screen bg-bg">
-      <div
-        className="absolute top-1/2 left-1/2 w-[90%] md:w-[564px] h-fit -translate-x-1/2 -translate-y-1/2
-            bg-secondary  rounded-3xl p-10 flex flex-col gap-8 justify-center shadow-2xl"
-      >
-        <div className="w-full sm:w-[425px] h-[84px] self-center text-headline">
-          <h1 className="text-center text-4xl md:text-5xl font-bold mt-2 underline underline-offset-4 decoration-4 decoration-highlight no-wrap">
+    <div className="flex min-h-screen items-center justify-center bg-[#fff] text-foreground px-4">
+      <Card className="w-full max-w-md border border-border shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-center text-3xl font-bold text-[#272343] ">
             Log in
-          </h1>
-          <p className="text-center text-gray-600 mt-2 text-[14px] md:text-[16px]">
+          </CardTitle>
+          <p className="text-center text-muted-foreground text-sm">
             Sign in to save your moments!
           </p>
-        </div>
+        </CardHeader>
 
-        <div className="w-full flex flex-col gap-[10px] md:gap-4">
-          <FormGroup
-            label="Email"
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value.trim())}
-          />
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value.trim())}
+            />
+          </div>
 
-          <FormGroup
-            label="Password"
-            id="password"
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={handleKeyDown}
-          >
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              title={showPassword ? "Show password" : "Hide password"}
-              className="text-headline"
-            >
-              {showPassword ? <EyeOff /> : <Eye />}
-            </button>
-          </FormGroup>
+          <div className="space-y-2 relative">
+            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-3 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
 
-          <button
-            type="button" // ngăn form submit tự động
-            className="hover:bg-highlight hover:text-headline font-normal rounded-[32px] 
-                text-center bg-headline text-[16px] md:text-xl w-full text-white h-12 md:h-14"
-            onClick={() => handleSubmit()}
-          >
-            LOG IN
-          </button>
+          <Button className="w-full bg-[#272343]" onClick={handleSubmit}>
+            Log in
+          </Button>
 
-          {/* Login bằng Facebook */}
-          <button
+          <Button
+            variant="outline"
+            className="w-full flex items-center justify-center space-x-2 bg-[#fff] text-[#1877F2]"
             onClick={handleFacebookLogin}
-            className="flex w-full items-center justify-center space-x-2 rounded-lg border-1  border-headline py-2 "
           >
-            <span>📘</span>
-            <span className="text-headline ">Tiếp tục với Facebook</span>
-          </button>
-          <p className=" text-headline mt-4 max-w-sm mx-auto">
+            <Facebook className="w-4 h-4 " />
+            <span>Continue with Facebook</span>
+          </Button>
+        </CardContent>
+
+        <CardFooter className="flex justify-center text-sm text-muted-foreground">
+          <p>
             New to Photostore?{" "}
-            <a
-              className="underline hover:text-tertiary cursor-pointer"
+            <span
+              className="underline cursor-pointer text-[#ffd803]"
               onClick={() => navigate(path.REGISTER)}
             >
               Register
-            </a>
-            .
+            </span>
           </p>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

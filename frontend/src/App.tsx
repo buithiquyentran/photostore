@@ -10,6 +10,8 @@ import REGISTER from "@/components/pages/loginPage/registerPage";
 import BROWER from "@/components/pages/browerPage";
 import VIEWER from "@/components/pages/ViewerPage";
 import FAVORITE from "@/components/pages/favoritePage"
+import TEST from "@/components/pages/Dashboard";
+import { Toaster } from "@/components/ui/toaster";
 import keycloak from "@/keycloak";
 import { Loading } from "@/components/ui/Loading";
 
@@ -47,11 +49,13 @@ function App() {
         <Route path="/" element={<DashboardLayout />}>
           <Route path={path.BROWER} element={<BROWER />} />
           <Route path={path.FAVORITE} element={<FAVORITE />} />
+          <Route path={path.TEST} element={<TEST />} />
         </Route>
         <Route path="/">
           <Route path="/photos/*" element={<VIEWER />} />
         </Route>
       </Routes>
+      <Toaster />
     </>
   );
 }

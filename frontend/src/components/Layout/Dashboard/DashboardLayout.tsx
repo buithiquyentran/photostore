@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
-import Sidebar from "@/components/Layout/Dashboard/Sidebar";
+import Sidebar from "@/components/Layout/Dashboard/sidebar1";
 import SearchBar from "@/components/Layout/Dashboard/SearchBar";
 import UserService from "@/components/api/user.service";
 import AssetsService from "@/components/api/assets.service";
@@ -84,7 +84,7 @@ const Layout = () => {
     <>
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="grow flex flex-col bg-bg">
+        <div className="grow flex flex-col bg-background">
           <SearchBar
             onSearchFile={handleSearchByFile}
             onSearchText={handleSearchByText}

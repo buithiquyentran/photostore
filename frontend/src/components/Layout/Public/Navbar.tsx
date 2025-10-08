@@ -4,7 +4,7 @@ import path from "@/resources/path";
 const Navbar = () => {
   const navigate = useNavigate();
   return (
-    <nav className="bg-headline text-white px-6 py-3 flex items-center justify-between">
+    <nav className="bg-background text-white px-6 py-3 flex items-center justify-between">
       <div className="flex items-center justify-center gap-2 underline underline-offset-4 decoration-4 decoration-highlight">
         <div>
           <Camera className="w-10 h-10 text-tertiary" />

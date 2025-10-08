@@ -51,7 +51,7 @@ function Home() {
   const navigate = useNavigate();
   return (
     <div className=" min-h-screen">
-      <header className="relative hero-section text-center text-headline overflow-hidden">
+      <header className="relative hero-section text-center text-primary overflow-hidden">
         <HeroSlideshow />
         <div className="absolute inset-0 flex flex-col justify-center items-center text-center px-4">
           <h1 className="text-5xl font-bold text-white mb-4 [text-shadow:_2px_2px_8px_rgba(0,0,0,0.7)]">
@@ -75,7 +75,7 @@ function Home() {
             key={index}
             className="bg-main rounded-lg shadow-lg p-6 hover:shadow-xl transition"
           >
-            <h2 className="text-2xl font-semibold text-headline mb-2">
+            <h2 className="text-2xl font-semibold text-primary mb-2">
               {feature.title}
             </h2>
             <p className="text-paragraph">{feature.description}</p>
