@@ -13,10 +13,8 @@ export default {
       },
       colors: {
         bg: "#E3F6F5",
-        // primary: "#272343",
         paragraph: "#2D334A",
         highlight: "#FFD803",
-        card: "#FFFFFE",
         newsletter: "#BAE8E8",
         tertiary: "#bae8e8",
 
@@ -39,12 +37,11 @@ export default {
           foreground: "hsl(var(--destructive-foreground))",
         },
 
-        border: "hsl(var(--border))",
+        border: "var(--border)",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         sidebar: {
           accent: "var(--sidebar-accent)",
-          
         },
       },
     },

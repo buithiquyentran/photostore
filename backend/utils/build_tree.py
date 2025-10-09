@@ -47,6 +47,7 @@ def build_tree(folders: List[Any]) -> List[Dict]:
             "name": _get_attr(f, "name"),
             "parent_id": _get_attr(f, "parent_id"),
             "project_id": _get_attr(f, "project_id"),
+            "slug": _get_attr(f, "slug"),
             "created_at": created_at,
             "is_default": _get_attr(f, "is_default"),
             "children": []

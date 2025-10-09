@@ -80,7 +80,7 @@ export default function RegisterPage() {
           <CardDescription>Welcome to Photostore!</CardDescription>
         </CardHeader>
 
-        <CardContent className="flex flex-col gap-3">
+        <CardContent className="flex flex-col gap-3 text-[#272343]">
           <div>
             <Label htmlFor="name">Username</Label>
             <Input id="name" value={form.name} onChange={handleChange} />

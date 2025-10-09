@@ -4,15 +4,15 @@
 
 @layer base {
   :root {
-    --background: #272343;
+    --background: rgb(31, 36, 46);
     --foreground: #fff;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.15 0 0);
     --primary: #ffd803;
     --primary-foreground: 0 0% 98%;
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
-    --border: 240 5.9% 90%;
+    --border: #374151;
     --input: 240 5.9% 90%;
     --ring: 240 5% 64.9%;
     --radius: 0.5rem;

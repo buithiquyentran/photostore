@@ -372,6 +372,42 @@ async def upload_assets(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/get-by-folder/{folder_path:path}")
+async def get_upload(folder_path: str, session: Session = Depends(get_session)):
+    abs_path = os.path.join("uploads", folder_path).replace("\\", "/")
+    # Nếu là thư mục → query tất cả assets trong folder đó
+    if os.path.isdir(abs_path):
+        # Bỏ prefix "uploads/" để so khớp với DB path
+        db_folder_path = folder_path.rstrip("/")
+
+        # Truy vấn tất cả asset có folder_path trùng
+        assets = session.exec(
+            select(Assets)
+            .where(Assets.folder_path == db_folder_path)
+            .where(Assets.is_deleted == False)
+        ).all()
+
+        if not assets:
+            raise HTTPException(404, "No assets found in this folder")
+
+        data = []
+        for a in assets:
+            data.append({
+                "id": a.id,
+                "name": a.name,
+                "system_name": a.system_name,
+                "path": a.path,
+                "file_url": a.file_url,
+                "width": a.width,
+                "height": a.height,
+                "file_type": a.file_type,
+                "created_at": a.created_at,
+            })
+
+        return JSONResponse(content={"status": 1, "count": len(data), "data": data})
+
+    # Nếu không phải file hoặc folder → 404
+    raise HTTPException(404, "Invalid file path")
 
 # ====== Route search_image ======
 # @router.post("/search")

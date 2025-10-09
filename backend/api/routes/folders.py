@@ -1,22 +1,73 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
+from fastapi import Query
+
 from typing import Optional
 from starlette.responses import JSONResponse
 
 from db.session import get_session
 from models import  Projects, Folders, Assets , Users, Embeddings
 from dependencies.dependencies import get_current_user
+from utils.folder_finder import find_folder_by_path
+
 from utils.build_tree import build_tree
 from utils.slug import create_slug
-router = APIRouter(prefix="/users/folders", tags=["Folders"])
+router = APIRouter(prefix="/folders", tags=["Folders"])
 
+# @router.get("/all")
+# def get_folders(session: Session = Depends(get_session), current_user: dict = Depends(get_current_user)):
+#     try:
+#         folders = session.exec(select(Folders).join(Projects, Projects.id == Folders.project_id).join(Users, Users.id == Projects.user_id).where(Users.id == current_user.id)).all()
+#         data = build_tree(folders)
+#     except Exception as e:
+#         return JSONResponse(status_code=500, content={"detail": f"Lỗi khi lấy danh sách folder: {e}"})
+
+#     return {"status": 1, "data": data}
 @router.get("/all")
-def get_folders(session: Session = Depends(get_session), current_user: dict = Depends(get_current_user)):
+def get_folders(
+    session: Session = Depends(get_session),
+    current_user: dict = Depends(get_current_user),
+):
     try:
-        folders = session.exec(select(Folders).join(Projects, Projects.id == Folders.project_id).join(Users, Users.id == Projects.user_id).where(Users.id == current_user.id)).all()
-        data = build_tree(folders)
+        # Lấy tất cả folder thuộc user hiện tại (qua project)
+        folders = (
+            session.query(Folders)
+            .join(Projects, Projects.id == Folders.project_id)
+            .join(Users, Users.id == Projects.user_id)
+            .filter(Users.id == current_user.id)
+            .all()
+        )
+
+        # Lấy danh sách project để nhóm
+        projects = (
+            session.query(Projects)
+            .join(Users, Users.id == Projects.user_id)
+            .filter(Users.id == current_user.id)
+            .all()
+        )
+
+        # Nhóm folder theo project
+        project_dict = {}
+        for p in projects:
+            project_dict[p.id] = {
+                "id": p.slug,
+                "name": p.name,
+                "slug" : p.slug,
+                "children": []
+            }
+
+        # Gọi hàm build_tree để tạo cây thư mục cho từng project
+        for p in projects:
+            project_folders = [f for f in folders if f.project_id == p.id]
+            tree = build_tree(project_folders)
+            project_dict[p.id]["children"] = tree
+
+        data = list(project_dict.values())
+
     except Exception as e:
-        return JSONResponse(status_code=500, content={"detail": f"Lỗi khi lấy danh sách folder: {e}"})
+        return JSONResponse(
+            status_code=500, content={"detail": f"Lỗi khi lấy danh sách folder: {e}"}
+        )
 
     return {"status": 1, "data": data}
 
@@ -147,7 +198,7 @@ def create_folder(
             detail=f"Lỗi khi tạo folder: {str(e)}"
         )
 @router.delete("/{folder_id}")
-def delete_project(folder_id: int, session: Session = Depends(get_session), current_user: dict = Depends(get_current_user)):
+def delete_folder(folder_id: int, session: Session = Depends(get_session), current_user: dict = Depends(get_current_user)):
     folder = session.exec(select(Folders).where(Folders.id == folder_id)).first() 
     if not folder:
         raise HTTPException(404, "Folder not found")
@@ -163,3 +214,52 @@ def delete_project(folder_id: int, session: Session = Depends(get_session), curr
     session.delete(folder)
     session.commit()
     return {"status": 1, "data": f"Folder {folder.name} deleted"}
+
+@router.get("/contents")
+def get_folder_contents(
+    path: str = Query(..., description="Ví dụ: demo_app/children"),
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    try:
+        parts = path.split("/")
+        project_slug = parts[0]
+        folder_path = "/".join(parts[1:])
+        # 🔹 Tìm project theo slug
+        project = session.exec(
+            select(Projects)
+            .join(Users, Users.id == Projects.user_id)
+            .where((Users.id == current_user.id) & (Projects.slug == project_slug))
+        ).first()
+
+        if not project:
+            raise HTTPException(404, "Project not found")
+
+        # 🔹 Tìm folder theo đường dẫn (dùng hàm helper)
+        folder = find_folder_by_path(session, project.id, folder_path)
+
+        if not folder:
+            raise HTTPException(404, "Folder not found")
+
+        # 🔹 Lấy các folder con
+        child_folders = session.exec(
+            select(Folders)
+            .where((Folders.parent_id == folder.id) & (Folders.project_id == project.id))
+        ).all()
+
+        # 🔹 Lấy assets trong folder đó
+        assets = session.exec(
+            select(Assets)
+            .where((Assets.folder_id == folder.id) & (Assets.is_deleted == False))
+        ).all()
+
+        return {
+            "status": 1,
+            "folders": [f.model_dump() for f in child_folders],
+            "assets": [a.model_dump() for a in assets],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

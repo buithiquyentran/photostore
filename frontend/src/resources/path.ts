@@ -2,11 +2,14 @@ const path = {
   HOME: "/",
   LOGIN: "/login",
   REGISTER: "/register",
-  BROWER: "/photos",
-  FAVORITE: "/photos/favorite",
+
+  BROWER: "/dashboard",
+  FAVORITE: "/dashboard/favorite",
   VIEWER: "/viewer",
   TEST: "/test",
-  TRASH: "/trash",
+  TRASH: "/dashboard/trash",
+
+  DASHBOARD: "/dashboard/*",
 } as const;
 
 export default path;
