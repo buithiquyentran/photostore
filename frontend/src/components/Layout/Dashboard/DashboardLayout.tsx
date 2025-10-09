@@ -4,32 +4,47 @@ import Sidebar from "@/components/Layout/Dashboard/Sidebar";
 import SearchBar from "@/components/Layout/Dashboard/SearchBar";
 import UserService from "@/components/api/user.service";
 import AssetsService from "@/components/api/assets.service";
+import folderService from "@/components/api/folder.service";
+interface FolderNode {
+  id: string;
+  name: string;
+  icon?: React.ReactNode;
+  children?: FolderNode[];
+  slug?: string;
+}
 const Layout = () => {
   // const [searchResults, setSearchResults] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
   const [queryText, setqueryText] = useState<string>("");
-  const handleSearchText = (text: string) => {
-    setqueryText(text);
-    console.log("Searching by text:", text);
-    // Gọi API backend tìm kiếm text
-  };
+  const [selectedMenu, setSelectedMenu] = useState<string>("");
+  const [folders, setFolders] = useState<FolderNode[] | null>([]);
+  const [folderPath, setFolderPath] = useState<string>("");
 
-  const fetchAssets = async () => {
+  const fetchFolderContent = async () => {
     try {
-      const user_assets = await AssetsService.GetAll({
-        is_deleted: false,
-      });
+      if (folderPath) {
+        const response = await folderService.GetContent({
+          path: folderPath,
+        });
+        setFolders(response.folders);
+        setAssets(response.assets);
+      } else {
+        const user_assets = await AssetsService.GetAll({
+          is_deleted: false,
+        });
 
-      const response = [...user_assets];
-      setAssets(response);
+        const response = [...user_assets];
+        setAssets(response);
+      }
     } catch (error) {
       console.error("Error fetching assets:", error);
     }
   };
+
   // chạy khi app load
   useEffect(() => {
-    fetchAssets();
-  }, []);
+    fetchFolderContent();
+  }, [folderPath]);
   const handleSearchByFile = async (e) => {
     const file = e.target.files?.[0];
 
@@ -83,7 +98,11 @@ const Layout = () => {
   return (
     <>
       <div className="flex min-h-screen">
-        <Sidebar />
+        <Sidebar
+          selectedMenu={selectedMenu}
+          setSelectedMenu={setSelectedMenu}
+          setFolderPath={setFolderPath}
+        />
         <div className="grow flex flex-col bg-background">
           <SearchBar
             onSearchFile={handleSearchByFile}
@@ -91,7 +110,7 @@ const Layout = () => {
             onUpload={handleUpload}
           />
           <div className="grow">
-            <Outlet context={{ assets }} />
+            <Outlet context={{ assets, folders }} />
           </div>
         </div>
 

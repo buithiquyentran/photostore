@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import {
   Bookmark,
@@ -14,9 +14,8 @@ import {
   Key,
 } from "lucide-react";
 import UserService from "@/components/api/user.service";
-import AssetService from "@/components/api/assets.service";
+import FolderService from "@/components/api/folder.service";
 import LoginService from "@/components/api/login.service";
-
 import {
   ChevronRight,
   ChevronDown,
@@ -35,66 +34,51 @@ interface FolderNode {
   name: string;
   icon?: React.ReactNode;
   children?: FolderNode[];
+  slug: string;
 }
 
 interface SidebarProps {
-  selectedFolder: string;
-  onFolderSelect: (folderId: string) => void;
+  selectedMenu: string;
+  setSelectedMenu: (folderSlug: string) => void;
+  setFolderPath: (folderPath: string) => void;
 }
-interface MenuItem {
-  label: string;
-  icon: React.ReactNode;
-  count: number;
-  subMenu?: string[];
-  path?: string;
-}
+const quickAccess = [
+  {
+    id: "all",
+    name: "All Files",
+    icon: <Folder className="h-4 w-4" />,
+    path: path.BROWER,
+  },
+  {
+    id: "starred",
+    name: "Starred",
+    icon: <Star className="h-4 w-4" />,
+    path: path.FAVORITE,
+  },
+  { id: "recent", name: "Recent", icon: <Clock className="h-4 w-4" /> },
+  {
+    id: "trash",
+    name: "Trash",
+    icon: <Trash2 className="h-4 w-4" />,
+    path: path.TRASH,
+  },
+];
 export default function Sidebar({
-  selectedFolder,
-  onFolderSelect,
+  selectedMenu,
+  setSelectedMenu,
+  setFolderPath,
 }: SidebarProps) {
-  const [openMenus, setOpenMenus] = useState<string[]>([]);
+  const navigate = useNavigate();
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
-
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([
-    {
-      label: "Assets",
-      icon: <Bookmark size={18} />,
-      count: 0, // mặc định 0
-      subMenu: ["Projects", "Folders", "Assets"],
-      path: path.BROWER,
-    },
-    { label: "Videos", icon: <Play size={18} />, count: 0 },
-    { label: "People", icon: <User size={18} />, count: 0 },
-    {
-      label: "Favorites",
-      icon: <Star size={18} />,
-      count: 0,
-      path: path.FAVORITE,
-    },
-    { label: "Labels", icon: <Tag size={18} />, count: 0 },
-  ]);
+  const [folders, setFolders] = useState<FolderNode[] | null>([]);
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const assetCount = await AssetService.Count({
-          is_deleted: false,
-        });
-        const favoriteCount = await AssetService.Count({
-          is_favorite: true,
-        });
-        setMenuItems((prev) =>
-          prev.map((item) => {
-            switch (item.label) {
-              case "Assets":
-                return { ...item, count: assetCount };
-              case "Favorites":
-                return { ...item, count: favoriteCount };
-              default:
-                return item;
-            }
-          })
-        );
+        const response = await FolderService.GetAll();
+        setFolders(response);
       } catch (err) {
         console.error("Failed to fetch asset count:", err);
       }
@@ -102,11 +86,6 @@ export default function Sidebar({
 
     fetchCounts();
   }, []);
-  const toggleMenu = (label: string) => {
-    setOpenMenus((prev) =>
-      prev.includes(label) ? prev.filter((m) => m !== label) : [...prev, label]
-    );
-  };
   const toggleUser = () => setOpen(!open);
   const fetchUser = async () => {
     try {
@@ -122,8 +101,6 @@ export default function Sidebar({
   useEffect(() => {
     fetchUser();
   }, []);
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
     const refreshToken = localStorage.getItem("refresh_token") || 1;
@@ -160,58 +137,10 @@ export default function Sidebar({
         );
       })()
     : "";
+
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
-    new Set(["projects", "my-project"])
+    new Set([])
   );
-  const navigate = useNavigate();
-
-  const folders: FolderNode[] = [
-    {
-      id: "projects",
-      name: "Projects",
-      children: [
-        {
-          id: "my-project",
-          name: "My Project",
-          children: [
-            { id: "designs", name: "Designs" },
-            { id: "marketing", name: "Marketing" },
-            { id: "assets", name: "Assets" },
-          ],
-        },
-        {
-          id: "client-work",
-          name: "Client Work",
-          children: [
-            { id: "branding", name: "Branding" },
-            { id: "web-design", name: "Web Design" },
-          ],
-        },
-      ],
-    },
-  ];
-
-  const quickAccess = [
-    {
-      id: "all",
-      name: "All Files",
-      icon: <Folder className="h-4 w-4" />,
-      path: path.BROWER,
-    },
-    {
-      id: "starred",
-      name: "Starred",
-      icon: <Star className="h-4 w-4" />,
-      path: path.FAVORITE,
-    },
-    { id: "recent", name: "Recent", icon: <Clock className="h-4 w-4" /> },
-    {
-      id: "trash",
-      name: "Trash",
-      icon: <Trash2 className="h-4 w-4" />,
-      path: path.TRASH,
-    },
-  ];
 
   const toggleFolder = (folderId: string) => {
     const newExpanded = new Set(expandedFolders);
@@ -223,19 +152,28 @@ export default function Sidebar({
     setExpandedFolders(newExpanded);
   };
 
-  const renderFolder = (folder: FolderNode, level = 0) => {
+  const renderFolder = (folder: FolderNode, level = 0, parentPath = "") => {
     const isExpanded = expandedFolders.has(folder.id);
     const hasChildren = folder.children && folder.children.length > 0;
-    const isSelected = selectedFolder === folder.id;
+    const isSelected = selectedMenu === folder.id;
+
+    const fullPath = parentPath ? `${parentPath}/${folder.slug}` : folder.slug;
+
+    const handleOpenFolder = () => {
+      // Nếu đã chọn rồi thì không load lại
+      if (selectedMenu === folder.id) return;
+      setFolderPath(fullPath);
+      console.log(fullPath);
+      navigate(`/dashboard/${fullPath}`);
+      setSelectedMenu(folder.id);
+    };
 
     return (
       <div key={folder.id}>
         <button
           onClick={() => {
-            if (hasChildren) {
-              toggleFolder(folder.id);
-            }
-            // onFolderSelect(folder.id);
+            if (hasChildren) toggleFolder(folder.id);
+            if (folder.slug) handleOpenFolder();
           }}
           className={cn(
             "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
@@ -255,9 +193,12 @@ export default function Sidebar({
           <Folder className="h-4 w-4 shrink-0" />
           <span className="truncate">{folder.name}</span>
         </button>
+
         {hasChildren && isExpanded && (
           <div className="mt-0.5">
-            {folder.children!.map((child) => renderFolder(child, level + 1))}
+            {folder.children!.map((child) =>
+              renderFolder(child, level + 1, fullPath)
+            )}
           </div>
         )}
       </div>
@@ -285,13 +226,13 @@ export default function Sidebar({
               <button
                 key={item.id}
                 onClick={() => {
-                  // onFolderSelect(item.id);
+                  setSelectedMenu(item.id);
                   if (item.path) navigate(item.path);
                 }}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-1.5 text-sm rounded-md transition-colors",
                   "hover:bg-sidebar-accent text-sidebar-foreground",
-                  selectedFolder === item.id &&
+                  selectedMenu === item.id &&
                     "bg-sidebar-accent text-sidebar-accent-foreground"
                 )}
               >
@@ -303,10 +244,10 @@ export default function Sidebar({
 
           <div>
             <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
-              Folders
+              Projects
             </h2>
             <div className="space-y-0.5">
-              {folders.map((folder) => renderFolder(folder))}
+              {folders?.map((folder) => renderFolder(folder))}
             </div>
           </div>
         </div>

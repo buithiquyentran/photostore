@@ -90,7 +90,7 @@ const DangNhapPage: React.FC = () => {
   };
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#fff] text-foreground px-4">
-      <Card className="w-full max-w-md border border-border shadow-lg">
+      <Card className="w-full max-w-md  shadow-2xl  rounded-3xl">
         <CardHeader>
           <CardTitle className="text-center text-3xl font-bold text-[#272343] ">
             Log in
@@ -100,8 +100,8 @@ const DangNhapPage: React.FC = () => {
           </p>
         </CardHeader>
 
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
+        <CardContent className="space-y-4 text-[#272343]">
+          <div className="space-y-2 ">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"

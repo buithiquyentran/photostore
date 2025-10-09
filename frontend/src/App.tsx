@@ -12,7 +12,7 @@ import VIEWER from "@/components/pages/ViewerPage";
 import FAVORITE from "@/components/pages/favoritePage";
 import TRASH from "@/components/pages/deletedPage";
 
-import TEST from "@/components/pages/Dashboard";
+import DASHBOARD from "@/components/pages/Dashboard";
 import { Toaster } from "@/components/ui/toaster";
 import keycloak from "@/keycloak";
 import { Loading } from "@/components/ui/Loading";
@@ -52,8 +52,7 @@ function App() {
           <Route path={path.BROWER} element={<BROWER />} />
           <Route path={path.FAVORITE} element={<FAVORITE />} />
           <Route path={path.TRASH} element={<TRASH />} />
-
-          <Route path={path.TEST} element={<TEST />} />
+          <Route path={path.DASHBOARD} element={<DASHBOARD />} />
         </Route>
         <Route path="/">
           <Route path="/photos/*" element={<VIEWER />} />
