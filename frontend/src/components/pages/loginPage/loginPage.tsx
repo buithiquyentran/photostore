@@ -100,8 +100,8 @@ const DangNhapPage: React.FC = () => {
           </p>
         </CardHeader>
 
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
+        <CardContent className="space-y-4 text-[#272343]">
+          <div className="space-y-2 ">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
