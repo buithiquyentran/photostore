@@ -82,6 +82,12 @@ const Layout = () => {
       for (let i = 0; i < files.length; i++) {
         formData.append("files", files[i]); // phải trùng với tên param trong BE
       }
+      if (folderPath) {
+        const project_slug = folderPath.split("/")[0];
+        const folder_slug = folderPath.split("/").slice(1).join("/");
+        formData.append("project_slug", project_slug);
+        formData.append("folder_slug", folder_slug);
+      }
 
       try {
         const res = await AssetsService.Upload(formData);
@@ -110,7 +116,7 @@ const Layout = () => {
             onUpload={handleUpload}
           />
           <div className="grow">
-            <Outlet context={{ assets, folders }} />
+            <Outlet context={{ assets, folders, onUpload: handleUpload }} />
           </div>
         </div>
 

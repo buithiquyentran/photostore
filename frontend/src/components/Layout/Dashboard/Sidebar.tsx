@@ -176,7 +176,7 @@ export default function Sidebar({
             if (folder.slug) handleOpenFolder();
           }}
           className={cn(
-            "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
+            "w-full flex items-center gap-2 px-3 py-1.5 text-base rounded-md transition-colors",
             "hover:bg-sidebar-accent text-sidebar-foreground",
             isSelected && "bg-sidebar-accent text-sidebar-accent-foreground",
             level > 0 && "ml-4"
@@ -219,7 +219,7 @@ export default function Sidebar({
         </div>
         <div className="flex-1 space-y-6">
           <div>
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
+            <h2 className="text-base font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
               Quick Access
             </h2>
             {quickAccess.map((item) => (
@@ -230,7 +230,7 @@ export default function Sidebar({
                   if (item.path) navigate(item.path);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-1.5 text-sm rounded-md transition-colors",
+                  "w-full flex items-center gap-3 px-3 py-1.5 text-base rounded-md transition-colors",
                   "hover:bg-sidebar-accent text-sidebar-foreground",
                   selectedMenu === item.id &&
                     "bg-sidebar-accent text-sidebar-accent-foreground"
@@ -243,7 +243,7 @@ export default function Sidebar({
           </div>
 
           <div>
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
+            <h2 className="text-base font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
               Projects
             </h2>
             <div className="space-y-0.5">
@@ -256,7 +256,7 @@ export default function Sidebar({
       {/* Bottom storage bar */}
 
       <div className="border-t border-gray-700 pt-4">
-        <div className="text-xs text-gray-400 mb-1">2 GB of 10 GB used</div>
+        <div className="text-base text-gray-400 mb-1">2 GB of 10 GB used</div>
         <div className=" flex w-full bg-secondary h-2 rounded-full overflow-hidden mb-4">
           <div className="bg-purple-500 h-2 " style={{ width: "20%" }}></div>
           <div className="bg-black h-2 " style={{ width: "80%" }}></div>
@@ -277,15 +277,15 @@ export default function Sidebar({
           </div>
           {open && (
             <div className="absolute left-14 bottom-0 bg-white shadow-lg rounded-md py-2 z-50">
-              <div className="px-4 py-2 text-sm text-gray-700 border-b flex">
+              <div className="px-4 py-2 text-base text-gray-700 border-b flex">
                 <span className="font-bold"> Name: </span> {username}
               </div>
-              <div className="px-4 py-2 text-sm text-gray-700 border-b flex">
+              <div className="px-4 py-2 text-base text-gray-700 border-b flex">
                 <span className="font-bold"> Email: </span> {email}
               </div>
               <button
                 onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                className="w-full text-left px-4 py-2 text-base text-red-600 hover:bg-gray-100"
               >
                 Đăng xuất
               </button>

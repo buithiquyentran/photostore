@@ -15,45 +15,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import folderService from "../api/folder.service";
 import FolderGrid from "@/components/ui/FolderGrid";
-
-interface FolderNode {
-  id: string;
-  name: string;
-  icon?: React.ReactNode;
-  children?: FolderNode[];
-  slug?: string;
-}
+import BreadcrumbPath from "@/components/ui/BreadcrumbPath";
 import { useOutletContext } from "react-router-dom";
 
 type DashboardContextType = {
   assets: any[];
   folders: any[];
+  onUpload: any;
 };
 
-export default function Dashboard(onUpload: (files: File[]) => void) {
-  const { assets, folders } = useOutletContext<DashboardContextType>();
+export default function Dashboard() {
+  const { assets, folders, onUpload } =
+    useOutletContext<DashboardContextType>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
-  // const [folders, setFolders] = useState<FolderNode[] | null>([]);
-  // const [assets, setAssets] = useState<any[]>([]);
-
-  // const fetchFolderContent = async () => {
-  //   try {
-  //     const response = await folderService.GetContent({
-  //       path: "home/my-children-folder",
-  //     });
-  //     setFolders(response.folders);
-  //     setAssets(response.assets);
-  //   } catch (error) {
-  //     console.error("Error fetching assets:", error);
-  //   }
-  // };
-  // chạy khi app load
-  // useEffect(() => {
-  //   fetchFolderContent();
-  // }, []);
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -74,11 +50,11 @@ export default function Dashboard(onUpload: (files: File[]) => void) {
     }
   };
 
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      onUpload(Array.from(e.target.files));
-    }
-  };
+  // const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   if (e.target.files && e.target.files.length > 0) {
+  //     onUpload(Array.from(e.target.files));
+  //   }
+  // };
 
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -100,11 +76,11 @@ export default function Dashboard(onUpload: (files: File[]) => void) {
       onDragOver={handleDrag}
       onDrop={handleDrop}
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-semibold text-foreground mb-1">
-              Files
+              <BreadcrumbPath />
             </h2>
             <p className="text-sm text-muted-foreground">
               {assets.length} items
@@ -122,7 +98,7 @@ export default function Dashboard(onUpload: (files: File[]) => void) {
             type="file"
             multiple
             accept="image/*"
-            onChange={handleFileInput}
+            onChange={onUpload}
             className="hidden"
           />
         </div>

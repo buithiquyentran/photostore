@@ -19,7 +19,7 @@ export default function FolderGrid({ folders }: { folders: any[] }) {
     );
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4  gap-4 mb-6">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4  gap-4 mb-6 ">
       {folders.map((folder) => (
         <motion.div
           key={folder.id}
@@ -28,7 +28,7 @@ export default function FolderGrid({ folders }: { folders: any[] }) {
           transition={{ duration: 0.2 }}
         >
           <Card
-            className="group relative cursor-pointer hover:bg-accent/40 transition-colors border-border"
+            className="group relative cursor-pointer hover:bg-accent/40 transition-colors border-border border border-gray-700"
             onClick={() => handleOpenFolder(folder.slug)}
           >
             <CardContent className="p-2 flex items-center justify-between">
