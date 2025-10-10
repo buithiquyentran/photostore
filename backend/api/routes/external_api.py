@@ -486,3 +486,72 @@ def search_by_text_api(
             status_code=500,
             detail=f"Search failed: {str(e)}"
         )
+
+
+@router.get("/search/text")
+def search_by_text_external(
+    q: str,  # Query text
+    k: int = 10,
+    similarity_threshold: float = 0.7,
+    project: Projects = Depends(verify_api_key),
+    session: Session = Depends(get_session)
+):
+    """
+    Search images by text query using CLIP embeddings (External API with API key).
+    
+    GET /api/external/search/text?q=a+cat+on+sofa
+    Headers: X-API-Key: your_api_key
+    
+    Uses CLIP to find images with content similar to text query.
+    Searches only in the project associated with the API key.
+    
+    Args:
+        q: Text query (e.g., "a cat on sofa", "sunset beach", "woman in white shirt")
+        k: Number of results (default: 10)
+        similarity_threshold: Minimum similarity 0-1 (default: 0.7 = 70%)
+    
+    Returns:
+        Images with similar content to the query
+    """
+    try:
+        # Search by CLIP embeddings in this project
+        assets = search_by_text(
+            session=session,
+            project_id=project.id,  # Only search in API key's project
+            query_text=q,
+            k=k,
+            folder_id=None,
+            user_id=project.user_id,
+            similarity_threshold=similarity_threshold
+        )
+        
+        # Format response
+        results = []
+        for asset in assets:
+            formatted_asset = format_asset_response(asset, session)
+            results.append({
+                "file": formatted_asset,
+                "message": "Semantic search result",
+                "result": True
+            })
+            
+        return {
+            "status": 1,
+            "data": {
+                "searchResults": results[0] if len(results) == 1 else results
+            },
+            "query": q,
+            "method": "clip_embeddings",
+            "project_id": project.id,
+            "total": len(results),
+            "similarity_threshold": similarity_threshold
+        }
+        
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Text search failed: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Text search failed: {str(e)}"
+        )

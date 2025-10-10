@@ -394,6 +394,28 @@ async def upload_assets(
                         # Không raise error, chỉ log warning
                         # Upload vẫn thành công nhưng không có embedding
                         print(f"⚠️ Embedding creation failed for asset {asset_id}: {emb_err}")
+                    
+                    # 🏷️ TỰ ĐỘNG ĐÁNH TAG cho ảnh
+                    auto_tags = []  # Store tags for response
+                    try:
+                        from services.tagging_service import auto_tag_asset
+                        # Open image từ bytes
+                        image_for_tagging = Image.open(io.BytesIO(file_bytes)).convert("RGB")
+                        tags = auto_tag_asset(
+                            session=session,
+                            asset_id=asset_id,
+                            image=image_for_tagging,
+                            threshold=0.25,  # Cosine similarity threshold (0-1)
+                            top_k=20  # Tăng lên 20 tags
+                        )
+                        auto_tags = tags  # Save for response
+                        if tags:
+                            print(f"✅ Auto-tagged asset {asset_id} with {len(tags)} tags: {', '.join(tags)}")
+                        else:
+                            print(f"⚠️ No tags generated for asset {asset_id}")
+                    except Exception as tag_err:
+                        # Không raise error, chỉ log warning
+                        print(f"⚠️ Auto-tagging failed for asset {asset_id}: {tag_err}")
 
             except Exception as e:
                 if os.path.exists(save_path):
@@ -421,6 +443,8 @@ async def upload_assets(
                 "project_slug": project.slug,
                 "folder_path": full_path,  # Full path từ project → parent folders → current folder
                 "is_private": is_private,
+                "auto_tags": auto_tags,  # ← Thêm danh sách tags tự động
+                "tags_count": len(auto_tags),  # ← Số lượng tags
                 "created_at": int(time.time()),
                 "updated_at": int(time.time())
             })

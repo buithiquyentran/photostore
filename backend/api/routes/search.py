@@ -165,6 +165,75 @@ async def search_by_image_upload(
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 
+@router.get("/text")
+def search_by_text_get(
+    q: str,  # Query text
+    project_id: Optional[int] = None,
+    folder_id: Optional[int] = None,
+    k: int = 10,
+    similarity_threshold: float = 0.7,
+    session: Session = Depends(get_session),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Search images by text query using CLIP embeddings (GET method).
+    
+    GET /api/v1/search/text?q=a+cat+on+sofa
+    
+    Uses CLIP to find images with content similar to text query.
+    NOT tag-based search, but semantic content search.
+    
+    Args:
+        q: Text query (e.g., "a cat on sofa", "sunset beach")
+        project_id: Optional project filter
+        folder_id: Optional folder filter
+        k: Number of results (default: 10)
+        similarity_threshold: Minimum similarity 0-1 (default: 0.7 = 70%)
+    
+    Returns:
+        Images with similar content to the query
+    """
+    try:
+        # Validate project ownership
+        if project_id:
+            validate_project_ownership(session, project_id, current_user.id)
+        
+        # Search by CLIP embeddings
+        assets = search_by_text(
+            session=session,
+            project_id=project_id,
+            query_text=q,
+            k=k,
+            folder_id=folder_id,
+            user_id=current_user.id,
+            similarity_threshold=similarity_threshold
+        )
+        
+        # Format response
+        results = []
+        for asset in assets:
+            formatted_asset = format_asset_response(asset, session)
+            results.append({
+                "file": formatted_asset,
+                "message": "Semantic search result",
+                "result": True
+            })
+        
+        return {
+            "status": 1,
+            "data": {
+                "searchResults": results[0] if len(results) == 1 else results
+            },
+            "query": q,
+            "method": "clip_embeddings",
+            "total": len(results),
+            "similarity_threshold": similarity_threshold
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+
 @router.post("/text")
 def search_by_text_query(
     query: str = Form(...),
@@ -176,7 +245,7 @@ def search_by_text_query(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Tìm kiếm ảnh bằng text query (semantic search).
+    Tìm kiếm ảnh bằng text query (semantic search) - POST method (legacy).
     
     Args:
         query: Text query (e.g., "a cat on the sofa", "sunset beach")

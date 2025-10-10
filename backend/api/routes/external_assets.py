@@ -117,6 +117,28 @@ async def upload_asset_external(
                     except Exception as emb_err:
                         # Không raise error, chỉ log warning
                         print(f"⚠️ [External API] Embedding creation failed for asset {asset_id}: {emb_err}")
+                    
+                    # 🏷️ TỰ ĐỘNG ĐÁNH TAG cho ảnh (External API)
+                    auto_tags = []  # Store tags for response
+                    try:
+                        from services.tagging_service import auto_tag_asset
+                        # Open image từ bytes
+                        image_for_tagging = Image.open(io.BytesIO(file_bytes)).convert("RGB")
+                        tags = auto_tag_asset(
+                            session=session,
+                            asset_id=asset_id,
+                            image=image_for_tagging,
+                            threshold=0.25,  # Cosine similarity threshold (0-1)
+                            top_k=20  # Tăng lên 20 tags
+                        )
+                        auto_tags = tags  # Save for response
+                        if tags:
+                            print(f"✅ [External API] Auto-tagged asset {asset_id} with {len(tags)} tags: {', '.join(tags)}")
+                        else:
+                            print(f"⚠️ [External API] No tags generated for asset {asset_id}")
+                    except Exception as tag_err:
+                        # Không raise error, chỉ log warning
+                        print(f"⚠️ [External API] Auto-tagging failed for asset {asset_id}: {tag_err}")
 
             except Exception as e:
                 if os.path.exists(save_path):
