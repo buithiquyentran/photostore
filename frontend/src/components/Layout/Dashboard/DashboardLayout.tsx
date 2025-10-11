@@ -13,10 +13,11 @@ interface FolderNode {
   slug?: string;
 }
 const Layout = () => {
+  const pathParts = location.pathname.replace(/^\/dashboard\/?/, "");
   const [assets, setAssets] = useState<any[]>([]);
   const [selectedMenu, setSelectedMenu] = useState<string>("");
   const [folders, setFolders] = useState<FolderNode[] | null>([]);
-  const [folderPath, setFolderPath] = useState<string>("");
+  const [folderPath, setFolderPath] = useState<string>(pathParts);
 
   const fetchFolderContent = useCallback(async () => {
     try {
@@ -67,8 +68,19 @@ const Layout = () => {
     }
   };
 
-  const handleUpload = async (e) => {
-    const files = e.target.files;
+  const handleUpload = async (
+    eOrFiles: React.ChangeEvent<HTMLInputElement> | File[]
+  ) => {
+    let files: File[] = [];
+
+    // Nếu là sự kiện từ input
+    if (Array.isArray(eOrFiles)) {
+      files = eOrFiles;
+    } else if (eOrFiles?.target?.files) {
+      files = Array.from(eOrFiles.target.files);
+    }
+
+    if (files.length === 0) return;
     if (files && files.length > 0) {
       const formData = new FormData();
       for (let i = 0; i < files.length; i++) {

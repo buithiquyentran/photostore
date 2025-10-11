@@ -5,6 +5,7 @@
 @layer base {
   :root {
     --background: rgb(31, 36, 46);
+    --popover: #111827;
     --foreground: #fff;
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.15 0 0);

@@ -2,11 +2,10 @@ import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import {
-  UploadCloud,
   MoreVertical,
   Download,
   Trash2,
-  Star,
+  Star,UploadCloud, Upload
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -14,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 import { cn } from "@/lib/utils";
 import FolderGrid from "@/components/ui/FolderGrid";
 import BreadcrumbPath from "@/components/ui/BreadcrumbPath";
@@ -60,12 +60,6 @@ export default function Dashboard() {
       onUpload(Array.from(e.dataTransfer.files));
     }
   };
-
-  // const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   if (e.target.files && e.target.files.length > 0) {
-  //     onUpload(Array.from(e.target.files));
-  //   }
-  // };
 
   const formatDate = (date: Date) => {
     const now = new Date();

@@ -17,7 +17,7 @@ export default {
         highlight: "#FFD803",
         newsletter: "#BAE8E8",
         tertiary: "#bae8e8",
-
+        popover: "var(--popover)",
         background: "var(--background)",
         foreground: "var(--foreground)",
         card: {
