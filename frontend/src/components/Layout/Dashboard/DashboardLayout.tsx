@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Outlet } from "react-router-dom";
-import Sidebar from "@/components/Layout/Dashboard/Sidebar";
+import Sidebar from "@/components/Layout/Dashboard/Sidebar/Sidebar";
 import SearchBar from "@/components/Layout/Dashboard/SearchBar";
 import UserService from "@/components/api/user.service";
 import AssetsService from "@/components/api/assets.service";
@@ -13,38 +13,31 @@ interface FolderNode {
   slug?: string;
 }
 const Layout = () => {
-  // const [searchResults, setSearchResults] = useState<any[]>([]);
+  const pathParts = location.pathname.replace(/^\/dashboard\/?/, "");
   const [assets, setAssets] = useState<any[]>([]);
-  const [queryText, setqueryText] = useState<string>("");
   const [selectedMenu, setSelectedMenu] = useState<string>("");
   const [folders, setFolders] = useState<FolderNode[] | null>([]);
-  const [folderPath, setFolderPath] = useState<string>("");
+  const [folderPath, setFolderPath] = useState<string>(pathParts);
 
-  const fetchFolderContent = async () => {
+  const fetchFolderContent = useCallback(async () => {
     try {
       if (folderPath) {
-        const response = await folderService.GetContent({
-          path: folderPath,
-        });
+        const response = await folderService.GetContent({ path: folderPath });
         setFolders(response.folders);
         setAssets(response.assets);
       } else {
-        const user_assets = await AssetsService.GetAll({
-          is_deleted: false,
-        });
-
-        const response = [...user_assets];
-        setAssets(response);
+        const user_assets = await AssetsService.GetAll({ is_deleted: false });
+        setAssets(user_assets);
       }
     } catch (error) {
       console.error("Error fetching assets:", error);
     }
-  };
+  }, [folderPath]); // ✅ khai báo folderPath là dependency ở đây
 
-  // chạy khi app load
   useEffect(() => {
     fetchFolderContent();
-  }, [folderPath]);
+  }, [fetchFolderContent]); // ✅ thêm fetchFolderContent vào deps
+
   const handleSearchByFile = async (e) => {
     const file = e.target.files?.[0];
 
@@ -75,8 +68,19 @@ const Layout = () => {
     }
   };
 
-  const handleUpload = async (e) => {
-    const files = e.target.files;
+  const handleUpload = async (
+    eOrFiles: React.ChangeEvent<HTMLInputElement> | File[]
+  ) => {
+    let files: File[] = [];
+
+    // Nếu là sự kiện từ input
+    if (Array.isArray(eOrFiles)) {
+      files = eOrFiles;
+    } else if (eOrFiles?.target?.files) {
+      files = Array.from(eOrFiles.target.files);
+    }
+
+    if (files.length === 0) return;
     if (files && files.length > 0) {
       const formData = new FormData();
       for (let i = 0; i < files.length; i++) {
@@ -116,7 +120,17 @@ const Layout = () => {
             onUpload={handleUpload}
           />
           <div className="grow">
-            <Outlet context={{ assets, folders, onUpload: handleUpload }} />
+            <Outlet
+              context={{
+                assets,
+                folders,
+                onUpload: handleUpload,
+                refetchFolders: fetchFolderContent,
+                setFolderPath: setFolderPath,
+                selectedMenu: selectedMenu,
+                setSelectedMenu: setSelectedMenu,
+              }}
+            />
           </div>
         </div>
 

@@ -1,16 +1,43 @@
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { FolderIcon, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+interface FolderNode {
+  id: string;
+  name: string;
+  icon?: React.ReactNode;
+  children?: FolderNode[];
+  slug: string;
+}
+interface FolderGridProps {
+  folders: FolderNode[] | null;
+  selectedMenu: string;
+  setSelectedMenu: (id: string) => void;
+  setFolderPath: (path: string) => void;
+}
 
-export default function FolderGrid({ folders }: { folders: any[] }) {
+export default function FolderGrid({
+  folders,
+  selectedMenu,
+  setSelectedMenu,
+  setFolderPath,
+}: FolderGridProps) {
+  const location = useLocation();
   const navigate = useNavigate();
 
-  const handleOpenFolder = (slug: string) => {
-    navigate(`/dashboard/${slug}`);
-  };
+  const pathParts = location.pathname
+    .replace(/^\/dashboard\/?/, "")
 
+  const handleOpenFolder = (folder: FolderNode) => {
+    if (selectedMenu === folder.id) return;
+    console.log(selectedMenu, folder.id);
+    const fullPath = pathParts ? `${pathParts}/${folder.slug}` : folder.slug;
+    console.log(fullPath);
+    setFolderPath(fullPath);
+    navigate(`/dashboard/${fullPath}`);
+    setSelectedMenu(folder.id);
+  };
   if (!folders?.length)
     return (
       <p className="text-muted-foreground text-sm p-4 italic">
@@ -29,7 +56,7 @@ export default function FolderGrid({ folders }: { folders: any[] }) {
         >
           <Card
             className="group relative cursor-pointer hover:bg-accent/40 transition-colors border-border border border-gray-700"
-            onClick={() => handleOpenFolder(folder.slug)}
+            onClick={() => handleOpenFolder(folder)}
           >
             <CardContent className="p-2 flex items-center justify-between">
               <div className="flex items-center gap-2 truncate">
