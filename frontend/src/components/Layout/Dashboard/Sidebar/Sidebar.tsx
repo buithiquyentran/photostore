@@ -26,6 +26,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import FolderTree from "@/components/Layout/Dashboard/Sidebar/FolderTree"
 import { cn } from "@/lib/utils";
 import path from "@/resources/path";
 
@@ -138,72 +139,7 @@ export default function Sidebar({
       })()
     : "";
 
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
-    new Set([])
-  );
 
-  const toggleFolder = (folderId: string) => {
-    const newExpanded = new Set(expandedFolders);
-    if (newExpanded.has(folderId)) {
-      newExpanded.delete(folderId);
-    } else {
-      newExpanded.add(folderId);
-    }
-    setExpandedFolders(newExpanded);
-  };
-
-  const renderFolder = (folder: FolderNode, level = 0, parentPath = "") => {
-    const isExpanded = expandedFolders.has(folder.id);
-    const hasChildren = folder.children && folder.children.length > 0;
-    const isSelected = selectedMenu === folder.id;
-
-    const fullPath = parentPath ? `${parentPath}/${folder.slug}` : folder.slug;
-
-    const handleOpenFolder = () => {
-      // Nếu đã chọn rồi thì không load lại
-      if (selectedMenu === folder.id) return;
-      setFolderPath(fullPath);
-      console.log(fullPath);
-      navigate(`/dashboard/${fullPath}`);
-      setSelectedMenu(folder.id);
-    };
-
-    return (
-      <div key={folder.id}>
-        <button
-          onClick={() => {
-            if (hasChildren) toggleFolder(folder.id);
-            if (folder.slug) handleOpenFolder();
-          }}
-          className={cn(
-            "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
-            "hover:bg-sidebar-accent text-sidebar-foreground",
-            isSelected && "bg-sidebar-accent text-sidebar-accent-foreground",
-            level > 0 && "ml-4"
-          )}
-          style={{ paddingLeft: `${level * 12 + 12}px` }}
-        >
-          {hasChildren &&
-            (isExpanded ? (
-              <ChevronDown className="h-4 w-4 shrink-0" />
-            ) : (
-              <ChevronRight className="h-4 w-4 shrink-0" />
-            ))}
-          {!hasChildren && <div className="w-4" />}
-          <Folder className="h-4 w-4 shrink-0" />
-          <span className="truncate">{folder.name}</span>
-        </button>
-
-        {hasChildren && isExpanded && (
-          <div className="mt-0.5">
-            {folder.children!.map((child) =>
-              renderFolder(child, level + 1, fullPath)
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   return (
     <div className="flex flex-col sticky top-0 h-screen justify-between w-60 bg-[#111827] p-4  border border-gray-700">
@@ -219,7 +155,7 @@ export default function Sidebar({
         </div>
         <div className="flex-1 space-y-6">
           <div>
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
+            <h2 className="text-base font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
               Quick Access
             </h2>
             {quickAccess.map((item) => (
@@ -230,7 +166,7 @@ export default function Sidebar({
                   if (item.path) navigate(item.path);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-1.5 text-sm rounded-md transition-colors",
+                  "w-full flex items-center gap-3 px-3 py-1.5 text-base rounded-md transition-colors",
                   "hover:bg-sidebar-accent text-sidebar-foreground",
                   selectedMenu === item.id &&
                     "bg-sidebar-accent text-sidebar-accent-foreground"
@@ -243,12 +179,15 @@ export default function Sidebar({
           </div>
 
           <div>
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
+            <h2 className="text-base font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
               Projects
             </h2>
-            <div className="space-y-0.5">
-              {folders?.map((folder) => renderFolder(folder))}
-            </div>
+            <FolderTree
+              folders={folders}
+              selectedMenu={selectedMenu}
+              setSelectedMenu={setSelectedMenu}
+              setFolderPath={setFolderPath}
+            />
           </div>
         </div>
       </div>
@@ -256,7 +195,7 @@ export default function Sidebar({
       {/* Bottom storage bar */}
 
       <div className="border-t border-gray-700 pt-4">
-        <div className="text-xs text-gray-400 mb-1">2 GB of 10 GB used</div>
+        <div className="text-base text-gray-400 mb-1">2 GB of 10 GB used</div>
         <div className=" flex w-full bg-secondary h-2 rounded-full overflow-hidden mb-4">
           <div className="bg-purple-500 h-2 " style={{ width: "20%" }}></div>
           <div className="bg-black h-2 " style={{ width: "80%" }}></div>
@@ -277,15 +216,15 @@ export default function Sidebar({
           </div>
           {open && (
             <div className="absolute left-14 bottom-0 bg-white shadow-lg rounded-md py-2 z-50">
-              <div className="px-4 py-2 text-sm text-gray-700 border-b flex">
+              <div className="px-4 py-2 text-base text-gray-700 border-b flex">
                 <span className="font-bold"> Name: </span> {username}
               </div>
-              <div className="px-4 py-2 text-sm text-gray-700 border-b flex">
+              <div className="px-4 py-2 text-base text-gray-700 border-b flex">
                 <span className="font-bold"> Email: </span> {email}
               </div>
               <button
                 onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                className="w-full text-left px-4 py-2 text-base text-red-600 hover:bg-gray-100"
               >
                 Đăng xuất
               </button>

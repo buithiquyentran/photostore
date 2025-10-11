@@ -14,15 +14,6 @@ from utils.build_tree import build_tree
 from utils.slug import create_slug
 router = APIRouter(prefix="/folders", tags=["Folders"])
 
-# @router.get("/all")
-# def get_folders(session: Session = Depends(get_session), current_user: dict = Depends(get_current_user)):
-#     try:
-#         folders = session.exec(select(Folders).join(Projects, Projects.id == Folders.project_id).join(Users, Users.id == Projects.user_id).where(Users.id == current_user.id)).all()
-#         data = build_tree(folders)
-#     except Exception as e:
-#         return JSONResponse(status_code=500, content={"detail": f"Lỗi khi lấy danh sách folder: {e}"})
-
-#     return {"status": 1, "data": data}
 @router.get("/all")
 def get_folders(
     session: Session = Depends(get_session),
@@ -74,8 +65,8 @@ def get_folders(
 from pydantic import BaseModel, Field, validator
 
 class FolderCreateRequest(BaseModel):
-    project_id: int = Field(..., description="ID của project chứa folder này")
-    parent_id: Optional[int] = Field(None, description="ID của folder cha (None nếu là root folder)")
+    project_slug: str = Field(..., description="SLUG của project chứa folder này")
+    folder_slug: Optional[str] = Field(None, description="SLUG của folder cha (None nếu là root folder)")
     name: str = Field(..., min_length=1, max_length=100, description="Tên folder")
     
     @validator('name')
@@ -106,7 +97,9 @@ def create_folder(
     - Check duplicate folder name trong cùng level
     """
     # 1. Validate project tồn tại và thuộc về user
-    project = session.get(Projects, req.project_id)
+    project = session.exec(
+        select(Projects).where(Projects.slug == req.project_slug)).first()
+
     if not project:
         raise HTTPException(status_code=404, detail="Project không tồn tại")
     
@@ -117,14 +110,14 @@ def create_folder(
         )
     
     # 2. Validate parent_id (nếu có)
-    if req.parent_id:
-        parent_folder = session.get(Folders, req.parent_id)
-        
+    if req.folder_slug:
+        parent_folder = session.exec(
+        select(Folders).where(Folders.slug == req.folder_slug)).first()
         if not parent_folder:
             raise HTTPException(status_code=404, detail="Folder cha không tồn tại")
         
         # Parent folder phải thuộc về cùng project
-        if parent_folder.project_id != req.project_id:
+        if parent_folder.project_id != project.id:
             raise HTTPException(
                 status_code=400, 
                 detail="Folder cha phải thuộc về cùng project"
@@ -133,8 +126,8 @@ def create_folder(
     # 3. Check duplicate folder name trong cùng level
     duplicate = session.exec(
         select(Folders)
-        .where(Folders.project_id == req.project_id)
-        .where(Folders.parent_id == req.parent_id)
+        .where(Folders.project_id == project.id)
+        .where(Folders.parent_id == parent_folder.id)
         .where(Folders.name == req.name)
     ).first()
     
@@ -150,8 +143,8 @@ def create_folder(
     # Check duplicate slug trong cùng level
     existing_folder = session.exec(
         select(Folders)
-        .where(Folders.project_id == req.project_id)
-        .where(Folders.parent_id == req.parent_id)
+        .where(Folders.project_id == project.id)
+        .where(Folders.parent_id == parent_folder.id)
         .where(Folders.slug == folder_slug)
     ).first()
     
@@ -162,8 +155,8 @@ def create_folder(
             new_slug = f"{folder_slug}-{counter}"
             existing_folder = session.exec(
                 select(Folders)
-                .where(Folders.project_id == req.project_id)
-                .where(Folders.parent_id == req.parent_id)
+                .where(Folders.project_id == project.id)
+                .where(Folders.parent_id == parent_folder.id)
                 .where(Folders.slug == new_slug)
             ).first()
             if not existing_folder:
@@ -176,8 +169,8 @@ def create_folder(
         new_folder = Folders(
             name=req.name,
             slug=folder_slug,
-            parent_id=req.parent_id,
-            project_id=req.project_id,
+            parent_id=parent_folder.id,
+            project_id=project.id,
             is_default=False
         )
         
@@ -234,12 +227,19 @@ def get_folder_contents(
 
         if not project:
             raise HTTPException(404, "Project not found")
-
+        if not folder_path:
+            folders = session.exec(select(Folders).where ((project.id == Folders.project_id) & (Folders.parent_id == None)))
+            return {
+                "status": 1,
+                "folders": [f.model_dump() for f in folders],
+                "assets": [],
+            }
         # 🔹 Tìm folder theo đường dẫn (dùng hàm helper)
         folder = find_folder_by_path(session, project.id, folder_path)
 
         if not folder:
             raise HTTPException(404, "Folder not found")
+        
 
         # 🔹 Lấy các folder con
         child_folders = session.exec(
