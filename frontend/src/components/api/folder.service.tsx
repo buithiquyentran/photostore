@@ -9,6 +9,15 @@ class FolderService {
     const res = await this.api.get("/all");
     return res.data.data;
   }
+  async Create(data: {
+    project_slug: string;
+    folder_slug?: string | null;
+    name: string;
+  }) {
+    const res = await this.api.post("/create", data);
+    return res.data.data;
+  }
+
   async GetContent(params: Record<string, any> = {}) {
     return (await this.api.get("/contents", { params })).data;
   }

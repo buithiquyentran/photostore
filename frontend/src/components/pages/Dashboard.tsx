@@ -23,11 +23,22 @@ type DashboardContextType = {
   assets: any[];
   folders: any[];
   onUpload: any;
+  refetchFolders: any;
+  setFolderPath: React.Dispatch<React.SetStateAction<string>>;
+  selectedMenu: string;
+  setSelectedMenu: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export default function Dashboard() {
-  const { assets, folders, onUpload } =
-    useOutletContext<DashboardContextType>();
+  const {
+    assets,
+    folders,
+    onUpload,
+    refetchFolders,
+    setFolderPath,
+    selectedMenu,
+    setSelectedMenu,
+  } = useOutletContext<DashboardContextType>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const handleDrag = (e: React.DragEvent) => {
@@ -80,7 +91,10 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-semibold text-foreground mb-1">
-              <BreadcrumbPath />
+              <BreadcrumbPath
+                refetchFolders={refetchFolders}
+                setFolderPath={setFolderPath}
+              />
             </h2>
             <p className="text-sm text-muted-foreground">
               {assets.length} items
@@ -103,7 +117,12 @@ export default function Dashboard() {
           />
         </div>
         {/* folders */}
-        <FolderGrid folders={folders} />
+        <FolderGrid
+          folders={folders}
+          setFolderPath={setFolderPath}
+          selectedMenu={selectedMenu}
+          setSelectedMenu={setSelectedMenu}
+        />
         {assets?.length === 0 ? (
           <Card
             className={cn(
@@ -202,7 +221,6 @@ export default function Dashboard() {
             ))}
           </div>
         )}
-
         {dragActive && (
           <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 pointer-events-none">
             <div className="bg-card border-2 border-dashed border-primary rounded-lg p-12 text-center">

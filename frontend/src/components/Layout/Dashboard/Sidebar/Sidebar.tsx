@@ -26,6 +26,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import FolderTree from "@/components/Layout/Dashboard/Sidebar/FolderTree"
 import { cn } from "@/lib/utils";
 import path from "@/resources/path";
 
@@ -138,72 +139,7 @@ export default function Sidebar({
       })()
     : "";
 
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
-    new Set([])
-  );
 
-  const toggleFolder = (folderId: string) => {
-    const newExpanded = new Set(expandedFolders);
-    if (newExpanded.has(folderId)) {
-      newExpanded.delete(folderId);
-    } else {
-      newExpanded.add(folderId);
-    }
-    setExpandedFolders(newExpanded);
-  };
-
-  const renderFolder = (folder: FolderNode, level = 0, parentPath = "") => {
-    const isExpanded = expandedFolders.has(folder.id);
-    const hasChildren = folder.children && folder.children.length > 0;
-    const isSelected = selectedMenu === folder.id;
-
-    const fullPath = parentPath ? `${parentPath}/${folder.slug}` : folder.slug;
-
-    const handleOpenFolder = () => {
-      // Nếu đã chọn rồi thì không load lại
-      if (selectedMenu === folder.id) return;
-      setFolderPath(fullPath);
-      console.log(fullPath);
-      navigate(`/dashboard/${fullPath}`);
-      setSelectedMenu(folder.id);
-    };
-
-    return (
-      <div key={folder.id}>
-        <button
-          onClick={() => {
-            if (hasChildren) toggleFolder(folder.id);
-            if (folder.slug) handleOpenFolder();
-          }}
-          className={cn(
-            "w-full flex items-center gap-2 px-3 py-1.5 text-base rounded-md transition-colors",
-            "hover:bg-sidebar-accent text-sidebar-foreground",
-            isSelected && "bg-sidebar-accent text-sidebar-accent-foreground",
-            level > 0 && "ml-4"
-          )}
-          style={{ paddingLeft: `${level * 12 + 12}px` }}
-        >
-          {hasChildren &&
-            (isExpanded ? (
-              <ChevronDown className="h-4 w-4 shrink-0" />
-            ) : (
-              <ChevronRight className="h-4 w-4 shrink-0" />
-            ))}
-          {!hasChildren && <div className="w-4" />}
-          <Folder className="h-4 w-4 shrink-0" />
-          <span className="truncate">{folder.name}</span>
-        </button>
-
-        {hasChildren && isExpanded && (
-          <div className="mt-0.5">
-            {folder.children!.map((child) =>
-              renderFolder(child, level + 1, fullPath)
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   return (
     <div className="flex flex-col sticky top-0 h-screen justify-between w-60 bg-[#111827] p-4  border border-gray-700">
@@ -246,9 +182,12 @@ export default function Sidebar({
             <h2 className="text-base font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
               Projects
             </h2>
-            <div className="space-y-0.5">
-              {folders?.map((folder) => renderFolder(folder))}
-            </div>
+            <FolderTree
+              folders={folders}
+              selectedMenu={selectedMenu}
+              setSelectedMenu={setSelectedMenu}
+              setFolderPath={setFolderPath}
+            />
           </div>
         </div>
       </div>
