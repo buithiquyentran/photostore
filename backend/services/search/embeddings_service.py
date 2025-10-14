@@ -104,6 +104,15 @@ def add_embedding_to_db(
     session.commit()
     session.refresh(embedding)
     
+    # Kiểm tra xem project có FAISS index chưa
+    from services.search.faiss_index import PROJECT_INDICES
+    if project_id not in PROJECT_INDICES:
+        try:
+            # Thử rebuild index từ database
+            rebuild_project_embeddings(session, project_id)
+        except Exception as e:
+            print(f"[Embeddings] Error rebuilding index for project {project_id}: {e}")
+    
     # Đồng bộ với FAISS index
     add_vector_to_project(
         project_id=project_id,
@@ -111,8 +120,6 @@ def add_embedding_to_db(
         folder_id=folder_id,
         embedding=embedding_vector
     )
-    
-    print(f"[Embeddings] Added embedding for asset {asset_id} in project {project_id}")
     
     return embedding
 
@@ -137,8 +144,6 @@ def remove_embedding_from_db(session: Session, asset_id: int, project_id: int):
     
     # Xóa khỏi FAISS
     remove_vector_from_project(project_id, asset_id)
-    
-    print(f"[Embeddings] Removed embedding for asset {asset_id} from project {project_id}")
 
 
 def rebuild_project_embeddings(session: Session, project_id: int):
@@ -165,8 +170,6 @@ def rebuild_project_embeddings(session: Session, project_id: int):
     
     # Rebuild FAISS index
     rebuild_project_index(project_id, embeddings_data)
-    
-    print(f"[Embeddings] Rebuilt {len(embeddings_data)} embeddings for project {project_id}")
 
 
 def search_by_image(
@@ -175,7 +178,8 @@ def search_by_image(
     image: Image.Image,
     k: int = 10,
     folder_id: Optional[int] = None,
-    user_id: Optional[int] = None
+    user_id: Optional[int] = None,
+    similarity_threshold: float = 0.7  # Ngưỡng similarity (0.7 = 70% giống nhau)
 ) -> list[Assets]:
     """
     Tìm kiếm assets tương tự bằng ảnh.
@@ -196,7 +200,7 @@ def search_by_image(
     
     if project_id:
         # Search trong 1 project cụ thể
-        asset_ids = search_in_project(project_id, query_vector, k, folder_id)
+        asset_ids = search_in_project(project_id, query_vector, k, folder_id, similarity_threshold)
     else:
         # Search across all projects của user
         if not user_id:
@@ -214,7 +218,7 @@ def search_by_image(
         # Search trong từng project và merge results
         all_results = []
         for proj in user_projects:
-            proj_results = search_in_project(proj.id, query_vector, k, folder_id)
+            proj_results = search_in_project(proj.id, query_vector, k, folder_id, similarity_threshold)
             all_results.extend(proj_results)
         
         # Sort by similarity và lấy top k
@@ -241,7 +245,8 @@ def search_by_text(
     query_text: str,
     k: int = 10,
     folder_id: Optional[int] = None,
-    user_id: Optional[int] = None
+    user_id: Optional[int] = None,
+    similarity_threshold: float = 0.2 # Ngưỡng similarity (0.7 = 70% giống nhau)
 ) -> list[Assets]:
     """
     Tìm kiếm assets bằng text query.
@@ -262,7 +267,7 @@ def search_by_text(
     
     if project_id:
         # Search trong 1 project cụ thể
-        asset_ids = search_in_project(project_id, query_vector, k, folder_id)
+        asset_ids = search_in_project(project_id, query_vector, k, folder_id, similarity_threshold)
     else:
         # Search across all projects của user
         if not user_id:
@@ -280,7 +285,7 @@ def search_by_text(
         # Search trong từng project và merge results
         all_results = []
         for proj in user_projects:
-            proj_results = search_in_project(proj.id, query_vector, k, folder_id)
+            proj_results = search_in_project(proj.id, query_vector, k, folder_id, similarity_threshold)
             all_results.extend(proj_results)
         
         # Sort by similarity và lấy top k

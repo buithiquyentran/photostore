@@ -7,7 +7,8 @@ from sqlalchemy import Text
 class Embeddings(SQLModel, table=True):
     __tablename__ = "embeddings"
     id: Optional[int] = Field(default=None, primary_key=True)
-    asset_id: int = Field(foreign_key="assets.id")
+    asset_id: Optional[int] = Field(default=None, foreign_key="assets.id")
+
     project_id: int = Field(foreign_key="projects.id", index=True)  # Thêm project_id để tìm kiếm nhanh
     folder_id: Optional[int] = Field(default=None, foreign_key="folders.id", index=True)  # Thêm folder_id để filter
     embedding: str = Field(sa_type=Text, nullable=False)  # TEXT type để chứa vector lớn (512 floats ~11KB)

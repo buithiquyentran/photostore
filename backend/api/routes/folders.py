@@ -108,8 +108,9 @@ def create_folder(
             status_code=403, 
             detail="Bạn không có quyền tạo folder trong project này"
         )
-    
+        
     # 2. Validate parent_id (nếu có)
+    parent_folder = None
     if req.folder_slug:
         parent_folder = session.exec(
         select(Folders).where(Folders.slug == req.folder_slug)).first()
@@ -122,54 +123,53 @@ def create_folder(
                 status_code=400, 
                 detail="Folder cha phải thuộc về cùng project"
             )
-    
-    # 3. Check duplicate folder name trong cùng level
-    duplicate = session.exec(
-        select(Folders)
-        .where(Folders.project_id == project.id)
-        .where(Folders.parent_id == parent_folder.id)
-        .where(Folders.name == req.name)
-    ).first()
-    
-    if duplicate:
-        raise HTTPException(
-            status_code=409, 
-            detail=f"Folder '{req.name}' đã tồn tại trong cùng cấp"
-        )
-    
     # 4. Tạo slug từ name
     folder_slug = create_slug(req.name)
+    # 3. Check duplicate folder name trong cùng level
+    if parent_folder :
+        duplicate = session.exec(
+            select(Folders)
+            .where(Folders.project_id == project.id)
+            .where(Folders.parent_id == parent_folder.id)
+            .where(Folders.name == req.name)
+        ).first()
     
-    # Check duplicate slug trong cùng level
-    existing_folder = session.exec(
-        select(Folders)
-        .where(Folders.project_id == project.id)
-        .where(Folders.parent_id == parent_folder.id)
-        .where(Folders.slug == folder_slug)
-    ).first()
+        if duplicate:
+            raise HTTPException(
+                status_code=409, 
+                detail=f"Folder '{req.name}' đã tồn tại trong cùng cấp"
+            )
     
-    if existing_folder:
-        # Thêm suffix nếu slug đã tồn tại
-        counter = 1
-        while existing_folder:
-            new_slug = f"{folder_slug}-{counter}"
-            existing_folder = session.exec(
-                select(Folders)
-                .where(Folders.project_id == project.id)
-                .where(Folders.parent_id == parent_folder.id)
-                .where(Folders.slug == new_slug)
-            ).first()
-            if not existing_folder:
-                folder_slug = new_slug
-                break
-            counter += 1
-    
+        # Check duplicate slug trong cùng level
+        existing_folder = session.exec(
+            select(Folders)
+            .where(Folders.project_id == project.id)
+            .where(Folders.parent_id == parent_folder.id)
+            .where(Folders.slug == folder_slug)
+        ).first()
+        
+        if existing_folder:
+            # Thêm suffix nếu slug đã tồn tại
+            counter = 1
+            while existing_folder:
+                new_slug = f"{folder_slug}-{counter}"
+                existing_folder = session.exec(
+                    select(Folders)
+                    .where(Folders.project_id == project.id)
+                    .where(Folders.parent_id == parent_folder.id)
+                    .where(Folders.slug == new_slug)
+                ).first()
+                if not existing_folder:
+                    folder_slug = new_slug
+                    break
+                counter += 1
+        
     try:
         # 5. Tạo folder mới
         new_folder = Folders(
             name=req.name,
             slug=folder_slug,
-            parent_id=parent_folder.id,
+            parent_id= parent_folder.id if parent_folder else None,
             project_id=project.id,
             is_default=False
         )
@@ -190,6 +190,7 @@ def create_folder(
             status_code=500, 
             detail=f"Lỗi khi tạo folder: {str(e)}"
         )
+
 @router.delete("/{folder_id}")
 def delete_folder(folder_id: int, session: Session = Depends(get_session), current_user: dict = Depends(get_current_user)):
     folder = session.exec(select(Folders).where(Folders.id == folder_id)).first() 

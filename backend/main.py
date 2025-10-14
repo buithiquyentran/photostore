@@ -4,12 +4,10 @@ from starlette.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import SQLModel
 
-from api.main import api_router
+from api.main import api_router, external_api_router
 from core.config import settings
 from dependencies.auth_middleware import AuthMiddleware
 from dependencies.api_key_middleware import verify_api_request
-from dependencies.static_middleware import verify_static_access
-
 from db.session import engine
 
 # Import models để SQLModel biết
@@ -34,7 +32,7 @@ app = FastAPI(
 if settings.all_cors_origins:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins= ["*"] ,#settings.all_cors_origins, # "http://localhost:3000,http://localhost:5173"
+        allow_origins=settings.all_cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -45,18 +43,23 @@ required_roles = {
 }
 
 app.add_middleware(AuthMiddleware, required_roles=required_roles)
-app.middleware("http")(verify_static_access)
 
 # Add API key middleware
 app.middleware("http")(verify_api_request)
 
+# Include versioned API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Include external API router (URL: /api/external/...)
+app.include_router(external_api_router, prefix="/api")
 
 @app.get("/")
 def root():
     return {"message": "Database connected successfully!"}
 
 # Add static files middleware
+from dependencies.static_middleware import verify_static_access
+app.middleware("http")(verify_static_access)
 
 @app.on_event("startup")
 def startup_event():
@@ -73,9 +76,6 @@ def startup_event():
     uploads_dir.mkdir(exist_ok=True)
     print(f"✅ Uploads directory initialized at {uploads_dir.absolute()}")
     
-    # TODO: Load FAISS indices for active projects
-    # from db.session import get_session
-    # from services.search.embeddings_service import rebuild_project_embeddings
-    # with next(get_session()) as session:
-    #     # Rebuild indices for active projects
-    #     pass
+    # Load FAISS indices from disk
+    from services.search.faiss_index import load_all_indices_from_disk
+    load_all_indices_from_disk()
