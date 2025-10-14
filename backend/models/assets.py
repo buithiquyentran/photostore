@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship # type: ignore
-
+from sqlalchemy.orm import relationship
 
 class Assets(SQLModel, table=True):
     __tablename__ = "assets"
@@ -40,4 +40,7 @@ class Assets(SQLModel, table=True):
     # Quan hệ với bảng folders (1 folder có nhiều assets)
     folders: Optional["Folders"] = Relationship(back_populates="assets")
     
-    embeddings: List["Embeddings"] = Relationship(back_populates="assets")
+    embeddings: List["Embeddings"] = Relationship(
+        back_populates="assets",
+        sa_relationship_kwargs={"cascade": "all, delete, delete-orphan"},
+    )

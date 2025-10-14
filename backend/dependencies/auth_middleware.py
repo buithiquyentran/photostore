@@ -52,7 +52,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
            "/api/v1/openapi.json",
            "/docs",
            "/redoc",
-           "/favicon.ico"
+           "/favicon.ico",
+           "/api/v1/test/*",  # TEst
+           
         ]
 
     def _get_required_roles_for_path(self, path: str):

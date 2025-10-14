@@ -60,6 +60,12 @@ class AssetResponse(BaseModel):
     folder_path: str
     is_private: bool
 
+# Ảnh private cho API client
+# @router.get("/uploads/{path:path}")
+# def get_external_image(path: str, project: Projects = Depends(verify_api_key)):
+#     return FileResponse(f"uploads/{path}")
+
+
 # ============================================
 # Folder Management
 # ============================================
@@ -505,8 +511,13 @@ def delete_asset(
                 }
             )
 
-        # TODO: Implement file deletion logic
-        # Reuse logic từ user_assets.py
+        try:
+            if asset.path:
+                file_path = os.path.join("uploads", asset.path)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+        except Exception as file_err:
+            print(f"[WARNING] Không thể xóa: {file_err}")
 
         session.delete(asset)
         session.commit()
@@ -526,6 +537,21 @@ def delete_asset(
                 "message": "Internal server error"
             }
         )
+
+@router.delete("/assets")
+def delete_asset_by_url(file_url: str, session: Session = Depends(get_session), project: Projects = Depends(verify_api_key)):
+    asset = session.exec(
+        select(Assets).where(Assets.file_url == file_url, Assets.project_id == project.id)
+    ).first()
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    if os.path.exists(asset.path):
+        os.remove(asset.path)
+
+    session.delete(asset)
+    session.commit()
+    return {"message": "Asset deleted successfully"}
 
 # ============================================
 # Search

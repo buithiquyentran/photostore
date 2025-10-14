@@ -14,6 +14,8 @@ def verify_api_key(request: Request, session: Session = Depends(get_session)) ->
     Xác thực API key và secret key.
     Trả về project nếu hợp lệ.
     """
+    if request.method == "OPTIONS":
+        return None  # Bỏ qua preflight
     api_key = request.headers.get("X-API-Key")
     if not api_key:
         raise HTTPException(

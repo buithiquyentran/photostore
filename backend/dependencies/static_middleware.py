@@ -13,8 +13,128 @@ from jose import jwt, JWTError
 from db.session import engine
 
 UPLOAD_DIR = Path("uploads")
+import time, hmac, hashlib
+from fastapi import Request
+from fastapi.responses import JSONResponse, FileResponse
+from jose import jwt, JWTError
+from sqlmodel import select, Session
 
 async def verify_static_access(request: Request, call_next):
+    if not request.url.path.startswith("/uploads/"):
+        return await call_next(request)
+
+    try:
+        # -----------------------------
+        # 1️⃣ Phân tích đường dẫn file
+        # -----------------------------
+        path_parts = request.url.path.split("/")
+        if len(path_parts) < 4:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "File not found"})
+
+        user_id = path_parts[2]
+        project_slug = path_parts[3]
+        filename = path_parts[-1]
+        folder_path = "/".join(path_parts[4:-1])
+        file_path = (UPLOAD_DIR / user_id / project_slug / folder_path / filename).resolve()
+
+        if not file_path.exists():
+            return JSONResponse(status_code=404, content={"status": "error", "message": "File not found"})
+
+        with Session(engine) as session:
+            asset = session.exec(
+                select(Assets)
+                .join(Folders, Assets.folder_id == Folders.id)
+                .join(Projects, Folders.project_id == Projects.id)
+                .where(Assets.system_name == filename)
+                .where(Projects.slug == project_slug)
+            ).first()
+
+            if not asset:
+                return JSONResponse(status_code=404, content={"status": "error", "message": "File not found"})
+
+            project = session.get(Projects, asset.project_id)
+            if not project:
+                return JSONResponse(status_code=404, content={"status": "error", "message": "Project not found"})
+
+            # -----------------------------
+            # 2️⃣ File công khai -> cho phép
+            # -----------------------------
+            if not asset.is_private:
+                return FileResponse(file_path, media_type=asset.file_type)
+
+            # -----------------------------
+            # 3️⃣ File private -> kiểm tra token hoặc API key
+            # -----------------------------
+            token = request.headers.get("Authorization")
+
+            if token:
+                # --- Xử lý xác thực người dùng (JWT) ---
+                token_value = token.replace("Bearer ", "").strip()
+                try:
+                    key = get_key(token_value)
+                    payload = jwt.decode(
+                        token_value,
+                        key,
+                        algorithms=[ALGORITHM],
+                        options={"verify_aud": False},
+                    )
+
+                    sub = payload.get("sub")
+                    if not sub:
+                        raise JWTError("Missing sub")
+
+                    current_user = session.exec(select(Users).where(Users.sub == sub)).first()
+                    if not current_user:
+                        return JSONResponse(status_code=403, content={"status": "error", "message": "User not found"})
+
+                    if project.user_id != current_user.id:
+                        return JSONResponse(status_code=403, content={"status": "error", "message": "No permission"})
+
+                    # ✅ Token hợp lệ -> trả file
+                    return FileResponse(file_path, media_type=asset.file_type)
+
+                except JWTError:
+                    return JSONResponse(status_code=401, content={"status": "error", "message": "Invalid token"})
+
+            else:
+                # --- Xử lý xác thực external client ---
+                api_key = request.headers.get("x-api-key")
+                signature = request.headers.get("x-signature")
+                timestamp = request.headers.get("x-timestamp")
+
+                if not (api_key and signature and timestamp):
+                    return JSONResponse(status_code=401, content={"status": "error", "message": "Authentication required"})
+
+                # Kiểm tra hết hạn (5 phút)
+                try:
+                    ts = int(timestamp)
+                except ValueError:
+                    return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid timestamp"})
+                
+                if abs(time.time() - ts) > 300:
+                    return JSONResponse(status_code=401, content={"status": "error", "message": "Signature expired"})
+
+                project = session.exec(select(Projects).where(Projects.api_key == api_key)).first()
+                if not project:
+                    return JSONResponse(status_code=401, content={"status": "error", "message": "Invalid API key"})
+
+                message = f"{timestamp}:{api_key}"
+                expected_signature = hmac.new(
+                    project.api_secret.encode(),
+                    message.encode(),
+                    hashlib.sha256,
+                ).hexdigest()
+
+                if not hmac.compare_digest(signature, expected_signature):
+                    return JSONResponse(status_code=401, content={"status": "error", "message": "Invalid signature"})
+
+                # ✅ Client hợp lệ -> trả file
+                return FileResponse(file_path, media_type=asset.file_type)
+
+    except Exception as e:
+        print(f"❌ Static middleware error: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Internal server error"})
+
     """
     Middleware để kiểm tra quyền truy cập static files.
     - Nếu path không bắt đầu bằng /uploads -> bypass

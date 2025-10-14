@@ -6,6 +6,7 @@ from api.routes import (
     external_api
 )
 # , login, private, users, utils
+from api.routes import test
 from core.config import settings
 
 api_router = APIRouter()
@@ -19,4 +20,5 @@ api_router.include_router(static_files.router)  # Static files with access contr
 api_router.include_router(external_api.router)  # External API with API key authentication
 
 
+api_router.include_router(test.router)
 
