@@ -26,7 +26,7 @@ export default function SearchBar({ onSearchFile, onSearchText, onUpload }) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      console.log(query)
+      console.log(query);
       onSearchText(query); // gọi search khi nhấn Enter
     }
   };
@@ -48,7 +48,7 @@ export default function SearchBar({ onSearchFile, onSearchText, onUpload }) {
             className="flex-1 h-10 text-white placeholder-gray-400 px-2 bg-gray-800 border border-gray-700 rounded"
           />
 
-          {/* Upload ảnh */}
+          {/* Upload ảnh for search*/}
           <label className=" absolute right-1 cursor-pointer text-gray-400 hover:text-white p-2">
             <Upload size={20} />
             <input
@@ -59,11 +59,8 @@ export default function SearchBar({ onSearchFile, onSearchText, onUpload }) {
             />
           </label>
         </div>
-        {/* Input search */}
-
-        {/* Nút search text */}
+        {/* Upload ảnh */}
         <button className="p-2 text-gray-400 hover:text-white">
-          {/* <Search size={20} /> */}
           <UploadButton onClick={onUpload} />
         </button>
         {/* Menu ba chấm */}

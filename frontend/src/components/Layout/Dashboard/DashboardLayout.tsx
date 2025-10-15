@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "@/components/Layout/Dashboard/Sidebar/Sidebar";
 import SearchBar from "@/components/Layout/Dashboard/SearchBar";
-import UserService from "@/components/api/user.service";
+import SearchService from "@/components/api/search.service";
 import AssetsService from "@/components/api/assets.service";
 import folderService from "@/components/api/folder.service";
 interface FolderNode {
@@ -45,7 +45,9 @@ const Layout = () => {
       try {
         const formData = new FormData();
         formData.append("file", file);
-        const res = await UserService.UploadImageForSearch(formData);
+        formData.append("query_text", "many people");
+        const res = await SearchService.Search(formData);
+        console.log(res);
         setAssets(res); // Lưu kết quả tìm kiếm vào state
       } catch (err) {
         console.error("Search failed", err);
@@ -53,19 +55,19 @@ const Layout = () => {
     }
   };
   const handleSearchByText = async (text: string) => {
-    if (text) {
-      try {
-        const formData = new FormData();
-        formData.append("query_text", text);
-        const res = await AssetsService.UploadImageForSearch(formData);
-        setAssets(res); // Lưu kết quả tìm kiếm vào state
-      } catch (err) {
-        console.error("Search failed", err);
-      }
-    } else {
-      const res = await AssetsService.GetAll();
-      setAssets(res); // Lưu kết quả tìm kiếm vào state
-    }
+    // if (text) {
+    //   try {
+    //     const formData = new FormData();
+    //     formData.append("query_text", text);
+    //     const res = await AssetsService.UploadImageForSearch(formData);
+    //     setAssets(res); // Lưu kết quả tìm kiếm vào state
+    //   } catch (err) {
+    //     console.error("Search failed", err);
+    //   }
+    // } else {
+    //   const res = await AssetsService.GetAll();
+    //   setAssets(res); // Lưu kết quả tìm kiếm vào state
+    // }
   };
 
   const handleUpload = async (

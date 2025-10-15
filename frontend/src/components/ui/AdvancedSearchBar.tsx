@@ -25,7 +25,7 @@ export default function AdvancedSearchBar({
         placeholder="Type to filter..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="bg-gray-800 border border-gray-700 rounded px-3 py-1 text-sm flex-1 min-w-[200px]"
+        className="bg-gray-800 border border-gray-700 rounded px-3 py-1 text-base flex-1 min-w-[200px]"
       />
 
       {/* Filter dropdowns */}
@@ -66,7 +66,7 @@ export default function AdvancedSearchBar({
       />
 
       {/* Add more */}
-      <button className="text-blue-400 text-sm hover:underline">
+      <button className="text-blue-400 text-base hover:underline">
         + Add more
       </button>
     </div>
@@ -99,7 +99,7 @@ function Dropdown({ label, options, onChange }: DropdownProps) {
       {/* Trigger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-left flex"
+        className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-base text-left flex"
       >
         {selected || label} <ChevronDown />
       </button>
@@ -115,7 +115,7 @@ function Dropdown({ label, options, onChange }: DropdownProps) {
               placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-2 py-1 text-sm bg-gray-700 text-white border-b border-gray-600 outline-none"
+              className="w-full px-2 py-1 text-base bg-gray-700 text-white border-b border-gray-600 outline-none"
             />
 
             {/* Options */}
@@ -125,13 +125,13 @@ function Dropdown({ label, options, onChange }: DropdownProps) {
                   <div
                     key={opt}
                     onClick={() => handleSelect(opt)}
-                    className="px-2 py-1 text-sm text-white hover:bg-gray-600 cursor-pointer"
+                    className="px-2 py-1 text-base text-white hover:bg-gray-600 cursor-pointer"
                   >
                     {opt}
                   </div>
                 ))
               ) : (
-                <div className="px-2 py-1 text-sm text-gray-400">
+                <div className="px-2 py-1 text-base text-gray-400">
                   No results found
                 </div>
               )}

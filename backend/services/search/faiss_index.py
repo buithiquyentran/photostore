@@ -166,7 +166,7 @@ def search_in_project(
     query_vector: np.ndarray,
     k: int = 10,
     folder_id: Optional[int] = None,
-    similarity_threshold: float = 0.7  # Ngưỡng similarity (0.7 = 70% giống nhau)
+    similarity_threshold: float = 0.2  # Ngưỡng similarity (0.7 = 70% giống nhau)
 ) -> list[int]:
     """
     Tìm kiếm trong project bằng vector query.

@@ -80,7 +80,7 @@ def verify_api_key(request: Request, session: Session = Depends(get_session)) ->
         )
      # check expired 5 phút
     now = int(time.time())
-    if now - int(timestamp) > 3600: #60*5
+    if now - int(timestamp) > 36000: #60*5
         raise HTTPException(status_code=401, detail={
                 "status": "error",
                 "message": "Signature expired"
@@ -119,9 +119,9 @@ def verify_api_key(request: Request, session: Session = Depends(get_session)) ->
 async def verify_api_request(request: Request, call_next):
     """
     Middleware để xác thực API requests.
-    Chỉ áp dụng cho các routes bắt đầu bằng /api/v1/external
+    Chỉ áp dụng cho các routes bắt đầu bằng /api/external
     """
-    if not request.url.path.startswith("/api/v1/external"):
+    if not request.url.path.startswith("/api/external"):
         return await call_next(request)
 
     try:

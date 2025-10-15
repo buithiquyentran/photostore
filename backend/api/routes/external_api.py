@@ -6,6 +6,8 @@ from sqlmodel import Session, select
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
+from fastapi import Query
+
 from PIL import Image
 import io
 from pathlib import Path
@@ -576,7 +578,7 @@ def delete_asset(
         )
 
 @router.delete("/assets")
-def delete_asset_by_url(file_url: str, session: Session = Depends(get_session), project: Projects = Depends(verify_api_key)):
+def delete_asset_by_url(file_url: str = Query(None, description="Xóa ảnh bằng file_url"), session: Session = Depends(get_session), project: Projects = Depends(verify_api_key)):
     asset = session.exec(
         select(Assets).where(Assets.file_url == file_url, Assets.project_id == project.id)
     ).first()

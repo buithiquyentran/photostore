@@ -178,6 +178,55 @@ def update_asset(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi: {str(e)}")
 
+@router.delete("/{asset_id}")
+def delete_asset(
+    asset_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Xóa asset"""
+    try:
+        asset = session.get(Assets, asset_id)
+        if not asset:
+            raise HTTPException(status_code=404, detail="Assets not found")
+        user  = session.exec(select(Users)
+                .join(Projects, Users.id == Projects.user_id)
+                .join(Folders, Projects.id == Folders.project_id)
+                .join(Assets, Folders.id == Assets.folder_id)
+                .where(Assets.id == asset.id)
+            ).first()
+        if not user:
+            raise HTTPException(404, "Owner not found")
+        if current_user.id != user.id:
+            raise HTTPException(401, "Unauthorized")
+        try:
+            if asset.path:
+                file_path = os.path.join("uploads", asset.path)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+        except Exception as file_err:
+            print(f"[WARNING] Không thể xóa: {file_err}")
+
+        session.delete(asset)
+        session.commit()
+
+        return {
+            "status": "success",
+            "message": "Asset deleted"
+        }
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "status": "error",
+                "message": "Internal server error"
+            }
+        )
+
+
 @router.post("/upload-images")
 async def upload_assets(
     current_user: dict = Depends(get_current_user),

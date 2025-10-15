@@ -15,28 +15,12 @@ import {
 } from "lucide-react";
 import SortDropdown from "@/components/ui/SortDropdown";
 import LazyImage from "@/components/ui/LazyImage";
-
+import { useOutletContext } from "react-router-dom";
 
 const Brower = () => {
   const navigate = useNavigate();
   const [view, setView] = useState("columns");
-  const [assets, setAssets] = useState<any[]>([]);
-  const fetchAssets = async () => {
-    try {
-      const user_assets = await AssetsService.GetAll({
-        is_deleted: false,
-      });
-
-      const response = [...user_assets];
-      setAssets(response);
-    } catch (error) {
-      console.error("Error fetching assets:", error);
-    }
-  };
-  // chạy khi app load
-  useEffect(() => {
-    fetchAssets();
-  }, []);
+  const { assets } = useOutletContext();
   const breakpointColumns = { default: 4, 1024: 3, 768: 2, 500: 1 };
   const changeView = (newView) => {
     setView(newView);

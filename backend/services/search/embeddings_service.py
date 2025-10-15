@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image
 from sqlmodel import Session, select
 import json
-from typing import Optional
+from typing import Optional, Union
 
 from dependencies.clip_service import get_clip_model
 from models import Embeddings, Assets, Folders
@@ -246,7 +246,7 @@ def search_by_text(
     k: int = 10,
     folder_id: Optional[int] = None,
     user_id: Optional[int] = None,
-    similarity_threshold: float = 0.7  # Ngưỡng similarity (0.7 = 70% giống nhau)
+    similarity_threshold: float = 0.2 # Ngưỡng similarity (0.7 = 70% giống nhau)
 ) -> list[Assets]:
     """
     Tìm kiếm assets bằng text query.
@@ -303,4 +303,81 @@ def search_by_text(
     asset_dict = {asset.id: asset for asset in assets}
     sorted_assets = [asset_dict[aid] for aid in asset_ids if aid in asset_dict]
     
+    return sorted_assets
+
+from typing import Union, Optional
+from PIL import Image
+import numpy as np
+
+def search_clip(
+    session: Session,
+    project_id: Optional[int],
+    query_text: Optional[str] = None,
+    query_image: Optional[Image.Image] = None,
+    k: int = 10,
+    folder_id: Optional[int] = None,
+    user_id: Optional[int] = None,
+    similarity_threshold: float = 0.7,
+    mix_ratio: float = 0.5,  # tỉ lệ trộn giữa text và image (0.5 = cân bằng)
+) -> list[Assets]:
+    """
+    Search bằng text, ảnh, hoặc kết hợp cả hai (CLIP multimodal search).
+    """
+
+    if not query_text and not query_image:
+        raise ValueError("Cần ít nhất 1 trong query_text hoặc query_image")
+
+    # 1️⃣ Tạo embedding vector
+    vectors = []
+    if query_text:
+        text_vec = embed_text(query_text)
+        vectors.append(text_vec)
+    if query_image:
+        image_vec = embed_image(query_image)
+        vectors.append(image_vec)
+
+    # Nếu có cả 2 → trộn (weighted average)
+    if len(vectors) == 2:
+        query_vector = (
+            (1 - mix_ratio) * vectors[0] + mix_ratio * vectors[1]
+        ).astype("float32")
+    else:
+        query_vector = vectors[0]
+
+    # Normalize vector
+    query_vector /= np.linalg.norm(query_vector)
+
+    # 2️⃣ Search trong project hoặc tất cả project của user
+    if project_id:
+        asset_ids = search_in_project(
+            project_id, query_vector, k, folder_id, similarity_threshold
+        )
+    else:
+        if not user_id:
+            raise ValueError("user_id required khi project_id=None")
+
+        from models.projects import Projects
+        user_projects = session.exec(
+            select(Projects).where(Projects.user_id == user_id)
+        ).all()
+
+        all_results = []
+        for proj in user_projects:
+            proj_results = search_in_project(
+                proj.id, query_vector, k, folder_id, similarity_threshold
+            )
+            all_results.extend(proj_results)
+
+        asset_ids = all_results[:k]
+
+    if not asset_ids:
+        return []
+
+    # 3️⃣ Query assets
+    assets = session.exec(
+        select(Assets).where(Assets.id.in_(asset_ids))
+    ).all()
+    asset_dict = {asset.id: asset for asset in assets}
+    sorted_assets = [asset_dict[aid] for aid in asset_ids if aid in asset_dict]
+
     return sorted_assets

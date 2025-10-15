@@ -18,7 +18,7 @@ from dependencies.dependencies import get_current_user
 from services.search.embeddings_service import (
     search_by_image,
     search_by_text,
-    rebuild_project_embeddings
+    rebuild_project_embeddings,search_clip
 )
 from services.search.faiss_index import get_project_stats
 from models.projects import Projects
@@ -95,11 +95,12 @@ def validate_project_ownership(session: Session, project_id: int, user_id: int) 
 
 @router.post("/image")
 async def search_by_image_upload(
-    file: UploadFile = File(...),
+    query_text: Optional[str] = Form(None),  # Query text
+    file: UploadFile = File(None),
     project_id: Optional[int] = Form(None),  # Optional - nếu None thì search tất cả projects của user
     folder_id: Optional[int] = Form(None),
     k: int = Form(20),
-    similarity_threshold: float = Form(0.7),  # Ngưỡng similarity (0.7 = 70% giống nhau)
+    similarity_threshold: float = Form(0.5),  # Ngưỡng similarity (0.7 = 70% giống nhau)
     session: Session = Depends(get_session),
     current_user: dict = Depends(get_current_user)
 ):
@@ -125,33 +126,30 @@ async def search_by_image_upload(
             validate_project_ownership(session, project_id, current_user.id)
         
         # Đọc ảnh
-        content = await file.read()
-        image = Image.open(io.BytesIO(content)).convert("RGB")
+        query_image = None
+        if (file):
+            content = await file.read()
+            query_image = Image.open(io.BytesIO(content)).convert("RGB")
         
         # Tìm kiếm
-        assets = search_by_image(
-            session=session,
-            project_id=project_id,
-            image=image,
-            k=k,
+        
+        assets = search_clip(session=session, project_id=project_id, query_text = query_text, query_image = query_image, k=k,
             folder_id=folder_id,
             user_id=current_user.id,
-            similarity_threshold=similarity_threshold
-        )
-        
+            similarity_threshold=similarity_threshold)
         # Format response giống như upload-images API
-        results = []
-        for asset in assets:
-            formatted_asset = format_asset_response(asset, session)
-            results.append({
-                "file": formatted_asset,
-                "message": "Search result",
-                "result": True
-            })
-        
+        # results = []
+        # for asset in assets:
+        #     formatted_asset = format_asset_response(asset, session)
+        #     results.append({
+        #         "file": formatted_asset,
+        #         "message": "Search result",
+        #         "result": True
+        #     })
+        return {"status": 1, "data": assets}
         return {
             "data": {
-                "searchResults": results[0] if len(results) == 1 else results
+                assets
             },
             "extensions": {
                 "cost": {
@@ -170,8 +168,8 @@ def search_by_text_get(
     q: str,  # Query text
     project_id: Optional[int] = None,
     folder_id: Optional[int] = None,
-    k: int = 20,
-    similarity_threshold: float = 0.7,
+    k: int = 10,
+    similarity_threshold: float = 0.2,
     session: Session = Depends(get_session),
     current_user: dict = Depends(get_current_user)
 ):
@@ -365,4 +363,3 @@ def get_search_stats(
     stats["project_id"] = project_id
     
     return stats
-
