@@ -33,7 +33,7 @@ MAX_FILENAME_LENGTH = 255  # Maximum length for filename in DB
 # from services.embeddings_service import index, faiss_id_to_asset, embed_image, rebuild_faiss,add_embedding_to_faiss, ensure_user_index,search_user
 # from services.search.embeddings_service import  embed_image,add_embedding_to_faiss, search_user,ensure_user_index, get_text_embedding, search_by_embedding
 
-router = APIRouter(prefix="/users/assets",  tags=["User Assets"])
+router = APIRouter(prefix="/assets",  tags=["User Assets"])
 
 
 def format_asset_response(asset, session: Session) -> dict:
@@ -476,7 +476,7 @@ async def search_assets(
     file: UploadFile | None = File(None),
     project_id: Optional[int] = Form(None),  # Optional - nếu None thì search tất cả projects của user
     folder_id: Optional[int] = Form(None),
-    k: int = Form(10),
+    k: int = Form(20),
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):

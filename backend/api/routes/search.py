@@ -98,7 +98,7 @@ async def search_by_image_upload(
     file: UploadFile = File(...),
     project_id: Optional[int] = Form(None),  # Optional - nếu None thì search tất cả projects của user
     folder_id: Optional[int] = Form(None),
-    k: int = Form(10),
+    k: int = Form(20),
     similarity_threshold: float = Form(0.7),  # Ngưỡng similarity (0.7 = 70% giống nhau)
     session: Session = Depends(get_session),
     current_user: dict = Depends(get_current_user)
@@ -170,7 +170,7 @@ def search_by_text_get(
     q: str,  # Query text
     project_id: Optional[int] = None,
     folder_id: Optional[int] = None,
-    k: int = 10,
+    k: int = 20,
     similarity_threshold: float = 0.7,
     session: Session = Depends(get_session),
     current_user: dict = Depends(get_current_user)

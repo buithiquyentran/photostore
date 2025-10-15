@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 
 from api.routes import (
-    assets, projects, folders, login, users, api_clients,
-    external_assets, user_assets, search, static_files,
+    projects, folders, login, users,
+    user_assets, search, static_files,
     external_api, tags
 )
 # , login, private, users, utils
