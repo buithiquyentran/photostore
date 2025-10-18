@@ -42,13 +42,13 @@ import {
 import ApiBaseVariable from "@/components/ui/ApiBaseVariable";
 import ProjectsService from "@/components/api/projects.service";
 interface Project {
-  id: string;
+  id: number;
   name: string;
   slug?: string;
   api_key: string;
   api_secret: string;
   description: string;
-  created_at: string
+  created_at?: string;
 }
 
 export default function ProjectsPage() {
@@ -82,18 +82,7 @@ export default function ProjectsPage() {
     });
   };
 
-  const generateSlug = (name: string) => {
-    return name;
-  };
-
-  const handleNameChange = (name: string) => {
-    setFormData({
-      name,
-      description: generateSlug(name),
-    });
-  };
-
-  const handleCreateProject = () => {
+  const handleCreateProject = async () => {
     if (!formData.name.trim()) {
       toast({
         title: "Error",
@@ -102,25 +91,34 @@ export default function ProjectsPage() {
       });
       return;
     }
+    try {
+      const response = await ProjectsService.Create({
+        name: formData.name,
+        description: formData.description,
+      });
+      const newProject: Project = {
+        id: response.id,
+        name: response.name,
+        description: response.description,
+        api_key: response.api_key,
+        api_secret: response.api_secret,
+        created_at: response.created_at,
+      };
 
-    const newProject: Project = {
-      id: Date.now().toString(),
-      name: formData.name,
-      description: formData.description,
-      api_key: `sk_live_${Math.random().toString(36).substring(2, 18)}`,
-      api_secret: `sk_secret_${Math.random().toString(36).substring(2, 42)}`,
-    };
-
-    setProjects([...(projects ? projects : []), newProject]);
-    setIsCreateDialogOpen(false);
-    setFormData({ name: "", description: "" });
-    toast({
-      title: "Success",
-      description: "Project created successfully",
-    });
+      setProjects([...(projects ? projects : []), newProject]);
+      setIsCreateDialogOpen(false);
+      setFormData({ name: "", description: "" });
+      toast({
+        title: "Success",
+        description: "Project created successfully",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Fail" });
+    }
   };
 
-  const handleEditProject = () => {
+  const handleEditProject = async () => {
     if (!selectedProject || !formData.name.trim()) {
       toast({
         title: "Error",
@@ -129,61 +127,86 @@ export default function ProjectsPage() {
       });
       return;
     }
+    try {
+      const response = await ProjectsService.Update(selectedProject.id, {
+        name: formData.name,
+        description: formData.description,
+      });
 
-    setProjects(
-      projects?.map((p) =>
-        p.id === selectedProject.id
-          ? { ...p, name: formData.name, description: formData.description }
-          : p
-      )
-    );
-    setIsEditDialogOpen(false);
-    setSelectedProject(null);
-    setFormData({ name: "", description: "" });
-    toast({
-      title: "Success",
-      description: "Project updated successfully",
-    });
+      setProjects(
+        projects?.map((p) =>
+          p.id === response.id
+            ? {
+                ...p,
+                name: response.name,
+                description: response.description,
+                slug: response.slug,
+              }
+            : p
+        )
+      );
+      setIsEditDialogOpen(false);
+      setSelectedProject(null);
+      setFormData({ name: "", description: "" });
+      toast({
+        title: "Success",
+        description: "Project updated successfully",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Fail" });
+    }
   };
 
-  const handleDeleteProject = () => {
+  const handleDeleteProject = async () => {
     if (!selectedProject) return;
-
-    setProjects(projects?.filter((p) => p.id !== selectedProject.id));
-    setIsDeleteDialogOpen(false);
-    setSelectedProject(null);
-    toast({
-      title: "Success",
-      description: "Project deleted successfully",
-    });
+    try {
+      const response = await ProjectsService.Delete(selectedProject.id);
+      setProjects(projects?.filter((p) => p.id !== response.id));
+      setIsDeleteDialogOpen(false);
+      setSelectedProject(null);
+      toast({
+        title: "Success",
+        description: "Project deleted successfully",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Fail" });
+    }
   };
 
-  const handleRegenerateSecret = () => {
+  const handleRegenerate = async () => {
     if (!selectedProject) return;
-
-    setProjects(
-      projects?.map((p) =>
-        p.id === selectedProject.id
-          ? {
-              ...p,
-              secretKey: `sk_secret_${Math.random()
-                .toString(36)
-                .substring(2, 42)}`,
-            }
-          : p
-      )
-    );
-    setIsRegenerateDialogOpen(false);
-    setSelectedProject(null);
-    toast({
-      title: "Success",
-      description: "Secret key regenerated successfully",
-    });
+    try {
+      const response = await ProjectsService.RegenerateApiKey(
+        selectedProject.id
+      );
+      setProjects(
+        projects?.map((p) =>
+          p.id === selectedProject.id
+            ? {
+                ...p,
+                api_key: response.api_key,
+                api_secret: response.api_secret,
+              }
+            : p
+        )
+      );
+      setIsRegenerateDialogOpen(false);
+      setSelectedProject(null);
+      toast({
+        title: "Success",
+        description: "Secret key regenerated successfully",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Fail" });
+    }
   };
 
   const openEditDialog = (project: Project) => {
     setSelectedProject(project);
-    setFormData({ name: project.name, slug: project.slug });
+    setFormData({ name: project.name, description: project.description });
     setIsEditDialogOpen(true);
   };
 
@@ -195,11 +218,6 @@ export default function ProjectsPage() {
   const openRegenerateDialog = (project: Project) => {
     setSelectedProject(project);
     setIsRegenerateDialogOpen(true);
-  };
-
-  const maskApiKey = (key: string) => {
-    if (key.length <= 8) return key;
-    return `${key.substring(0, 8)}****${key.substring(key.length - 4)}`;
   };
 
   const formatDate = (date: Date) => {
@@ -222,7 +240,7 @@ export default function ProjectsPage() {
     }
   };
   return (
-    <div className="min-h-screen bg-[#000]">
+    <div className="min-h-screen">
       <div className="mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-start justify-between">
           <div>
@@ -240,7 +258,7 @@ export default function ProjectsPage() {
           <Button
             size="lg"
             onClick={() => setIsCreateDialogOpen(true)}
-            className="gap-2 text-[#000] text-lg"
+            className="gap-2 text-black text-lg bg-blue-500"
           >
             <Plus className="h-4 w-4" />
             Create Project
@@ -391,15 +409,17 @@ export default function ProjectsPage() {
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
-                placeholder="My Project"
+                placeholder="Enter your project's name"
                 value={formData.name}
-                onChange={(e) => handleNameChange(e.target.value)}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="slug">Description</Label>
               <Input
-                id="slug"
+                id="description"
                 placeholder="Describe your project"
                 value={formData.description}
                 onChange={(e) =>
@@ -474,7 +494,7 @@ export default function ProjectsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRegenerateSecret}>
+            <AlertDialogAction onClick={handleRegenerate} className="text-black">
               Regenerate
             </AlertDialogAction>
           </AlertDialogFooter>

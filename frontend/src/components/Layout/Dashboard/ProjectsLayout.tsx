@@ -9,13 +9,13 @@ const ProjectsLayout = () => {
 
   return (
     <>
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen ">
         <Sidebar
           selectedMenu={selectedMenu}
           setSelectedMenu={setSelectedMenu}
           setFolderPath={setFolderPath}
         />
-        <div className="grow flex flex-col bg-[#000]">
+        <div className="grow flex flex-col bg-background">
           <div className="grow">
             <Outlet />
           </div>
