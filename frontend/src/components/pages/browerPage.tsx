@@ -20,7 +20,7 @@ import { useOutletContext } from "react-router-dom";
 const Brower = () => {
   const navigate = useNavigate();
   const [view, setView] = useState("columns");
-  const { assets } = useOutletContext();
+  const { assets} = useOutletContext();
   const breakpointColumns = { default: 4, 1024: 3, 768: 2, 500: 1 };
   const changeView = (newView) => {
     setView(newView);
@@ -79,7 +79,7 @@ const Brower = () => {
         className="flex gap-4 px-4"
         columnClassName="flex flex-col gap-4"
       >
-        {assets.map((asset) => (
+        {assets?.map((asset) => (
           <div onClick={() => navigate(`/photos/${asset.path}`)}>
             <LazyImage key={asset.id} asset={asset} />
           </div>

@@ -3,7 +3,7 @@ import { Search, Upload, MoreVertical } from "lucide-react";
 import UploadButton from "@/components/ui/UploadButton";
 import AdvancedSearchBar from "@/components/ui/AdvancedSearchBar";
 
-export default function SearchBar({ onSearchFile, onSearchText, onUpload }) {
+export default function SearchBar({ onSearch, onUpload }) {
   const [query, setQuery] = useState("");
 
   // Debounce (chỉ gọi API sau khi ngừng gõ 500ms)
@@ -15,19 +15,19 @@ export default function SearchBar({ onSearchFile, onSearchText, onUpload }) {
     };
   };
   // Wrap search với debounce
-  const debouncedSearch = useCallback(debounce(onSearchText, 500), []);
+  const debouncedSearch = useCallback(debounce(onSearch, 500), []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const text = e.target.value;
     setQuery(text);
-    debouncedSearch(text); // gọi search khi ngưng gõ
+    debouncedSearch(null, text); // gọi search khi ngưng gõ
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       console.log(query);
-      onSearchText(query); // gọi search khi nhấn Enter
+      onSearch(query); // gọi search khi nhấn Enter
     }
   };
 
@@ -55,7 +55,7 @@ export default function SearchBar({ onSearchFile, onSearchText, onUpload }) {
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={onSearchFile}
+              onChange={onSearch}
             />
           </label>
         </div>

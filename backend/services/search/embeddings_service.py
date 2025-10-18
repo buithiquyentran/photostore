@@ -179,7 +179,7 @@ def search_by_image(
     k: int = 10,
     folder_id: Optional[int] = None,
     user_id: Optional[int] = None,
-    similarity_threshold: float = 0.7  # Ngưỡng similarity (0.7 = 70% giống nhau)
+    similarity_threshold: float = 0.2  # Ngưỡng similarity (0.7 = 70% giống nhau)
 ) -> list[Assets]:
     """
     Tìm kiếm assets tương tự bằng ảnh.
@@ -317,7 +317,7 @@ def search_clip(
     k: int = 10,
     folder_id: Optional[int] = None,
     user_id: Optional[int] = None,
-    similarity_threshold: float = 0.7,
+    similarity_threshold: float = 0.2,
     mix_ratio: float = 0.5,  # tỉ lệ trộn giữa text và image (0.5 = cân bằng)
 ) -> list[Assets]:
     """

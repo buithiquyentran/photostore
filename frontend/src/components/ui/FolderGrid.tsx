@@ -1,8 +1,24 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { FolderIcon, MoreVertical } from "lucide-react";
+import {
+  FolderIcon,
+  MoreVertical,
+  FolderOpen,
+  Share,
+  Trash2,
+  Edit,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import ShareDialog from "@/components/ui/ShareDialog";
 interface FolderNode {
   id: string;
   name: string;
@@ -25,9 +41,8 @@ export default function FolderGrid({
 }: FolderGridProps) {
   const location = useLocation();
   const navigate = useNavigate();
-
-  const pathParts = location.pathname
-    .replace(/^\/dashboard\/?/, "")
+  const [shareFolder, setShareFolder] = useState<FolderNode | null>(null);
+  const pathParts = location.pathname.replace(/^\/dashboard\/?/, "");
 
   const handleOpenFolder = (folder: FolderNode) => {
     if (selectedMenu === folder.id) return;
@@ -46,37 +61,73 @@ export default function FolderGrid({
     );
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4  gap-4 mb-6 ">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
       {folders.map((folder) => (
-        <motion.div
+        <Card
           key={folder.id}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
+          className="group relative border border-gray-700 hover:border-primary/50 transition-colors"
+          onClick={() => handleOpenFolder(folder)}
         >
-          <Card
-            className="group relative cursor-pointer hover:bg-accent/40 transition-colors border-border border border-gray-700"
-            onClick={() => handleOpenFolder(folder)}
-          >
-            <CardContent className="p-2 flex items-center justify-between">
-              <div className="flex items-center gap-2 truncate">
-                <FolderIcon className="h-5 w-5 text-yellow-400" />
-                <span className="font-medium truncate text-sm group-hover:text-primary">
-                  {folder.name}
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
+          <CardContent className="p-2 flex items-center justify-between">
+            <div className="flex items-center gap-2 truncate">
+              <FolderIcon className="h-5 w-5 text-yellow-400" />
+              <span className="font-medium truncate text-sm group-hover:text-primary">
+                {folder.name}
+              </span>
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => e.stopPropagation()}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <MoreVertical className="h-4 w-4 text-white" />
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent
+                align="end"
+                className="w-40 bg-popover border-border"
               >
-                <MoreVertical className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenFolder(folder);
+                  }}
+                >
+                  <FolderOpen className="h-4 w-4 mr-2" /> Open
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareFolder(folder);
+                  }}
+                >
+                  <Share className="h-4 w-4 mr-2" /> Share
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <Edit className="h-4 w-4 mr-2" /> Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive">
+                  <Trash2 className="h-4 w-4 mr-2" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </CardContent>
+        </Card>
       ))}
+
+      {/* Hộp thoại chia sẻ */}
+      {shareFolder && (
+        <ShareDialog
+          folder={shareFolder}
+          onClose={() => setShareFolder(null)}
+        />
+      )}
     </div>
   );
 }

@@ -38,22 +38,30 @@ const Layout = () => {
     fetchFolderContent();
   }, [fetchFolderContent]); // ✅ thêm fetchFolderContent vào deps
 
-  const handleSearchByFile = async (e) => {
-    const file = e.target.files?.[0];
+  const handleSearch = async (e, queryText: string) => {
+  try {
+    const formData = new FormData();
 
+    // Nếu gọi từ input file thì có e.target.files
+    const file = e?.target?.files?.[0];
     if (file) {
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("query_text", "many people");
-        const res = await SearchService.Search(formData);
-        console.log(res);
-        setAssets(res); // Lưu kết quả tìm kiếm vào state
-      } catch (err) {
-        console.error("Search failed", err);
-      }
+      formData.append("file", file);
     }
-  };
+
+    // Nếu có text search thì thêm query_text
+    if (queryText) {
+      formData.append("query_text", queryText);
+    }
+
+    // Gọi API
+    const res = await SearchService.Search(formData);
+    console.log("Search result:", res);
+    setAssets(res); // ✅ Tùy backend trả về dạng nào
+  } catch (err) {
+    console.error("Search failed", err);
+  }
+};
+
   const handleSearchByText = async (text: string) => {
     // if (text) {
     //   try {
@@ -117,8 +125,7 @@ const Layout = () => {
         />
         <div className="grow flex flex-col bg-background">
           <SearchBar
-            onSearchFile={handleSearchByFile}
-            onSearchText={handleSearchByText}
+            onSearch={handleSearch}
             onUpload={handleUpload}
           />
           <div className="grow">

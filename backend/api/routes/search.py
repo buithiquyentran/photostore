@@ -100,7 +100,7 @@ async def search_by_image_upload(
     project_id: Optional[int] = Form(None),  # Optional - nếu None thì search tất cả projects của user
     folder_id: Optional[int] = Form(None),
     k: int = Form(20),
-    similarity_threshold: float = Form(0.5),  # Ngưỡng similarity (0.7 = 70% giống nhau)
+    similarity_threshold: float = Form(0.2),  # Ngưỡng similarity (0.7 = 70% giống nhau)
     session: Session = Depends(get_session),
     current_user: dict = Depends(get_current_user)
 ):

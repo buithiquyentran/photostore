@@ -619,6 +619,7 @@ async def search_by_image_api(
             k=k,
             user_id=None  # Không cần user_id vì đã có project_id
         )
+        return {"status": 1, "data": assets}
         
         # Format response giống như upload-images API
         results = []
