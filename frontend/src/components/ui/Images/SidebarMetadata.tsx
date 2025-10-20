@@ -1,10 +1,8 @@
 import { useState } from "react";
-import AccessControlModal from "./AccessControlModal";
+import AccessControlModal from "../Modals/AccessControlModal";
 import { motion } from "framer-motion";
 import { Globe, Lock } from "lucide-react";
 import { formatFileSize, formattedDate } from "@/components/utils/format";
-import { div } from "framer-motion/client";
-import UserService from "@/components/api/user.service";
 interface SidebarMetadataProps {
   open: boolean;
   meta: {

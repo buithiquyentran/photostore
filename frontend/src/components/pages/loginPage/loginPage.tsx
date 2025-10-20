@@ -60,7 +60,7 @@ const DangNhapPage: React.FC = () => {
           console.error("SocialLogin error:", err);
         }
         // Refresh trang sau khi đăng nhập thành công
-        navigate(path.BROWER);
+        navigate(path.DASHBOARD);
       }
     } catch (error: any) {
       toast({
@@ -85,7 +85,7 @@ const DangNhapPage: React.FC = () => {
     keycloak.login({
       idpHint: "facebook",
       prompt: "login",
-      redirectUri: window.location.origin + path.BROWER,
+      redirectUri: window.location.origin + path.DASHBOARD,
     });
   };
   return (

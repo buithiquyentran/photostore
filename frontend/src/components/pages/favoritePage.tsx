@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, use } from "react";
 import { useNavigate } from "react-router-dom";
 import Masonry from "react-masonry-css";
 import AssetsService from "@/components/api/assets.service";
-import AdvancedSearchBar from "@/components/ui/AdvancedSearchBar";
+import AdvancedSearchBar from "@/components/ui/Layouts/AdvancedSearchBar";
 import {
   Search,
   Upload,
@@ -14,7 +14,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import SortDropdown from "@/components/ui/SortDropdown";
-import LazyImage from "@/components/ui/LazyImage";
+import LazyImage from "@/components/ui/Images/LazyImage";
 const Brower = () => {
   const [view, setView] = useState("columns");
   const [assets, setAssets] = useState<any[]>([]);
@@ -22,6 +22,7 @@ const Brower = () => {
     try {
       const user_assets = await AssetsService.GetAll({
         is_favorite: true,
+        is_deleted: false,
       });
 
       const response = [...user_assets];

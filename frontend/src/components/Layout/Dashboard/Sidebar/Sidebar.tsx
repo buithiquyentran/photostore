@@ -48,7 +48,7 @@ const quickAccess = [
     id: "all",
     name: "All Files",
     icon: <Folder className="h-4 w-4" />,
-    path: path.BROWER,
+    path: path.DASHBOARD,
   },
   {
     id: "starred",

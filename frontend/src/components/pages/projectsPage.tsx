@@ -25,7 +25,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/Modals/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -39,7 +39,7 @@ import {
   LeafyGreen,
   Copy,
 } from "lucide-react";
-import ApiBaseVariable from "@/components/ui/ApiBaseVariable";
+import ApiBaseVariable from "@/components/ui/Modals/ApiBaseVariable";
 import ProjectsService from "@/components/api/projects.service";
 interface Project {
   id: number;
@@ -265,9 +265,9 @@ export default function ProjectsPage() {
           </Button>
         </div>
 
-        <div className="rounded-lg border border-border bg-card">
+        <div className="rounded-lg border border-border ">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-[#111827]">
               <TableRow className="hover:bg-transparent ">
                 <TableHead className="font-semibold text-white text-xl">
                   Name
@@ -494,7 +494,10 @@ export default function ProjectsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRegenerate} className="text-black">
+            <AlertDialogAction
+              onClick={handleRegenerate}
+              className="text-black"
+            >
               Regenerate
             </AlertDialogAction>
           </AlertDialogFooter>

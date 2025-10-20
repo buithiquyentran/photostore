@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Outlet } from "react-router-dom";
-import Sidebar from "@/components/Layout/Dashboard/Sidebar/Sidebar";
 import SearchBar from "@/components/Layout/Dashboard/SearchBar";
+import Sidebar from "@/components/Layout/Dashboard/Sidebar/Sidebar";
 import SearchService from "@/components/api/search.service";
 import AssetsService from "@/components/api/assets.service";
 import folderService from "@/components/api/folder.service";
@@ -39,43 +39,27 @@ const Layout = () => {
   }, [fetchFolderContent]); // ✅ thêm fetchFolderContent vào deps
 
   const handleSearch = async (e, queryText: string) => {
-  try {
-    const formData = new FormData();
+    try {
+      const formData = new FormData();
 
-    // Nếu gọi từ input file thì có e.target.files
-    const file = e?.target?.files?.[0];
-    if (file) {
-      formData.append("file", file);
+      // Nếu gọi từ input file thì có e.target.files
+      const file = e?.target?.files?.[0];
+      if (file) {
+        formData.append("file", file);
+      }
+
+      // Nếu có text search thì thêm query_text
+      if (queryText) {
+        formData.append("query_text", queryText);
+      }
+
+      // Gọi API
+      const res = await SearchService.Search(formData);
+      console.log("Search result:", res);
+      setAssets(res); // ✅ Tùy backend trả về dạng nào
+    } catch (err) {
+      console.error("Search failed", err);
     }
-
-    // Nếu có text search thì thêm query_text
-    if (queryText) {
-      formData.append("query_text", queryText);
-    }
-
-    // Gọi API
-    const res = await SearchService.Search(formData);
-    console.log("Search result:", res);
-    setAssets(res); // ✅ Tùy backend trả về dạng nào
-  } catch (err) {
-    console.error("Search failed", err);
-  }
-};
-
-  const handleSearchByText = async (text: string) => {
-    // if (text) {
-    //   try {
-    //     const formData = new FormData();
-    //     formData.append("query_text", text);
-    //     const res = await AssetsService.UploadImageForSearch(formData);
-    //     setAssets(res); // Lưu kết quả tìm kiếm vào state
-    //   } catch (err) {
-    //     console.error("Search failed", err);
-    //   }
-    // } else {
-    //   const res = await AssetsService.GetAll();
-    //   setAssets(res); // Lưu kết quả tìm kiếm vào state
-    // }
   };
 
   const handleUpload = async (
@@ -124,10 +108,7 @@ const Layout = () => {
           setFolderPath={setFolderPath}
         />
         <div className="grow flex flex-col bg-background">
-          <SearchBar
-            onSearch={handleSearch}
-            onUpload={handleUpload}
-          />
+          <SearchBar onSearch={handleSearch} onUpload={handleUpload} />
           <div className="grow">
             <Outlet
               context={{

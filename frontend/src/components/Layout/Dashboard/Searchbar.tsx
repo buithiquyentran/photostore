@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { Search, Upload, MoreVertical } from "lucide-react";
-import UploadButton from "@/components/ui/UploadButton";
-import AdvancedSearchBar from "@/components/ui/AdvancedSearchBar";
+import UploadButton from "@/components/ui/Images/UploadButton";
+import AdvancedSearchBar from "@/components/ui/Layouts/AdvancedSearchBar";
 
 export default function SearchBar({ onSearch, onUpload }) {
   const [query, setQuery] = useState("");
@@ -32,7 +32,7 @@ export default function SearchBar({ onSearch, onUpload }) {
   };
 
   return (
-    <div className=" sticky top-0 bg-gray-900 ">
+    <div className=" sticky top-0 bg-gray-900 z-20">
       <div className="flex items-center px-2 py-1 gap-2 w-full mx-auto border-b border-gray-700">
         {/* Icon filter */}
         <button className="p-2 text-gray-400 hover:text-white">

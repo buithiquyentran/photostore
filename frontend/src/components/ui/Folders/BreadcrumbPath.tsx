@@ -1,7 +1,7 @@
 import { Folder, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import FolderService from "@/components/api/folder.service";
-import CreateFolderDialog from "@/components/ui/CreateFolderDialog";
+import CreateFolderDialog from "@/components/ui/Modals/CreateFolderDialog";
 import { toast } from "@/hooks/use-toast";
 
 type BreadcrumbPathProps = {
@@ -60,6 +60,7 @@ export default function BreadcrumbPath({
           className="flex items-center font-medium text-foreground hover:underline"
           onClick={() => setFolderPath("")} // về root -> folderPath rỗng
         >
+          <Folder className="w-4 h-4 mr-1" />
           Projects
         </Link>
 
@@ -68,7 +69,7 @@ export default function BreadcrumbPath({
             <ChevronRight className="w-4 h-4 mx-1 text-muted-foreground" />
             {index === pathParts.length - 1 ? (
               <span className="flex items-center text-foreground font-medium">
-                <Folder className="w-4 h-4 mr-1" />
+
                 {part}
               </span>
             ) : (
@@ -77,14 +78,13 @@ export default function BreadcrumbPath({
                 onClick={() => handleCrumbClick(index)}
                 className="flex items-center text-foreground hover:text-foreground hover:underline"
               >
-                <Folder className="w-4 h-4 mr-1" />
                 {part}
               </Link>
             )}
           </div>
         ))}
       </div>
-        <span className="mx-4">:</span>
+      <span className="mx-4">:</span>
       <CreateFolderDialog onCreate={handleAddFolder} />
     </div>
   );

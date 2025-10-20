@@ -18,7 +18,10 @@ const AccessControlModal: React.FC<Props> = ({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={(e) => e.stopPropagation()}
+    >
       <div className="w-full max-w-md rounded-lg bg-gray-900 p-6 shadow-lg">
         {/* Header */}
         <h2 className="text-lg font-semibold text-white">
@@ -34,7 +37,9 @@ const AccessControlModal: React.FC<Props> = ({
               name="access"
               value="public"
               checked={is_private === false}
-              onChange={() => setIs_private(false)}
+              onChange={() => {
+                setIs_private(false);
+              }}
               className="mt-1"
             />
             <div>

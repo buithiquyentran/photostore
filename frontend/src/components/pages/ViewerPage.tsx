@@ -13,9 +13,18 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/Modals/alert-dialog";
 import AssetService from "@/components/api/assets.service";
-import UserService from "@/components/api/user.service";
-import SidebarMetadata from "@/components/ui/SidebarMetadata";
+import SidebarMetadata from "@/components/ui/Images/SidebarMetadata";
 import path from "@/resources/path";
 export default function ViewerPage() {
   const { "*": file_url } = useParams();
@@ -26,7 +35,7 @@ export default function ViewerPage() {
   const [toggleStar, setToggleStar] = useState<any>(null);
   const [nextPath, setNextPath] = useState<string>();
   const [prevPath, setPrevPath] = useState<string>();
-
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   useEffect(() => {
     let objectUrl: string | null = null;
     const fetchAndSetImage = async () => {
@@ -91,7 +100,7 @@ export default function ViewerPage() {
       {/* Header */}
       <div className="flex items-center justify-between bg-black/50 px-4">
         <button
-          onClick={() => navigate(path.BROWER)}
+          onClick={() => navigate(path.DASHBOARD)}
           className="p-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
         >
           <X size={24} />
@@ -126,7 +135,10 @@ export default function ViewerPage() {
             )}
           </button>
           <button
-            onClick={() => handleDelete()}
+            // onClick={() => handleDelete()}
+            onClick={() => {
+              setIsDeleteDialogOpen(true);
+            }}
             className="p-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
           >
             <Trash2 size={24} />
@@ -184,6 +196,36 @@ export default function ViewerPage() {
           />
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              image &quot;{meta?.name}&quot; and remove all associated API
+              credentials.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete();
+                navigate(path.DASHBOARD);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

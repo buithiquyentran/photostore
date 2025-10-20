@@ -1,4 +1,4 @@
-import HeroSlideshow from "./slideshow";
+import HeroSlideshow from "./Slideshow";
 import path from "@/resources/path";
 import { useNavigate } from "react-router-dom";
 const features = [

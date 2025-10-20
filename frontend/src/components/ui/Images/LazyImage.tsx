@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import AssetsService from "@/components/api/assets.service";
 function LazyImage({ asset }: { asset: any }) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const imgRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     let objectUrl: string | null = null;
@@ -24,7 +24,7 @@ function LazyImage({ asset }: { asset: any }) {
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl); // cleanup tránh leak
     };
-  }, [asset.file_url]);
+  }, [asset]);
 
   return (
     <div

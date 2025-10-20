@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import ShareDialog from "@/components/ui/ShareDialog";
+import ShareDialog from "@/components/ui/Modals/ShareDialog";
 interface FolderNode {
   id: string;
   name: string;

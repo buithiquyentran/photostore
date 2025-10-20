@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { cn } from "@/lib/utils";
-import FolderGrid from "@/components/ui/FolderGrid";
-import BreadcrumbPath from "@/components/ui/BreadcrumbPath";
+import FolderGrid from "@/components/ui/Folders/FolderGrid";
+import BreadcrumbPath from "@/components/ui/Folders/BreadcrumbPath";
 import { useOutletContext } from "react-router-dom";
 
 type DashboardContextType = {
