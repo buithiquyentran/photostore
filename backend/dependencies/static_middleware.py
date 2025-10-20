@@ -98,9 +98,9 @@ async def verify_static_access(request: Request, call_next):
 
             else:
                 # --- Xử lý xác thực external client ---
-                api_key = request.headers.get("x-api-key")
-                signature = request.headers.get("x-signature")
-                timestamp = request.headers.get("x-timestamp")
+                api_key = request.headers.get("X-API-Key")
+                signature = request.headers.get("X-Signature")
+                timestamp = request.headers.get("X-Timestamp")
 
                 if not (api_key and signature and timestamp):
                     return JSONResponse(status_code=401, content={"status": "error", "message": "Authentication required"})

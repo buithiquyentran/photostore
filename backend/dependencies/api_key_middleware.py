@@ -5,6 +5,7 @@ from fastapi import Request, HTTPException, Depends
 from sqlmodel import Session, select
 from db.session import engine, get_session
 from models.projects import Projects
+from core.config import settings
 import hmac
 import hashlib
 import time
@@ -54,10 +55,21 @@ def verify_api_key(request: Request, session: Session = Depends(get_session)) ->
             }
         )
 
-    # Kiểm tra timestamp format (không kiểm tra thời gian để tránh lệch múi giờ)
+    # Kiểm tra timestamp format và thời gian hết hạn (nếu cấu hình)
     try:
-        # Chỉ kiểm tra timestamp có phải là số hợp lệ
         ts = int(timestamp)
+        
+        # Nếu API_KEY_EXPIRY_SECONDS > 0, kiểm tra thời gian hết hạn
+        if settings.API_KEY_EXPIRY_SECONDS > 0:
+            now = int(time.time())
+            if abs(now - ts) > settings.API_KEY_EXPIRY_SECONDS:
+                raise HTTPException(
+                    status_code=401,
+                    detail={
+                        "status": "error",
+                        "message": f"Request expired (valid for ±{settings.API_KEY_EXPIRY_SECONDS} seconds)"
+                    }
+                )
     except ValueError:
         raise HTTPException(
             status_code=401,
@@ -68,7 +80,7 @@ def verify_api_key(request: Request, session: Session = Depends(get_session)) ->
         )
      # check expired 5 phút
     now = int(time.time())
-    if now - int(timestamp) > 3600: #60*5
+    if now - int(timestamp) > 36000: #60*5
         raise HTTPException(status_code=401, detail={
                 "status": "error",
                 "message": "Signature expired"
@@ -107,9 +119,9 @@ def verify_api_key(request: Request, session: Session = Depends(get_session)) ->
 async def verify_api_request(request: Request, call_next):
     """
     Middleware để xác thực API requests.
-    Chỉ áp dụng cho các routes bắt đầu bằng /api/v1/external
+    Chỉ áp dụng cho các routes bắt đầu bằng /api/external
     """
-    if not request.url.path.startswith("/api/v1/external"):
+    if not request.url.path.startswith("/api/external"):
         return await call_next(request)
 
     try:

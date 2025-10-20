@@ -1,5 +1,4 @@
 import { UploadCloud } from "lucide-react";
-import AssetService from "@/components/api/assets.service";
 interface UploadButtonProps {
   onClick: () => void;
 }

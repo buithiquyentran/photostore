@@ -48,7 +48,7 @@ const quickAccess = [
     id: "all",
     name: "All Files",
     icon: <Folder className="h-4 w-4" />,
-    path: path.BROWER,
+    path: path.DASHBOARD,
   },
   {
     id: "starred",
@@ -142,7 +142,7 @@ export default function Sidebar({
 
 
   return (
-    <div className="flex flex-col sticky top-0 h-screen justify-between w-60 bg-[#111827] p-4  border border-gray-700">
+    <div className="flex flex-col sticky top-0 h-screen justify-between w-80 bg-[#111827] p-4  border border-gray-700">
       {/* Top section */}
       <div>
         <div className="flex items-center justify-center gap-2 mb-8 underline underline-offset-4 decoration-4 decoration-highlight">

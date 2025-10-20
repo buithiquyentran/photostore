@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "supersecretkey"
     REFR_SECRET_KEY: str = "supersecretkeyrefresh"
     
+    # API Key Settings
+    API_KEY_EXPIRY_SECONDS: int = 300  # 5 minutes by default
+    
     # CORS - Đọc từ CORS_ORIGINS và parse thành list
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
     

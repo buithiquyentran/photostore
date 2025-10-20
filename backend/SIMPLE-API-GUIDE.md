@@ -50,9 +50,11 @@ def generate_signature(api_key, api_secret):
 
 ### Lưu ý về timestamp
 
-- Timestamp chỉ được sử dụng để tạo signature, không kiểm tra thời gian hết hạn
 - Format là Unix timestamp (số giây kể từ 1/1/1970 UTC)
-- Không cần lo lắng về múi giờ, chỉ cần đảm bảo timestamp là một số hợp lệ
+- Kiểm tra thời gian hết hạn có thể được bật/tắt thông qua cấu hình:
+  + Nếu `API_KEY_EXPIRY_SECONDS > 0`: Kiểm tra timestamp phải nằm trong khoảng ±N giây so với thời gian hiện tại
+  + Nếu `API_KEY_EXPIRY_SECONDS = 0`: Không kiểm tra thời gian hết hạn, chỉ kiểm tra format
+- Để tắt kiểm tra thời gian hết hạn, đặt `API_KEY_EXPIRY_SECONDS=0` trong file `.env`
 
 ## Endpoints
 

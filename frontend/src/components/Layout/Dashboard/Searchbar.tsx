@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
 import { Search, Upload, MoreVertical } from "lucide-react";
-import UploadButton from "@/components/ui/UploadButton";
-import AdvancedSearchBar from "@/components/ui/AdvancedSearchBar";
+import UploadButton from "@/components/ui/Images/UploadButton";
+import AdvancedSearchBar from "@/components/ui/Layouts/AdvancedSearchBar";
 
-export default function SearchBar({ onSearchFile, onSearchText, onUpload }) {
+export default function SearchBar({ onSearch, onUpload }) {
   const [query, setQuery] = useState("");
 
   // Debounce (chỉ gọi API sau khi ngừng gõ 500ms)
@@ -15,24 +15,24 @@ export default function SearchBar({ onSearchFile, onSearchText, onUpload }) {
     };
   };
   // Wrap search với debounce
-  const debouncedSearch = useCallback(debounce(onSearchText, 500), []);
+  const debouncedSearch = useCallback(debounce(onSearch, 500), []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const text = e.target.value;
     setQuery(text);
-    debouncedSearch(text); // gọi search khi ngưng gõ
+    debouncedSearch(null, text); // gọi search khi ngưng gõ
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      console.log(query)
-      onSearchText(query); // gọi search khi nhấn Enter
+      console.log(query);
+      onSearch(query); // gọi search khi nhấn Enter
     }
   };
 
   return (
-    <div className=" sticky top-0 bg-gray-900 ">
+    <div className=" sticky top-0 bg-gray-900 z-20">
       <div className="flex items-center px-2 py-1 gap-2 w-full mx-auto border-b border-gray-700">
         {/* Icon filter */}
         <button className="p-2 text-gray-400 hover:text-white">
@@ -48,22 +48,19 @@ export default function SearchBar({ onSearchFile, onSearchText, onUpload }) {
             className="flex-1 h-10 text-white placeholder-gray-400 px-2 bg-gray-800 border border-gray-700 rounded"
           />
 
-          {/* Upload ảnh */}
+          {/* Upload ảnh for search*/}
           <label className=" absolute right-1 cursor-pointer text-gray-400 hover:text-white p-2">
             <Upload size={20} />
             <input
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={onSearchFile}
+              onChange={onSearch}
             />
           </label>
         </div>
-        {/* Input search */}
-
-        {/* Nút search text */}
+        {/* Upload ảnh */}
         <button className="p-2 text-gray-400 hover:text-white">
-          {/* <Search size={20} /> */}
           <UploadButton onClick={onUpload} />
         </button>
         {/* Menu ba chấm */}

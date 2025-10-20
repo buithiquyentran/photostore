@@ -3,13 +3,14 @@ const path = {
   LOGIN: "/login",
   REGISTER: "/register",
 
-  BROWER: "/dashboard",
+  DASHBOARD: "/dashboard",
   FAVORITE: "/dashboard/favorite",
   VIEWER: "/viewer",
   TEST: "/test",
   TRASH: "/dashboard/trash",
-
-  DASHBOARD: "/dashboard/*",
+  MY_PROJECT: "/dashboard/my-projects",
+  FOLDER_DASHBOARD: "/dashboard/*",
 } as const;
 
 export default path;
+
