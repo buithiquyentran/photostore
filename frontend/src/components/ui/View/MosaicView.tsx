@@ -11,7 +11,7 @@ const MosaicView = ({ assets, onSelect }) => {
       className="flex gap-4"
       columnClassName="flex flex-col gap-4"
     >
-      {assets.map((asset) => (
+      {assets?.map((asset) => (
         <div
           key={asset.id}
           onClick={() => onSelect(asset)}

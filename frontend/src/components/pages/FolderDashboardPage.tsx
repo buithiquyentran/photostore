@@ -5,7 +5,9 @@ import {
   MoreVertical,
   Download,
   Trash2,
-  Star,UploadCloud, Upload
+  Star,
+  UploadCloud,
+  Upload,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -17,11 +19,14 @@ import {
 import { cn } from "@/lib/utils";
 import FolderGrid from "@/components/ui/Folders/FolderGrid";
 import BreadcrumbPath from "@/components/ui/Folders/BreadcrumbPath";
-import { useOutletContext } from "react-router-dom";
-
+import { useOutletContext, useNavigate } from "react-router-dom";
+import MosaicView from "@/components/ui/View/MosaicView";
+import ListView from "@/components/ui/View/ListView";
+import CardView from "@/components/ui/View/CardView";
 type DashboardContextType = {
-  assets: any[];
-  folders: any[];
+  assetsOutlet: any[];
+  view: any[];
+  foldersOutlet: any[];
   onUpload: any;
   refetchFolders: any;
   setFolderPath: React.Dispatch<React.SetStateAction<string>>;
@@ -31,14 +36,18 @@ type DashboardContextType = {
 
 export default function Dashboard() {
   const {
-    assets,
-    folders,
+    assetsOutlet,
+    view,
+    foldersOutlet,
     onUpload,
     refetchFolders,
     setFolderPath,
     selectedMenu,
     setSelectedMenu,
   } = useOutletContext<DashboardContextType>();
+  const [assets, setAssets] = useState<any[]>(assetsOutlet);
+  const navigate = useNavigate();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const handleDrag = (e: React.DragEvent) => {
@@ -61,18 +70,35 @@ export default function Dashboard() {
     }
   };
 
-  const formatDate = (date: Date) => {
-    const now = new Date();
-    const diffInDays = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    if (diffInDays === 0) return "Today";
-    if (diffInDays === 1) return "Yesterday";
-    if (diffInDays < 7) return `${diffInDays} days ago`;
-    return date.toLocaleDateString();
+  useEffect(() => {
+    setAssets(assetsOutlet);
+  }, [assetsOutlet, view, setFolderPath]);
+  const renderView = () => {
+    switch (view) {
+      case "list":
+        return (
+          <ListView
+            assets={assets}
+            // onSelect={(a) => navigate(`/photos/${a.path}`)}
+          />
+        );
+      case "card":
+        return (
+          <CardView
+            assets={assets}
+            onSelect={(a) => navigate(`/photos/${a.path}`)}
+            // onDelete={handleDelete}
+          />
+        );
+      default:
+        return (
+          <MosaicView
+            assets={assets}
+            onSelect={(a) => navigate(`/photos/${a.path}`)}
+          />
+        );
+    }
   };
-
   return (
     <main
       className="flex-1 overflow-y-auto p-4 bg-[rgb(31,36,46)] "
@@ -91,7 +117,7 @@ export default function Dashboard() {
               />
             </h2>
             <p className="text-sm text-muted-foreground">
-              {assets.length} items
+              {assetsOutlet?.length} items
             </p>
           </div>
           <Button
@@ -112,7 +138,7 @@ export default function Dashboard() {
         </div>
         {/* folders */}
         <FolderGrid
-          folders={folders}
+          folders={foldersOutlet}
           setFolderPath={setFolderPath}
           selectedMenu={selectedMenu}
           setSelectedMenu={setSelectedMenu}
@@ -142,78 +168,7 @@ export default function Dashboard() {
             </Button>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {assets?.map((file) => (
-              <Card
-                key={file.id}
-                className="group overflow-hidden bg-card border border-gray-700 hover:border-primary/50 transition-all cursor-pointer"
-              >
-                <div className="aspect-video bg-muted relative overflow-hidden">
-                  <img
-                    src={file.file_url || "/placeholder.svg"}
-                    alt={file.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="h-8 w-8 bg-background/90 hover:bg-background"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="h-8 w-8 bg-background/90 hover:bg-background"
-                    >
-                      <Star className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-medium text-foreground truncate mb-1">
-                        {file.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
-                        {file.created_at}
-                      </p>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="end"
-                        className="bg-popover border-border"
-                      >
-                        <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
-                          <Star className="h-4 w-4 mr-2" />
-                          Add to Starred
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive hover:bg-destructive/10">
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+          <div className="p-4">{renderView()}</div>
         )}
         {dragActive && (
           <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 pointer-events-none">

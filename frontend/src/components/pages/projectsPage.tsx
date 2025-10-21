@@ -36,7 +36,6 @@ import {
   Pencil,
   Trash2,
   Plus,
-  LeafyGreen,
   Copy,
 } from "lucide-react";
 import ApiBaseVariable from "@/components/ui/Modals/ApiBaseVariable";

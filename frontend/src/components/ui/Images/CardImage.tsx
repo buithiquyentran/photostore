@@ -7,6 +7,7 @@ import {
   Globe,
   Lock,
   StarOff,
+  CodeXml,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
+
 import { formatFileSize, formattedDate } from "@/components/utils/format";
 import AccessControlModal from "../Modals/AccessControlModal";
 import AssetsService from "@/components/api/assets.service";
@@ -58,15 +61,8 @@ export default function ImageCard({
   const [imageError, setImageError] = useState(false);
   const [openAccessModal, setOpenAccessModal] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
   const [cardAsset, setCardAsset] = useState(asset);
-  const formatFileSize = (bytes?: string) => {
-    if (!bytes) return "Unknown";
-    const num = Number.parseInt(bytes);
-    if (num < 1024) return `${num} B`;
-    if (num < 1024 * 1024) return `${(num / 1024).toFixed(1)} KB`;
-    return `${(num / (1024 * 1024)).toFixed(1)} MB`;
-  };
+  const { toast } = useToast();
 
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
@@ -135,7 +131,18 @@ export default function ImageCard({
       console.error("Toggle star failed", err);
     }
   };
-
+    const handleCopy = async (url: string) => {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast({
+          title: "Copied!",
+          description: "Image URL copied to clipboard.",
+        });
+      } catch (err) {
+        toast({ title: "Copy failed", description: "Could not copy URL." });
+        console.error("Failed to copy: ", err);
+      }
+    };
   return (
     <Card
       key={cardAsset.id}
@@ -176,7 +183,7 @@ export default function ImageCard({
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-popover-foreground hover:bg-accent"
-                onClick={()=>handleToggleStar(true)}
+                onClick={() => handleToggleStar(true)}
               >
                 <Star className="h-4 w-4 mr-2" />
                 Add to Starred
@@ -197,13 +204,13 @@ export default function ImageCard({
           <Button
             size="icon"
             variant="secondary"
-            className="h-8 w-8 bg-background/90 hover:bg-background"
+            className="h-10 w-10 bg-background/90 hover:bg-background"
             onClick={(e) => {
               e.stopPropagation();
               handleDownload();
             }}
           >
-            <Download className="h-4 w-4" />
+            <Download size={30} />
           </Button>
           <Button
             size="icon"
@@ -212,13 +219,22 @@ export default function ImageCard({
               e.stopPropagation();
               handleToggleStar(!cardAsset.is_favorite);
             }}
-            className="h-8 w-8 bg-background/90 hover:bg-background"
+            className="h-10 w-10 bg-background/90 hover:bg-background"
           >
             {cardAsset.is_favorite ? (
-              <Star size={24} className="text-highlight" />
+              <Star size={30} className="text-highlight" />
             ) : (
-              <StarOff size={24} />
+              <StarOff size={30} />
             )}
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCopy(cardAsset.file_url);
+            }}
+            className="h-10 w-10 bg-background/90 hover:bg-background"
+          >
+            <CodeXml size={30} />
           </Button>
         </div>
       </div>
