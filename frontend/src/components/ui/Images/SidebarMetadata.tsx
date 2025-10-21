@@ -3,6 +3,7 @@ import AccessControlModal from "../Modals/AccessControlModal";
 import { motion } from "framer-motion";
 import { Globe, Lock } from "lucide-react";
 import { formatFileSize, formattedDate } from "@/components/utils/format";
+import TagInput from "@/components/ui/TagInput";
 interface SidebarMetadataProps {
   open: boolean;
   meta: {
@@ -44,46 +45,50 @@ export default function SidebarMetadata({
       <div className="p-4 space-y-4 overflow-y-auto">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-gray-400 text-sm">File name</p>
-            <p className="font-medium">{meta.name}</p>
+            <p className="text-gray-400 text-base">File name</p>
+            <p className="font-medium">{meta?.name}</p>
           </div>
           <div>
-            <p className="text-gray-400 text-sm">Format</p>
-            <p className="font-medium">{meta.format}</p>
+            <p className="text-gray-400 text-base">Format</p>
+            <p className="font-medium">{meta?.format}</p>
           </div>
           <div>
-            <p className="text-gray-400 text-sm">File size</p>
-            <p className="font-medium">{formatFileSize(meta.file_size)}</p>
+            <p className="text-gray-400 text-base">File size</p>
+            <p className="font-medium">{formatFileSize(meta?.file_size)}</p>
           </div>
           <div>
-            <p className="text-gray-400 text-sm">Dimensions</p>
+            <p className="text-gray-400 text-base">Dimensions</p>
             <p className="font-medium">
-              {meta.width} x {meta.height}
+              {meta?.width} x {meta?.height}
             </p>
           </div>
         </div>
 
         <div>
-          <p className="text-gray-400 text-sm">Created</p>
+          <p className="text-gray-400 text-base">Created</p>
           <p className="font-medium">{formattedDate(meta.created_at)}</p>
         </div>
 
         <div>
-          <p className="text-gray-400 text-sm">Last replaced</p>
+          <p className="text-gray-400 text-base">Last replaced</p>
           <p className="font-medium">{formattedDate(meta.updated_at)}</p>
         </div>
         <div>
-          <p className="text-gray-400 text-sm">Location</p>
+          <p className="text-gray-400 text-base">Location</p>
           <p className="font-medium">{meta.folder_path}</p>
         </div>
         <div>
-          <p className="text-gray-400 text-sm">Public ID</p>
+          <p className="text-gray-400 text-base">Public ID</p>
           <p className="font-medium">{meta.system_name}</p>
         </div>
+        <TagInput
+          initialTags={["a girl", "couple", "dance", "guitar", "person"]}
+          onChange={() => console.log("Tags updated:")}
+        />
 
         <div>
           <div className="flex items-center cursor-pointer">
-            <div className="text-gray-400 text-sm mr-2">Access control</div>
+            <div className="text-gray-400 text-base mr-2">Access control</div>
             <div
               className="px-2 py-1 rounded bg-gray-800 text-xs"
               onClick={() => setOpenModal(true)}

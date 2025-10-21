@@ -9,9 +9,9 @@ import {
   Star,
   StarOff,
   Trash2,
-  MoreVertical,
   ChevronLeft,
   ChevronRight,
+  CodeXml,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -26,6 +26,8 @@ import {
 import AssetService from "@/components/api/assets.service";
 import SidebarMetadata from "@/components/ui/Images/SidebarMetadata";
 import path from "@/resources/path";
+import { useToast } from "@/hooks/use-toast";
+
 export default function ViewerPage() {
   const { "*": file_url } = useParams();
   const navigate = useNavigate();
@@ -36,6 +38,8 @@ export default function ViewerPage() {
   const [nextPath, setNextPath] = useState<string>();
   const [prevPath, setPrevPath] = useState<string>();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const { toast } = useToast();
+
   useEffect(() => {
     let objectUrl: string | null = null;
     const fetchAndSetImage = async () => {
@@ -95,6 +99,18 @@ export default function ViewerPage() {
       console.error("Toggle star failed", err);
     }
   };
+  const handleCopy = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({
+        title: "Copied!",
+        description: "Image URL copied to clipboard.",
+      });
+    } catch (err) {
+      toast({ title: "Copy failed", description: "Could not copy URL." });
+      console.error("Failed to copy: ", err);
+    }
+  };
   return (
     <div className="fixed inset-0 bg-black flex flex-col z-50">
       {/* Header */}
@@ -106,6 +122,12 @@ export default function ViewerPage() {
           <X size={24} />
         </button>
         <div className="flex items-center justify-between bg-black/50 ">
+          <button
+            onClick={() => handleCopy(meta.file_url)}
+            className="p-2 m-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
+          >
+            <CodeXml size={24} />
+          </button>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 m-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
