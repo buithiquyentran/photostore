@@ -1,33 +1,64 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import TagService from "@/components/api/tags.service";
+import { toast } from "@/hooks/use-toast";
 
 interface TagInputProps {
-  initialTags?: string[];
-  onChange?: (tags: string[]) => void;
+  initialTags: object[];
+  asset_id: number;
 }
 
 export default function TagInput({
   initialTags = [],
-  onChange,
+  asset_id,
 }: TagInputProps) {
-  const [tags, setTags] = useState<string[]>(initialTags);
+  const [tags, setTags] = useState<[]>();
+  const [tagList, setTagList] = useState<string[]>();
   const [inputValue, setInputValue] = useState("");
 
-  const addTag = (value: string) => {
-    const newTag = value.trim();
-    if (!newTag || tags.includes(newTag)) return;
-    const newTags = [...tags, newTag];
-    setTags(newTags);
-    onChange?.(newTags);
-    setInputValue("");
+  useEffect(() => {
+    setTags(initialTags);
+    setTagList(initialTags?.map((tag) => tag.name));
+  }, [initialTags]);
+
+  const addTag = async (value: string) => {
+    const newTagValue = value.trim();
+    if (!newTagValue || tags.some((t) => t.name === newTagValue)) return;
+
+    try {
+      const response = await TagService.Add({
+        asset_id: Number(asset_id),
+        tag_names: [newTagValue],
+      });
+      const newTag: Tag = { name: response.added_tags[0], id: response.id };
+      const newTags = [...tags, newTag];
+      setTags(newTags);
+      setInputValue("");
+      // toast({ title: `Tag "${newTag.name}" created successfully!` });
+    } catch (error: any) {
+      toast({
+        title: "Add tag failed",
+        description: error.response?.data?.detail || "Please try again later.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const removeTag = (tag: string) => {
-    const newTags = tags.filter((t) => t !== tag);
-    setTags(newTags);
-    onChange?.(newTags);
+  const removeTag = async (tag) => {
+    try {
+      await TagService.Delete(asset_id, Number(tag.id));
+      const newTags = tags?.filter((t) => t.name !== tag.name);
+      console.log(newTags);
+      setTags(newTags);
+    } catch (error: any) {
+      toast({
+        title: "Delete tag failed",
+        description: error.response?.data?.detail || "Please try again later.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -47,12 +78,12 @@ export default function TagInput({
           "focus-within:ring-1 focus-within:ring-primary"
         )}
       >
-        {tags.map((tag) => (
+        {tags?.map((tag) => (
           <div
-            key={tag}
+            key={tag.id}
             className="flex items-center gap-1 p-1 rounded-full text-base"
           >
-            {tag}
+            {tag.name}
             <button
               onClick={() => removeTag(tag)}
               className="hover:text-destructive focus:outline-none"

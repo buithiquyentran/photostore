@@ -18,6 +18,7 @@ interface SidebarMetadataProps {
     name: string;
     system_name: string;
     is_private: boolean;
+    tags: any[]
   };
   onsave: (is_private: boolean) => void;
 }
@@ -66,24 +67,24 @@ export default function SidebarMetadata({
 
         <div>
           <p className="text-gray-400 text-base">Created</p>
-          <p className="font-medium">{formattedDate(meta.created_at)}</p>
+          <p className="font-medium">{formattedDate(meta?.created_at)}</p>
         </div>
 
         <div>
           <p className="text-gray-400 text-base">Last replaced</p>
-          <p className="font-medium">{formattedDate(meta.updated_at)}</p>
+          <p className="font-medium">{formattedDate(meta?.updated_at)}</p>
         </div>
         <div>
           <p className="text-gray-400 text-base">Location</p>
-          <p className="font-medium">{meta.folder_path}</p>
+          <p className="font-medium">{meta?.folder_path}</p>
         </div>
         <div>
           <p className="text-gray-400 text-base">Public ID</p>
-          <p className="font-medium">{meta.system_name}</p>
+          <p className="font-medium">{meta?.system_name}</p>
         </div>
         <TagInput
-          initialTags={["a girl", "couple", "dance", "guitar", "person"]}
-          onChange={() => console.log("Tags updated:")}
+          initialTags={meta?.tags.map((tag)=>({name: tag.name, id: tag.id}))}
+          asset_id = {meta.id}
         />
 
         <div>
@@ -93,7 +94,7 @@ export default function SidebarMetadata({
               className="px-2 py-1 rounded bg-gray-800 text-xs"
               onClick={() => setOpenModal(true)}
             >
-              {meta.is_private ? (
+              {meta?.is_private ? (
                 <div className="flex items-center gap-1">
                   <Lock className="h-5 w-5 text-highlight" />{" "}
                   <span>Private</span>
@@ -110,7 +111,7 @@ export default function SidebarMetadata({
             open={openModal}
             onClose={() => setOpenModal(false)}
             onSave={onsave}
-            _is_private={meta.is_private}
+            _is_private={meta?.is_private}
           />
         </div>
       </div>

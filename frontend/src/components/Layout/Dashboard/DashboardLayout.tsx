@@ -31,7 +31,6 @@ const Layout = () => {
   const fetchFolderContent = useCallback(async () => {
     try {
       let response;
-      console.log("folderPath", folderPath);
       if (folderPath === "home") {
         response = await AssetsService.GetAll({ is_deleted: false });
         setAssets(response);

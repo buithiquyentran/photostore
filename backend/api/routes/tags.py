@@ -8,6 +8,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 from PIL import Image
 import io
+from sqlmodel import Session, select
 
 from db.session import get_session
 from dependencies.dependencies import get_current_user
@@ -27,7 +28,7 @@ from services.tagging_service import (
     batch_auto_tag_assets,
     search_similar_tags
 )
-from models import Tags, Assets
+from models import Assets, Projects, Users
 
 router = APIRouter(prefix="/tags", tags=["Tags"])
 
@@ -175,7 +176,15 @@ def add_tags_to_asset(
         raise HTTPException(404, "Asset not found")
     
     # TODO: Check quyền sở hữu asset
-    
+    user  = session.exec(select(Users)
+            .join(Projects, Users.id == Projects.user_id)
+            .join(Assets, Projects.id == Assets.project_id)
+            .where(Assets.id == asset.id)
+        ).first()
+    if not user:
+        raise HTTPException(404, "Owner not found")
+    if current_user.id != user.id:
+        raise HTTPException(403, "Forbidden")
     added_tags = []
     for tag_name in request.tag_names:
         tag = get_or_create_tag(session, tag_name)
@@ -184,7 +193,8 @@ def add_tags_to_asset(
     
     return {
         "asset_id": request.asset_id,
-        "added_tags": added_tags
+        "added_tags": added_tags,
+        "id":  tag.id
     }
 
 
@@ -203,6 +213,15 @@ def get_asset_tags(
         raise HTTPException(404, "Asset not found")
     
     # TODO: Check quyền xem asset
+    user  = session.exec(select(Users)
+            .join(Projects, Users.id == Projects.user_id)
+            .join(Assets, Projects.id == Assets.project_id)
+            .where(Assets.id == asset.id)
+        ).first()
+    if not user:
+        raise HTTPException(404, "Owner not found")
+    if current_user.id != user.id:
+        raise HTTPException(403, "Forbidden")
     
     tags = get_tags_for_asset(session, asset_id)
     return tags
@@ -224,7 +243,15 @@ def remove_tag_from_asset_route(
         raise HTTPException(404, "Asset not found")
     
     # TODO: Check quyền sửa asset
-    
+    user  = session.exec(select(Users)
+            .join(Projects, Users.id == Projects.user_id)
+            .join(Assets, Projects.id == Assets.project_id)
+            .where(Assets.id == asset.id)
+        ).first()
+    if not user:
+        raise HTTPException(404, "Owner not found")
+    if current_user.id != user.id:
+        raise HTTPException(403, "Forbidden")
     success = remove_tag_from_asset(session, tag_id, asset_id)
     
     if not success:
