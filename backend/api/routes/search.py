@@ -174,7 +174,7 @@ def search_by_text_get(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Search images by text query using CLIP embeddings (GET method).
+    Search images by text query using CLIP embeddings (GET methohrequestd).
     
     GET /api/v1/search/text?q=a+cat+on+sofa
     

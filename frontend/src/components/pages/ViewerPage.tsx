@@ -157,7 +157,6 @@ export default function ViewerPage() {
             )}
           </button>
           <button
-            // onClick={() => handleDelete()}
             onClick={() => {
               setIsDeleteDialogOpen(true);
             }}
