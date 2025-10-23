@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship # type: ignore
-from sqlalchemy.orm import relationship
 
 class Assets(SQLModel, table=True):
     __tablename__ = "assets"
@@ -37,6 +36,10 @@ class Assets(SQLModel, table=True):
     created_at: int = Field(default_factory=lambda: int(datetime.utcnow().timestamp()))
     updated_at: int = Field(default_factory=lambda: int(datetime.utcnow().timestamp()))
 
+    thumbnails: List["Thumbnails"] = Relationship(
+        back_populates="assets",
+        sa_relationship_kwargs={"cascade": "all, delete, delete-orphan"},
+    )
     # Quan hệ với bảng folders (1 folder có nhiều assets)
     folders: Optional["Folders"] = Relationship(back_populates="assets")
     
@@ -44,3 +47,7 @@ class Assets(SQLModel, table=True):
         back_populates="assets",
         sa_relationship_kwargs={"cascade": "all, delete, delete-orphan"},
     )
+
+    @property
+    def download_url(self):
+        return self.file_url

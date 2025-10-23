@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File,Request,BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlmodel import Session, select, func
 from fastapi import UploadFile, File, Form
 from typing import List
@@ -6,35 +6,26 @@ from fastapi import Query
 from PIL import Image
 import io, os, time
 from uuid import uuid4
-from datetime import datetime, timedelta
-import io, faiss, json
-import torch
-import clip
-from fastapi import Request
-import numpy as np
 from pathlib import Path
 from typing import Optional
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from db.session import get_session
-from models import  Projects, Folders, Assets , Users, Embeddings
-from dependencies.dependencies import get_optional_user, get_current_user
+from models import  Projects, Folders, Assets , Users
+from dependencies.dependencies import get_current_user
 from db.crud_asset import add_asset
 from db.crud_embedding import create_embedding_for_asset
+from db.crud_thumbnail import generate_thumbnail_urls_for_file
+
 from utils.path_builder import build_full_path, build_file_url
 from utils.folder_finder import find_folder_by_path
 from utils.filename_utils import truncate_filename, split_filename, sanitize_filename
 from core.config import settings
-from db.crud_folder import get_or_create_folder
 
 # Constants
 MAX_FILENAME_LENGTH = 255  # Maximum length for filename in DB
 
-# from services.embeddings_service import index, faiss_id_to_asset, embed_image, rebuild_faiss,add_embedding_to_faiss, ensure_user_index,search_user
-# from services.search.embeddings_service import  embed_image,add_embedding_to_faiss, search_user,ensure_user_index, get_text_embedding, search_by_embedding
-
 router = APIRouter(prefix="/assets",  tags=["User Assets"])
-
 
 def format_asset_response(asset, session: Session) -> dict:
     """
@@ -70,8 +61,7 @@ def format_asset_response(asset, session: Session) -> dict:
         "created_at": asset.created_at,
         "updated_at": asset.updated_at
     }
-BUCKET_NAME = "photostore"
-BUCKET_NAME_PUBLIC = "images" 
+
 UPLOAD_DIR = Path("uploads")
 
 
@@ -319,6 +309,7 @@ async def upload_assets(
                 try:
                     with Image.open(io.BytesIO(file_bytes)) as im:
                         width, height = im.size
+                    
                 except Exception:
                     raise HTTPException(400, f"Ảnh {file.filename} không hợp lệ")
 
@@ -359,7 +350,7 @@ async def upload_assets(
             # Lưu file vào local
             with open(save_path, "wb") as f:
                 f.write(file_bytes)
-
+            
             try:
                 # Build file URL với full path
                 base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
@@ -385,6 +376,12 @@ async def upload_assets(
                     is_image=file.content_type.startswith("image/")
                 )
                 
+                 # Thumbnails
+                    # Generate thumbnail URLs if file is an image
+                
+                thumbnails = None
+                if file.content_type.startswith("image/"):
+                    thumbnails = generate_thumbnail_urls_for_file(asset_id)
                 # 🔥 TỰ ĐỘNG TẠO EMBEDDING cho ảnh
                 # Chỉ tạo embedding nếu là file IMAGE (không phải video)
                 if file.content_type.startswith("image/"):
@@ -424,17 +421,12 @@ async def upload_assets(
                     except Exception as tag_err:
                         # Không raise error, chỉ log warning
                         print(f"⚠️ Auto-tagging failed for asset {asset_id}: {tag_err}")
-
+    
             except Exception as e:
                 if os.path.exists(save_path):
                     os.remove(save_path)
                 raise HTTPException(status_code=500, detail=f"DB insert failed: {e}")
 
-            preview_url = f"/uploads/{object_path}"
-            safe_path = object_path.replace("\\", "/")
-            file_path = (UPLOAD_DIR / safe_path).resolve()
-
-            
             results.append({
                 "status": 1,
                 "id": asset_id,
@@ -454,7 +446,8 @@ async def upload_assets(
                 "auto_tags": auto_tags,  # ← Thêm danh sách tags tự động
                 "tags_count": len(auto_tags),  # ← Số lượng tags
                 "created_at": int(time.time()),
-                "updated_at": int(time.time())
+                "updated_at": int(time.time()),
+                "thumbnails": thumbnails
             })
 
         # Format response theo GraphQL style
