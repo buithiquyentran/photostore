@@ -34,6 +34,7 @@ const Layout = () => {
       if (folderPath === "home") {
         response = await AssetsService.GetAll({ is_deleted: false });
         setAssets(response);
+        console.log(response)
       } else if (folderPath === "trash") {
         response = await AssetsService.GetAll({ is_deleted: true });
         setAssets(response);

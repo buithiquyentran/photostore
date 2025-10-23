@@ -71,7 +71,11 @@ export default function ImageCard({
 
     const fetchAndSetImage = async () => {
       try {
-        const res = await AssetsService.GetAsset(asset.path);
+        const res = await AssetsService.GetThumbnail(asset.id, {
+          w: 500,
+          h: 500,
+        });
+
         const blob = res.data as Blob;
         const url = URL.createObjectURL(blob);
         setImageUrl(url);
@@ -131,18 +135,18 @@ export default function ImageCard({
       console.error("Toggle star failed", err);
     }
   };
-    const handleCopy = async (url: string) => {
-      try {
-        await navigator.clipboard.writeText(url);
-        toast({
-          title: "Copied!",
-          description: "Image URL copied to clipboard.",
-        });
-      } catch (err) {
-        toast({ title: "Copy failed", description: "Could not copy URL." });
-        console.error("Failed to copy: ", err);
-      }
-    };
+  const handleCopy = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({
+        title: "Copied!",
+        description: "Image URL copied to clipboard.",
+      });
+    } catch (err) {
+      toast({ title: "Copy failed", description: "Could not copy URL." });
+      console.error("Failed to copy: ", err);
+    }
+  };
   return (
     <Card
       key={cardAsset.id}

@@ -9,7 +9,7 @@ function LazyImage({ asset }: { asset: any }) {
 
     const fetchAndSetImage = async () => {
       try {
-        const res = await AssetsService.GetAsset(asset.path);
+        const res = await AssetsService.GetThumbnail(asset.id, { w: 500, h:500 });
         const blob = res.data as Blob;
         const url = URL.createObjectURL(blob);
         setImageUrl(url);

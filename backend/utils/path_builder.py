@@ -60,3 +60,5 @@ def build_file_url(session: Session, project_id: int, folder_id: int, filename: 
         return f"{base_url}/uploads/{filename}"
     
     return f"{base_url}/uploads/{full_path}/{filename}"
+
+
