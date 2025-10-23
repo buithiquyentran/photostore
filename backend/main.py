@@ -1,21 +1,12 @@
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from sqlmodel import SQLModel
-
 from api.main import api_router, external_api_router
 from core.config import settings
 from dependencies.auth_middleware import AuthMiddleware
 from dependencies.api_key_middleware import verify_api_request
 from db.session import engine
-
-# Import models để SQLModel biết
-from models.users import Users, RefreshToken
-from models.projects import Projects
-from models.folders import Folders
-from models.assets import Assets
-from models.embeddings import Embeddings
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     tag = route.tags[0] if route.tags else "default"
