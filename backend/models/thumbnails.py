@@ -13,7 +13,7 @@ class Thumbnails(SQLModel, table=True):
     height: int
     quality: int = Field(default=80)
     format: str = Field(default="webp", max_length=10)
-
+    filename:  Optional[str] = None
     # Generated file info
     file_url: str = Field(max_length=512)
     file_size: Optional[float] = None

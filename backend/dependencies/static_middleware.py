@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from sqlmodel import Session, select
 from pathlib import Path
 import os
+from fastapi import HTTPException
 
 from models import Assets, Projects, Folders, Users, Thumbnails
 from dependencies.dependencies import get_key, ALGORITHM
@@ -13,6 +14,19 @@ from jose import jwt, JWTError
 from db.session import engine
 import time, hmac, hashlib
 from fastapi import Request
+
+from db.crud_thumbnail import get_or_create_thumbnail
+
+UPLOAD_DIR = Path("uploads")
+
+def parse_thumbnail_filename(filename: str):
+    import re
+    m = re.match(r"(\d+)_(\d+)x(\d+)\.(\w+)", filename)
+    if not m:
+        raise ValueError(f"Invalid thumbnail filename format: {filename}")
+    asset_id, width, height, ext = m.groups()
+    return int(asset_id), int(width), int(height), ext.lower()
+
 
 UPLOAD_DIR = Path("uploads")
 async def verify_static_access(request: Request, call_next):
@@ -23,13 +37,12 @@ async def verify_static_access(request: Request, call_next):
     # 1️⃣ Trường hợp THUMBNAIL
     # -----------------------------
     if  path.startswith("/uploads/thumbnail/"):
-        filename = path.split("/")[-1]  # VD: 274_800x800.webp
-        base_id = filename.split("_")[0]  # asset_id = 274
-
+        filename = path.split("/")[-1]  # VD: 274_800x800.webp 
+        asset_id, w, h, format = parse_thumbnail_filename(filename)
         # Lấy thumbnail record (nếu có)
         with Session(engine) as session:
             thumb = session.exec(
-                select(Thumbnails).where(Thumbnails.asset_id == base_id)
+                select(Thumbnails).where(Thumbnails.asset_id == asset_id)
             ).first()
 
             if not thumb:
@@ -46,10 +59,25 @@ async def verify_static_access(request: Request, call_next):
 
             # ✅ File public → cho phép ngay
             if not asset.is_private:
+                # Get or create thumbnail
+                thumbnail = get_or_create_thumbnail(
+                    session=session,
+                    asset_id=asset_id,
+                    width=w,
+                    height=h,
+                    format=format,
+                )
+                file_path = os.path.join("uploads/thumbnails", thumbnail.filename)
+                if not os.path.exists(file_path):
+                    raise HTTPException(status_code=404, detail="File not found")
+                
+                return FileResponse(file_path, media_type="image/jpeg")
                 return FileResponse(
                     os.path.join("uploads", "thumbnails", filename),
                     media_type=asset.file_type or "image/webp"
                 )
+
+                
 
             # ⚠️ Nếu file private → xác thực giống như logic bên dưới
             token = request.headers.get("Authorization")
@@ -67,10 +95,23 @@ async def verify_static_access(request: Request, call_next):
                         return JSONResponse(status_code=403, content={"status": "error", "message": "Permission denied"})
 
                     # ✅ OK
-                    return FileResponse(
-                        os.path.join("uploads", "thumbnails", filename),
-                        media_type=asset.file_type or "image/webp"
+                    # return FileResponse(
+                    #     os.path.join("uploads", "thumbnails", filename),
+                    #     media_type=asset.file_type or "image/webp"
+                    # )
+                    # Get or create thumbnail
+                    thumbnail = get_or_create_thumbnail(
+                        session=session,
+                        asset_id=asset_id,
+                        width=w,
+                        height=h,
+                        format=format,
                     )
+                    file_path = os.path.join("uploads/thumbnails", thumbnail.filename)
+                    if not os.path.exists(file_path):
+                        raise HTTPException(status_code=404, detail="File not found")
+                    
+                    return FileResponse(file_path, media_type="image/jpeg")
                 except JWTError:
                     return JSONResponse(status_code=401, content={"status": "error", "message": "Invalid token"})
 
@@ -88,10 +129,23 @@ async def verify_static_access(request: Request, call_next):
                 if not hmac.compare_digest(signature, expected_signature):
                     return JSONResponse(status_code=401, content={"status": "error", "message": "Invalid signature"})
 
-                return FileResponse(
-                    os.path.join("uploads", "thumbnails", filename),
-                    media_type=asset.file_type or "image/webp"
+                # return FileResponse(
+                #     os.path.join("uploads", "thumbnails", filename),
+                #     media_type=asset.file_type or "image/webp"
+                # )
+                # Get or create thumbnail
+                thumbnail = get_or_create_thumbnail(
+                    session=session,
+                    asset_id=asset_id,
+                    width=w,
+                    height=h,
+                    format=format,
                 )
+                file_path = os.path.join("uploads/thumbnails", thumbnail.filename)
+                if not os.path.exists(file_path):
+                    raise HTTPException(status_code=404, detail="File not found")
+                
+                return FileResponse(file_path, media_type="image/jpeg")
 
             else:
                 return JSONResponse(status_code=401, content={"status": "error", "message": "Unauthorized"})

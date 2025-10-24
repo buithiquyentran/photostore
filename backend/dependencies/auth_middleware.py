@@ -54,7 +54,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
            "/redoc",
            "/favicon.ico",
            "/api/v1/test/*",  # Test
-           "/api/v1/thumbnail/*", 
            
         ]
 

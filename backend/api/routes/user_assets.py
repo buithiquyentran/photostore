@@ -24,7 +24,7 @@ from core.config import settings
 
 # Constants
 MAX_FILENAME_LENGTH = 255  # Maximum length for filename in DB
-
+UPLOAD_DIR = Path("uploads")
 router = APIRouter(prefix="/assets",  tags=["User Assets"])
 
 def format_asset_response(asset, session: Session) -> dict:
@@ -41,11 +41,14 @@ def format_asset_response(asset, session: Session) -> dict:
     
     # Build folder path using build_full_path function
     folder_path = build_full_path(session, project.id, folder.id) if project and folder else ""
-    
+    thumbnails = None
+    if asset.file_type.startswith("image/"):
+        thumbnails = generate_thumbnail_urls_for_file(asset.id)
     return {
         "status": 1,
         "id": asset.id,
         "name": asset.name,
+        "path": asset.path, 
         "original_name": asset.name,  # Giả sử name là original_name
         "system_name": asset.system_name,
         "file_url": file_url,
@@ -59,10 +62,9 @@ def format_asset_response(asset, session: Session) -> dict:
         "folder_path": folder_path,
         "is_private": asset.is_private,
         "created_at": asset.created_at,
-        "updated_at": asset.updated_at
+        "updated_at": asset.updated_at,
+        "thumbnails": thumbnails
     }
-
-UPLOAD_DIR = Path("uploads")
 
 
 @router.get("/count")
@@ -103,10 +105,16 @@ def list_assets(
 
         if is_deleted is not None:
             statement = statement.where(Assets.is_deleted == is_deleted)
-
-        results = session.exec(statement).all()
-        # ensure_user_index(session, id)
+        assets = session.exec(statement).all()
         
+        # Format response giống như upload-images API
+        results = []
+        for asset in assets:
+            formatted_asset = format_asset_response(asset, session)
+            results.append(
+                formatted_asset
+            )
+
         return {"status": 1, "data": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi: {str(e)}")

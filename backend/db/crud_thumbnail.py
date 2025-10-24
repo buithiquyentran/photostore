@@ -9,14 +9,18 @@ from PIL import Image
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from sqlmodel import select
+import io
+import os
+from fastapi import HTTPException, status
 from pathlib import Path
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from PIL import Image
 
+UPLOAD_DIR = Path("uploads")
 from models import  Assets , Thumbnails
 
-UPLOAD_DIR = Path("uploads")
 UPLOAD_THUMBNAILS = Path("uploads/thumbnails")
 
 # Thumbnail schemas
@@ -47,13 +51,13 @@ def get_thumbnail(
         Thumbnails.quality == quality
     ).first()
 
-def create_thumbnail(session: Session, thumbnail_data: ThumbnailCreate) -> Thumbnails:
-    """Create new thumbnail record in database"""
-    db_thumbnail =Thumbnails(**thumbnail_data.dict())
-    session.add(db_thumbnail)
-    session.commit()
-    session.refresh(db_thumbnail)
-    return db_thumbnail
+# def create_thumbnail(session: Session, thumbnail_data: ThumbnailCreate) -> Thumbnails:
+#     """Create new thumbnail record in database"""
+#     db_thumbnail =Thumbnails(**thumbnail_data.dict())
+#     session.add(db_thumbnail)
+#     session.commit()
+#     session.refresh(db_thumbnail)
+#     return db_thumbnail
 
 def update_thumbnail_access(session: Session, thumbnail: Thumbnails):
     """Update last accessed time and access count"""
@@ -178,8 +182,6 @@ def get_or_create_thumbnail(
         # uploads_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../uploads"))
         relative_path = original_file.path
         local_path = os.path.join(UPLOAD_DIR, relative_path).replace("\\", "/")
-        print("relative_path", relative_path)
-        print("local_path", local_path)
         
         if not os.path.exists(local_path):
             raise HTTPException(status_code=404, detail="Original image not found in local storage")
@@ -197,7 +199,8 @@ def get_or_create_thumbnail(
 
     # Step 6️⃣: Lưu thumbnail xuống local
     thumbnail_url = upload_thumbnail_to_local(thumbnail_data, asset_id, width, height, format)
-
+    
+    filename = f"{asset_id}_{width}x{height}.{format.lower()}"
     # Step 7️⃣: Tạo record trong DB
     new_thumbnail = Thumbnails(
         asset_id=asset_id,
@@ -205,6 +208,7 @@ def get_or_create_thumbnail(
         height=height,
         quality=quality,
         format=format,
+        filename= filename,
         file_url=thumbnail_url,
         file_size=len(thumbnail_data),
         access_count=1,
@@ -215,13 +219,12 @@ def get_or_create_thumbnail(
     session.refresh(new_thumbnail)
 
     return new_thumbnail
-
 def generate_thumbnail_urls_for_file(asset_id: int, base_url: str = "http://localhost:8000/api/v1") -> list:
     """Generate thumbnail URLs for common sizes"""
     common_sizes = [
-        (150, 150),   # Small thumbnail
+        (64, 64),   # Small thumbnail
         (300, 300),   # Medium thumbnail  
-        (600, 600),   # Large thumbnail
+        (500, 500),   # Large thumbnail
         (800, 600),   # Landscape
     ]
     

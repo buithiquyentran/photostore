@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton"; // shadcn skeleton nếu có
 import AssetsService from "@/components/api/assets.service";
 
-
-
 const AssetThumbnail = ({ asset, size = 48 }) => {
   const [imgUrl, setImgUrl] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
@@ -15,19 +13,11 @@ const AssetThumbnail = ({ asset, size = 48 }) => {
       try {
         if (!asset?.path) return;
         setLoading(true);
+        const res = await AssetsService.GetThumbnail(asset.id, {
+          w: 64,
+          h: 64,
+        });
 
-        // ✅ check cache trước khi fetch
-        // if (typeof window !== "undefined") {
-        //   const cacheKey = `asset-cache-${asset.path}`;
-        //   const cached = sessionStorage.getItem(cacheKey);
-        //   if (cached && isMounted) {
-        //     setImgUrl(cached);
-        //     setLoading(false);
-        //     return;
-        //   }
-        // }
-
-        const res = await AssetsService.GetAsset(asset.path); 
         const blob = res.data as Blob;
         const url = URL.createObjectURL(blob);
 
@@ -44,7 +34,6 @@ const AssetThumbnail = ({ asset, size = 48 }) => {
         setLoading(false);
       }
     };
-
 
     fetchImage();
 

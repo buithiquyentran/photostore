@@ -11,6 +11,12 @@ class AssetService {
       responseType: "blob",
     });
   }
+  async GetThumbnail(asset_id: number, params: Record<string, any> = {}) {
+    return this.api.get(`/uploads/thumbnail/${asset_id}`, {
+      params,
+      responseType: "blob",
+    });
+  }
   async GetAll(params: Record<string, any> = {}) {
     return (await this.api.get("/assets/all", { params })).data.data;
   }
