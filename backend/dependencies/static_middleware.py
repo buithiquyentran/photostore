@@ -28,6 +28,7 @@ def parse_thumbnail_filename(filename: str):
     return int(asset_id), int(width), int(height), ext.lower()
 
 
+UPLOAD_DIR = Path("uploads")
 async def verify_static_access(request: Request, call_next):
     path = request.url.path
     if not path.startswith("/uploads/"):
