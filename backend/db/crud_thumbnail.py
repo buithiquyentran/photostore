@@ -219,7 +219,7 @@ def get_or_create_thumbnail(
     session.refresh(new_thumbnail)
 
     return new_thumbnail
-def generate_thumbnail_urls_for_file(asset_id: int, base_url: str = "http://localhost:8000/api/v1") -> list:
+def generate_thumbnail_urls_for_file(asset_id: int, base_url: str = "http://localhost:8000/uploads/thumbnail") -> list:
     """Generate thumbnail URLs for common sizes"""
     common_sizes = [
         (64, 64),   # Small thumbnail
@@ -230,7 +230,7 @@ def generate_thumbnail_urls_for_file(asset_id: int, base_url: str = "http://loca
     
     thumbnail_urls = []
     for width, height in common_sizes:
-        thumbnail_url = f"{base_url}/thumbnail/{asset_id}?w={width}&h={height}"
+        thumbnail_url = f"{base_url}/{asset_id}_{width}x{height}.webp"
         thumbnail_urls.append({
             "width": width,
             "height": height,

@@ -41,22 +41,9 @@ async def verify_static_access(request: Request, call_next):
         asset_id, w, h, format = parse_thumbnail_filename(filename)
         # Lấy thumbnail record (nếu có)
         with Session(engine) as session:
-            thumb = session.exec(
-                select(Thumbnails).where(Thumbnails.asset_id == asset_id)
-            ).first()
-
-            if not thumb:
-                return JSONResponse(status_code=404, content={"status": "error", "message": "Thumbnail not found"})
-
-            # Tìm file gốc để kiểm tra quyền
-            asset = session.get(Assets, thumb.asset_id)
+            asset = session.get(Assets, asset_id)
             if not asset:
-                return JSONResponse(status_code=404, content={"status": "error", "message": "Original asset not found"})
-
-            project = session.get(Projects, asset.project_id)
-            if not project:
-                return JSONResponse(status_code=404, content={"status": "error", "message": "Project not found"})
-
+                    return JSONResponse(status_code=404, content={"status": "error", "message": "Original asset not found"})
             # ✅ File public → cho phép ngay
             if not asset.is_private:
                 # Get or create thumbnail
@@ -72,12 +59,6 @@ async def verify_static_access(request: Request, call_next):
                     raise HTTPException(status_code=404, detail="File not found")
                 
                 return FileResponse(file_path, media_type="image/jpeg")
-                return FileResponse(
-                    os.path.join("uploads", "thumbnails", filename),
-                    media_type=asset.file_type or "image/webp"
-                )
-
-                
 
             # ⚠️ Nếu file private → xác thực giống như logic bên dưới
             token = request.headers.get("Authorization")
@@ -91,14 +72,16 @@ async def verify_static_access(request: Request, call_next):
                     payload = jwt.decode(token_value, key, algorithms=[ALGORITHM], options={"verify_aud": False})
                     sub = payload.get("sub")
                     user = session.exec(select(Users).where(Users.sub == sub)).first()
-                    if not user or user.id != project.user_id:
+                    
+                    # Tìm file gốc để kiểm tra quyền
+                    asset = session.get(Assets, asset_id)
+                    if not asset:
+                        return JSONResponse(status_code=404, content={"status": "error", "message": "Original asset not found"})
+
+                    if not user or user.id != asset.project_id:
                         return JSONResponse(status_code=403, content={"status": "error", "message": "Permission denied"})
 
                     # ✅ OK
-                    # return FileResponse(
-                    #     os.path.join("uploads", "thumbnails", filename),
-                    #     media_type=asset.file_type or "image/webp"
-                    # )
                     # Get or create thumbnail
                     thumbnail = get_or_create_thumbnail(
                         session=session,
@@ -129,10 +112,10 @@ async def verify_static_access(request: Request, call_next):
                 if not hmac.compare_digest(signature, expected_signature):
                     return JSONResponse(status_code=401, content={"status": "error", "message": "Invalid signature"})
 
-                # return FileResponse(
-                #     os.path.join("uploads", "thumbnails", filename),
-                #     media_type=asset.file_type or "image/webp"
-                # )
+                if not user or user.id != asset.project_id:
+                    return JSONResponse(status_code=403, content={"status": "error", "message": "Permission denied"})
+                
+                # ✅ OK
                 # Get or create thumbnail
                 thumbnail = get_or_create_thumbnail(
                     session=session,

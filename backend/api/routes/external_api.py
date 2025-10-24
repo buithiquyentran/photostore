@@ -435,7 +435,7 @@ async def upload_assets(
                         # Không raise error, chỉ log warning
                         # Upload vẫn thành công nhưng không có embedding
                         print(f"⚠️ Embedding creation failed for asset {asset_id}: {emb_err}")
-
+    
             except Exception as e:
                 if os.path.exists(save_path):
                     os.remove(save_path)
