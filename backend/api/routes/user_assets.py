@@ -66,7 +66,11 @@ def format_asset_response(asset, session: Session) -> dict:
         "thumbnails": thumbnails
     }
 
+<<<<<<< HEAD
 
+=======
+UPLOAD_DIR = Path("uploads")
+>>>>>>> 2bf550080b7ef74b6ff1f69d9478b44adf09e273
 
 
 @router.get("/count")

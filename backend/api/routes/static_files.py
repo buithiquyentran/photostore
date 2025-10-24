@@ -80,6 +80,48 @@ async def get_upload(file_path: str):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_path, media_type="image/jpeg")
 
+@router.get("/thumbnail/{asset_id}", response_class=RedirectResponse)
+# Get or create thumbnail
+def get_thumbnail(
+    asset_id: int,
+    w: int = Query(..., ge=50, le=2000, description="Width in pixels"),
+    h: int = Query(..., ge=50, le=2000, description="Height in pixels"),
+    format: str = Query("webp", regex="^(webp|jpg|jpeg|png)$", description="Output format"),
+    q: int = Query(80, ge=10, le=100, description="Quality (10-100)"),
+    session: Session = Depends(get_session)
+):
+    """
+    Get or create thumbnail for an image file.
+    Returns redirect to the thumbnail URL.
+    
+    Parameters:
+    - asset_id: ID of the original file
+    - w: Width in pixels (50-2000)
+    - h: Height in pixels (50-2000) 
+    - format: Output format (webp, jpg, jpeg, png)
+    - q: Quality 10-100 (default 80)
+    """
+    try:
+        # Get or create thumbnail
+        thumbnail = get_or_create_thumbnail(
+            session=session,
+            asset_id=asset_id,
+            width=w,
+            height=h,
+            format=format,
+            quality=q
+        )
+        
+        # Redirect to thumbnail URL
+        return RedirectResponse(url=thumbnail.file_url, status_code=302)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}"
+        )
+
 
 
 @router.get("/metadata/{file_path:path}")

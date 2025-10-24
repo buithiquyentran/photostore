@@ -182,7 +182,6 @@ def get_or_create_thumbnail(
         # uploads_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../uploads"))
         relative_path = original_file.path
         local_path = os.path.join(UPLOAD_DIR, relative_path).replace("\\", "/")
-
         
         if not os.path.exists(local_path):
             raise HTTPException(status_code=404, detail="Original image not found in local storage")
