@@ -123,8 +123,8 @@ const ListView = ({ assets }) => {
 
       <Table>
         <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="font-semibold text-white text-xl">
+          <TableRow className="hover:bg-transparent text-lg">
+            <TableHead className="font-semibold text-white">
               <Checkbox
                 checked={
                   selectedIds.length > 0 &&
@@ -133,22 +133,22 @@ const ListView = ({ assets }) => {
                 onCheckedChange={handleToggleSelectAll}
               />
             </TableHead>
-            <TableHead className="font-semibold text-white text-xl">
+            <TableHead className="font-semibold text-white">
               Display name
             </TableHead>
-            <TableHead className="font-semibold text-white text-xl">
+            <TableHead className="font-semibold text-white">
               Container folder
             </TableHead>
-            <TableHead className="font-semibold text-white text-xl">
+            <TableHead className="font-semibold text-white">
               Format
             </TableHead>
-            <TableHead className="font-semibold text-white text-xl">
+            <TableHead className="font-semibold text-white">
               Size
             </TableHead>
-            <TableHead className="font-semibold text-white text-xl">
+            <TableHead className="font-semibold text-white">
               Dimensions
             </TableHead>
-            <TableHead className="font-semibold text-white text-xl">
+            <TableHead className="font-semibold text-white min-w-[140px]">
               Access control
             </TableHead>
           </TableRow>
