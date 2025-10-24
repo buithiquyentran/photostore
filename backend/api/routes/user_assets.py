@@ -67,7 +67,6 @@ def format_asset_response(asset, session: Session) -> dict:
     }
 
 
-
 @router.get("/count")
 def count(session: Session = Depends(get_session), current_user: dict = Depends(get_current_user),is_favorite: bool | None = Query(None, description="Lọc ảnh được đánh dấu yêu thích"),
     is_deleted: bool | None = Query(None, description="Lọc ảnh đã xóa")):
