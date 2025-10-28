@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import dayjs from "dayjs";
 import {
   ChevronDown,
@@ -18,12 +18,18 @@ import TagsService from "@/components/api/tags.service";
 import FolderSerivce from "@/components/api/folder.service";
 interface AdvancedSearchBarProps {
   fetchContent: (filters: any) => void;
+  filters: any;
+  setFilters: React.Dispatch<React.SetStateAction<string>>;
+  resetSignal: number;
 }
 
 export default function AdvancedSearchBar({
   fetchContent,
+  filters,
+  setFilters,
+  resetSignal,
 }: AdvancedSearchBarProps) {
-  const [filters, setFilters] = useState<any>({});
+  // const [filters, setFilters] = useState<any>({});
   const [query, setQuery] = useState("");
   const [tags, setTags] = useState<Array<{ id: number; name: string }>>([]);
   const [folders, setFolders] = useState<Array<any>>([]);
@@ -101,6 +107,7 @@ export default function AdvancedSearchBar({
         onChange={(val) => handleChange("keyword", val)}
         onSelectMatchType={(val) => handleChange("match_type", val)}
         isDisplayName={true}
+        resetSignal={resetSignal}
       />
 
       <Dropdown
@@ -109,22 +116,26 @@ export default function AdvancedSearchBar({
         onChange={(val) => handleChange("folder_path", val)}
         withInput={true}
         showPath={true}
+        resetSignal={resetSignal}
       />
       <Dropdown
         label="Creation date"
         options={["Today", "Last 7 days", "Last 30 days", "This year"]}
         onChange={(val) => handleChange("creationDate", val)}
+        resetSignal={resetSignal}
       />
       <Dropdown
         label="Tags"
         options={tags?.map((tag) => tag.name)}
         onChange={(val) => handleChange("tag", val)}
         withInput={true}
+        resetSignal={resetSignal}
       />
       <Dropdown
         label="Formats"
         options={["jpg", "png", "webp", "mp4"]}
         onChange={(val) => handleChange("file_extension", val)}
+        resetSignal={resetSignal}
       />
       <Dropdown
         label="Asset types"
@@ -133,6 +144,7 @@ export default function AdvancedSearchBar({
           const is_image = val === "Image" ? "true" : "false";
           handleChange("is_image", is_image);
         }}
+        resetSignal={resetSignal}
       />
 
       <Dropdown
@@ -155,6 +167,7 @@ export default function AdvancedSearchBar({
           },
         ]}
         onChange={(val) => handleChange("shape", val)}
+        resetSignal={resetSignal}
       />
 
       {/* Add more */}
@@ -173,6 +186,7 @@ interface DropdownProps {
   withInput?: boolean;
   onSelectMatchType?: (value: string) => void;
   showPath?: boolean; // ✅ thêm prop mới
+  resetSignal: number;
 }
 function Dropdown({
   label,
@@ -182,14 +196,18 @@ function Dropdown({
   onSelectMatchType,
   withInput = false,
   showPath = false, // ✅ thêm prop mới
+  resetSignal,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState("");
   const [selectedMatchType, setSelectedMatchType] = useState("start-with");
   const [displayName, setDisplayName] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const filteredOptions = options?.filter((opt) => {
-    const text = typeof opt === "string" ? opt : opt.label ?? opt.value ?? "";
+    const text =
+      typeof opt === "string" ? opt : opt.label ?? opt.value ?? opt.name;
     return text.toLowerCase().includes(search.toLowerCase());
   });
 
@@ -206,9 +224,27 @@ function Dropdown({
     setSelected(value);
     onChange(value);
   };
+  useEffect(() => {
+    setSelected("");
+    setSearch("");
+    setDisplayName("");
+  }, [resetSignal]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <div>
+    <div ref={dropdownRef} className="relative">
       {/* Trigger */}
       <button
         onClick={() => setIsOpen(!isOpen)}

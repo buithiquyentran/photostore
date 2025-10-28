@@ -10,8 +10,17 @@ import {
 } from "lucide-react";
 import DisplayOrder from "@/components/Layout/Dashboard/DisplayOrder";
 
-export default function SearchBar({ onSearch, onUpload, fetchContent, view, setView }) {
+export default function SearchBar({
+  onSearch,
+  onUpload,
+  fetchContent,
+  view,
+  setView,
+  folderPath,
+}) {
   const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<any>({}); // Lưu trữ các filter đã chọn
+  const [resetSignal, setResetSignal] = useState(0); // Dùng để reset AdvancedSearchBar
 
   // Debounce (chỉ gọi API sau khi ngừng gõ 500ms)
   const debounce = (func, delay) => {
@@ -35,9 +44,15 @@ export default function SearchBar({ onSearch, onUpload, fetchContent, view, setV
       e.preventDefault();
       console.log(query);
       onSearch(query); // gọi search khi nhấn Enter
+      fetchContent();
     }
   };
-
+  const handleResetFilters = () => {
+    setFilters({});
+    setQuery("");
+    setResetSignal((prev) => prev + 1);
+    fetchContent();
+  };
   return (
     <div className=" sticky top-0 bg-gray-900 z-20">
       <div className="flex items-center px-2 py-1 gap-2 w-full mx-auto border-b border-gray-700">
@@ -75,10 +90,15 @@ export default function SearchBar({ onSearch, onUpload, fetchContent, view, setV
           <MoreVertical size={20} />
         </button>
       </div>
-      <AdvancedSearchBar fetchContent={fetchContent} />
+      <AdvancedSearchBar
+        fetchContent={fetchContent}
+        filters={filters}
+        setFilters={setFilters}
+        resetSignal={resetSignal}
+      />
       <div className="flex items-center justify-between px-4 py-1 border-b border-gray-700 text-white">
         <button
-          // onClick={fetchAssets}
+          onClick={handleResetFilters}
           className="flex items-center text-gray-400 hover:text-white px-2"
         >
           <RotateCcw size={20} /> &nbsp;
@@ -86,7 +106,11 @@ export default function SearchBar({ onSearch, onUpload, fetchContent, view, setV
         </button>
 
         <div className="flex items-center gap-4">
-          <DisplayOrder fetchContent={fetchContent} />
+          <DisplayOrder
+            fetchContent={fetchContent}
+            filters={filters}
+            setFilters={setFilters}
+          />
           <div className="flex gap-3 p-1 shadow-md">
             <button
               onClick={() => setView("mosaic")}

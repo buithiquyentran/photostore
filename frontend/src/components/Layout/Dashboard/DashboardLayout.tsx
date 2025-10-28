@@ -138,8 +138,9 @@ const Layout = () => {
             onSearch={handleSearch}
             onUpload={handleUpload}
             fetchContent={fetchContent}
-            view ={view}
+            view={view}
             setView={setView}
+            folderPath={folderPath}
           />
 
           <div className="grow">
