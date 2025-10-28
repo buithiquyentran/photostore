@@ -1,9 +1,16 @@
 import { useState, useCallback } from "react";
 import { Search, Upload, MoreVertical } from "lucide-react";
 import UploadButton from "@/components/ui/Images/UploadButton";
-import AdvancedSearchBar from "@/components/ui/Layouts/AdvancedSearchBar";
+import AdvancedSearchBar from "@/components/Layout/Dashboard/AdvancedSearchBar";
+import {
+  RotateCcw,
+  LayoutDashboard,
+  LayoutList,
+  LayoutGrid,
+} from "lucide-react";
+import DisplayOrder from "@/components/Layout/Dashboard/DisplayOrder";
 
-export default function SearchBar({ onSearch, onUpload }) {
+export default function SearchBar({ onSearch, onUpload, fetchContent, view, setView }) {
   const [query, setQuery] = useState("");
 
   // Debounce (chỉ gọi API sau khi ngừng gõ 500ms)
@@ -68,7 +75,52 @@ export default function SearchBar({ onSearch, onUpload }) {
           <MoreVertical size={20} />
         </button>
       </div>
-      <AdvancedSearchBar onSearch={(filters) => console.log(filters)} />
+      <AdvancedSearchBar fetchContent={fetchContent} />
+      <div className="flex items-center justify-between px-4 py-1 border-b border-gray-700 text-white">
+        <button
+          // onClick={fetchAssets}
+          className="flex items-center text-gray-400 hover:text-white px-2"
+        >
+          <RotateCcw size={20} /> &nbsp;
+          <span className="text-sm">Refresh</span>
+        </button>
+
+        <div className="flex items-center gap-4">
+          <DisplayOrder fetchContent={fetchContent} />
+          <div className="flex gap-3 p-1 shadow-md">
+            <button
+              onClick={() => setView("mosaic")}
+              className={`p-2 rounded-full ${
+                view === "mosaic"
+                  ? "text-highlight"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              <LayoutDashboard size={20} />
+            </button>
+            <button
+              onClick={() => setView("list")}
+              className={`p-2 rounded-full ${
+                view === "list"
+                  ? "text-highlight"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              <LayoutList size={20} />
+            </button>
+            <button
+              onClick={() => setView("card")}
+              className={`p-2 rounded-full ${
+                view === "card"
+                  ? "text-highlight"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              <LayoutGrid size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

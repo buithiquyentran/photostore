@@ -114,6 +114,7 @@ export default function Dashboard() {
               <BreadcrumbPath
                 refetchFolders={refetchFolders}
                 setFolderPath={setFolderPath}
+                setSelectedMenu={setSelectedMenu}
               />
             </h2>
             <p className="text-sm text-muted-foreground">

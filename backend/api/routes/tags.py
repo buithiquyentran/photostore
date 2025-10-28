@@ -28,7 +28,7 @@ from services.tagging_service import (
     batch_auto_tag_assets,
     search_similar_tags
 )
-from models import Assets, Projects, Users
+from models import Assets, Projects, Users, TagsDetail, Tags
 
 router = APIRouter(prefix="/tags", tags=["Tags"])
 
@@ -104,7 +104,25 @@ def list_tags(
     tags = get_all_tags(session, active_only=active_only)
     return tags
 
-
+@router.get("/user_tags")
+def get_user_tags(
+    session: Session = Depends(get_session),
+    current_user=Depends(get_current_user)
+):
+    # Lấy tất cả tag mà user có asset gắn với tag đó
+    statement = (
+        select(Tags)
+        .join(TagsDetail)
+        .join(Assets, Assets.id == TagsDetail.source_id)
+        .join(Projects, Projects.id == Assets.project_id)
+        .where(
+            TagsDetail.source_type == "assets",
+            Projects.user_id == current_user.id
+        )
+        .distinct()
+    )
+    tags = session.exec(statement).all()
+    return {"status": "success", "data": [{"id": tag.id, "name": tag.name} for tag in tags]}
 @router.post("/", response_model=TagResponse)
 def create_tag(
     tag_data: TagCreate,

@@ -58,7 +58,8 @@ def register_user(session: Session, email: str, sub: str, username: str):
         default_folder = Folders(
             project_id=default_project.id,
             name="Home",
-            slug=f"home",
+            slug="home",
+            path="default-project/home", 
             is_default=True
         )
         session.add(default_folder)
@@ -131,9 +132,10 @@ async def add_user_with_assets(session: Session, email: str, username: str, sub:
             # Build full path từ project và folder slugs
             folder_path = build_full_path(session, project_id, folder_id)
             object_path = f"{folder_path}/{storage_filename}"
+            path = f"{user_id}/{folder_path}/{storage_filename}"
 
             # absolute path (lưu trong ổ cứng)
-            save_path = os.path.join(UPLOAD_DIR, object_path).replace("\\", "/")
+            save_path = os.path.join(UPLOAD_DIR, path).replace("\\", "/")
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
             # Lưu file vào local

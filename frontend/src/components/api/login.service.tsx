@@ -21,7 +21,11 @@ class LoginService {
     ).data;
   }
   async LogOut(data: any) {
-    return (await this.api.post("/logout", data)).data;
+    return (
+      await this.api.post("/logout", data, {
+        headers: {},
+      })
+    ).data;
   }
 }
 export default new LoginService();

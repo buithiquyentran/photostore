@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -21,7 +21,9 @@ const ListView = ({ assets }) => {
   const [openAccessModal, setOpenAccessModal] = useState(false);
   const [listAssets, setListAssets] = useState(assets);
   const [editAsset, setEditAsset] = useState(null);
-
+  useEffect(() => {
+    setListAssets(assets);
+  }, [assets]);
   // ✅ State chọn nhiều ảnh
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 

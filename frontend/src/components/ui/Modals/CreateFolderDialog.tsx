@@ -23,7 +23,6 @@ export default function CreateFolderDialog({
   const handleCreate = () => {
     if (!folderName.trim()) return;
     onCreate(folderName);
-    alert(folderName);
     setFolderName("");
     setOpen(false);
   };
@@ -51,7 +50,7 @@ export default function CreateFolderDialog({
           />
         </div>
         <DialogFooter>
-          <Button onClick={handleCreate}>Create</Button>
+          <Button className="text-black" onClick={handleCreate}>Create</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -6,7 +6,9 @@ class TagService {
     // Khởi tạo api
     this.api = createApiClient(baseUrl);
   }
-
+  async Get() {
+    return (await this.api.get("/user_tags")).data;
+  }
   async Add(data: any) {
     return (await this.api.post("/asset/add", data)).data;
   }
