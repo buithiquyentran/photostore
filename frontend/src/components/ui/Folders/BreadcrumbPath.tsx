@@ -62,7 +62,7 @@ export default function BreadcrumbPath({
         {pathParts.map((part, index) => (
           <div key={index} className="flex items-center">
             {index === pathParts.length - 1 ? (
-              <span className="flex items-center text-foreground font-medium">
+              <span className="flex items-center text-foreground font-normal">
                 {part}
               </span>
             ) : (

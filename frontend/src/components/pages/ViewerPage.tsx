@@ -238,7 +238,7 @@ export default function ViewerPage() {
               onClick={(e) => {
                 e.stopPropagation();
                 handleDelete();
-                navigate(path.DASHBOARD);
+                navigate(`/photos/${nextPath}`);
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

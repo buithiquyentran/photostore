@@ -221,16 +221,16 @@ export default function Sidebar({
             <span>{username}</span>
           </div>
           {open && (
-            <div className="absolute left-14 bottom-0 bg-white shadow-lg rounded-md py-2 z-50">
-              <div className="px-4 py-2 text-base text-gray-700 border-b flex">
-                <span className="font-bold"> Name: </span> {username}
+            <div className="absolute left-14 bottom-0 bg-white shadow-lg rounded-sm z-100">
+              <div className="px-4 py-1 text-base text-gray-700 border-b flex">
+                <span className="font-bold mr-2"> Ussername: </span> {username}
               </div>
-              <div className="px-4 py-2 text-base text-gray-700 border-b flex">
-                <span className="font-bold"> Email: </span> {email}
+              <div className="px-4 py-1 text-base text-gray-700 border-b flex">
+                <span className="font-bold mr-2"> Email: </span> {email}
               </div>
               <button
                 onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-base text-red-600 hover:bg-gray-100"
+                className="w-full text-left px-4 py-1 text-base text-red-600 hover:bg-gray-100"
               >
                 Đăng xuất
               </button>
