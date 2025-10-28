@@ -66,3 +66,10 @@ coverage/
 *.backup
 *.bak
 backup_*.sql
+
+# Next.js build output
+.next/
+out/
+.cache/
+node_modules/
+

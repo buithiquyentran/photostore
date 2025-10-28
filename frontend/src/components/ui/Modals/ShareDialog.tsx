@@ -68,7 +68,7 @@ export default function ShareDialog({
         </div>
 
         <DialogFooter>
-          <Button onClick={onClose}>Xong</Button>
+          <Button className="text-black" onClick={onClose}>Xong</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

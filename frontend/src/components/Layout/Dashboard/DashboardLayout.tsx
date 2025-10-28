@@ -1,18 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { Outlet } from "react-router-dom";
-import {
-  RotateCcw,
-  LayoutDashboard,
-  LayoutList,
-  LayoutGrid,
-} from "lucide-react";
+
 import SearchBar from "@/components/Layout/Dashboard/SearchBar";
 import Sidebar from "@/components/Layout/Dashboard/Sidebar/Sidebar";
 import SearchService from "@/components/api/search.service";
 import AssetsService from "@/components/api/assets.service";
 import folderService from "@/components/api/folder.service";
 
-import SortDropdown from "@/components/ui/SortDropdown";
 interface FolderNode {
   id: string;
   name: string;
@@ -28,35 +22,47 @@ const Layout = () => {
   const [folderPath, setFolderPath] = useState<string>(pathParts);
   const [view, setView] = useState<"mosaic" | "list" | "card">("mosaic");
 
-  const fetchFolderContent = useCallback(async () => {
-    try {
-      let response;
-      if (folderPath === "home") {
-        response = await AssetsService.GetAll({ is_deleted: false });
-        setAssets(response);
-        console.log(response)
-      } else if (folderPath === "trash") {
-        response = await AssetsService.GetAll({ is_deleted: true });
-        setAssets(response);
-      } else if (folderPath === "favorite") {
-        response = await AssetsService.GetAll({
-          is_deleted: false,
-          is_favorite: true,
-        });
-        setAssets(response);
-      } else {
-        response = await folderService.GetContent({ path: folderPath });
+  const fetchContent = useCallback(
+    async (filters = {}) => {
+      try {
+        let response;
+        if (folderPath === "home") {
+          response = await AssetsService.GetAll({
+            is_deleted: false,
+            ...filters,
+          });
+          
+        } else if (folderPath === "trash") {
+          response = await AssetsService.GetAll({
+            is_deleted: true,
+            ...filters,
+          });
+          
+        } else if (folderPath === "favorite") {
+          response = await AssetsService.GetAll({
+            is_deleted: false,
+            is_favorite: true, ...filters ,
+          });
+          
+        } else {
+          response = await AssetsService.GetAll({
+            folder_path: folderPath,
+            ...filters,
+          });
+          
+        }
         setFolders(response.folders);
         setAssets(response.assets);
+      } catch (error) {
+        console.error("Error fetching assets:", error);
       }
-    } catch (error) {
-      console.error("Error fetching assets:", error);
-    }
-  }, [folderPath]);
+    },
+    [folderPath]
+  );
 
   useEffect(() => {
-    fetchFolderContent();
-  }, [fetchFolderContent]); // ✅ thêm fetchFolderContent vào deps
+    fetchContent();
+  }, [fetchContent]); // ✅ thêm fetchContent vào deps
 
   const handleSearch = async (e, queryText: string) => {
     try {
@@ -100,7 +106,7 @@ const Layout = () => {
       for (let i = 0; i < files.length; i++) {
         formData.append("files", files[i]); // phải trùng với tên param trong BE
       }
-      if (folderPath) {
+      if (folderPath && folderPath !== "home" && folderPath !== "trash" && folderPath !== "favorite") {
         const project_slug = folderPath.split("/")[0];
         const folder_slug = folderPath.split("/").slice(1).join("/");
         formData.append("project_slug", project_slug);
@@ -128,52 +134,14 @@ const Layout = () => {
           setFolderPath={setFolderPath}
         />
         <div className="grow flex flex-col bg-background">
-          <SearchBar onSearch={handleSearch} onUpload={handleUpload} />
-          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 text-white">
-            <button
-              // onClick={fetchAssets}
-              className="flex items-center text-gray-400 hover:text-white px-2"
-            >
-              <RotateCcw size={20} /> &nbsp;
-              <span className="text-sm">Refresh</span>
-            </button>
+          <SearchBar
+            onSearch={handleSearch}
+            onUpload={handleUpload}
+            fetchContent={fetchContent}
+            view ={view}
+            setView={setView}
+          />
 
-            <div className="flex items-center gap-4">
-              <SortDropdown />
-              <div className="flex gap-3 p-1 shadow-md">
-                <button
-                  onClick={() => setView("mosaic")}
-                  className={`p-2 rounded-full ${
-                    view === "mosaic"
-                      ? "text-highlight"
-                      : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  <LayoutDashboard size={20} />
-                </button>
-                <button
-                  onClick={() => setView("list")}
-                  className={`p-2 rounded-full ${
-                    view === "list"
-                      ? "text-highlight"
-                      : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  <LayoutList size={20} />
-                </button>
-                <button
-                  onClick={() => setView("card")}
-                  className={`p-2 rounded-full ${
-                    view === "card"
-                      ? "text-highlight"
-                      : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  <LayoutGrid size={20} />
-                </button>
-              </div>
-            </div>
-          </div>
           <div className="grow">
             <Outlet
               context={{
@@ -181,7 +149,7 @@ const Layout = () => {
                 foldersOutlet: folders,
                 view: view,
                 onUpload: handleUpload,
-                refetchFolders: fetchFolderContent,
+                refetchFolders: fetchContent,
                 setFolderPath: setFolderPath,
                 selectedMenu: selectedMenu,
                 setSelectedMenu: setSelectedMenu,

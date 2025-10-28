@@ -1,5 +1,6 @@
 import  { useEffect, useState} from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
+import empty_message_image from "@/assets/empty_message.png";
 
 import MosaicView from "@/components/ui/View/MosaicView";
 import ListView from "@/components/ui/View/ListView";
@@ -41,8 +42,22 @@ const Brower = () => {
     }
   };
   return (
-    <div className=" bg-[rgb(31,36,46)] min-h-full">
-      <div className="p-4">{renderView()}</div>
+    <div className="bg-[rgb(31,36,46)] min-h-full">
+      {assets.length > 0 ? (
+        renderView()
+      ) : (
+        <div className=" text-gray-400 text-xl flex flex-col items-center gap-4">
+          <img
+            src={empty_message_image}
+            alt={"empty-state.png"}
+            className="flex justify-center"
+          />
+
+          <div>
+            Try adjusting your search or filter to find what you're looking for
+          </div>
+        </div>
+      )}
     </div>
   );
 };

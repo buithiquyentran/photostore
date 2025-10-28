@@ -36,4 +36,6 @@ async def social_login(current_user: dict = Depends(get_current_user), session: 
             new_user = await add_user_with_assets(session=session, email=email, username=username,  sub=sub)
             return {"msg": "User created", "user": new_user}
     except Exception as e:
-        return {"msg": "User exists"}
+        import traceback
+        traceback.print_exc()  # in ra toàn bộ stack trace trong terminal
+        raise HTTPException(status_code=500, detail=f"Lỗi khi tạo user: {str(e)}")

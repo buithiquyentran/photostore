@@ -3,7 +3,7 @@ import createApiClient from "./api.service";
 class LoginService {
   private api: any;
 
-  constructor(baseUrl = "api/v1/auth") {
+  constructor(baseUrl = "/api/v1/auth") {
     this.api = createApiClient(baseUrl);
   }
   async Login(data: any) {
@@ -21,7 +21,11 @@ class LoginService {
     ).data;
   }
   async LogOut(data: any) {
-    return (await this.api.post("/logout", data)).data;
+    return (
+      await this.api.post("/logout", data, {
+        headers: {},
+      })
+    );
   }
 }
 export default new LoginService();

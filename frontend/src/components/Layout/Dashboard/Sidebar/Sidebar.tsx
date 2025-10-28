@@ -26,7 +26,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import FolderTree from "@/components/Layout/Dashboard/Sidebar/FolderTree"
+import FolderTree from "@/components/Layout/Dashboard/Sidebar/FolderTree";
 import { cn } from "@/lib/utils";
 import path from "@/resources/path";
 
@@ -76,16 +76,16 @@ export default function Sidebar({
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const fetchCounts = async () => {
+    const fetchFolderTree = async () => {
       try {
-        const response = await FolderService.GetAll();
+        const response = await FolderService.GetFolderTree();
         setFolders(response);
       } catch (err) {
         console.error("Failed to fetch asset count:", err);
       }
     };
 
-    fetchCounts();
+    fetchFolderTree();
   }, []);
   const toggleUser = () => setOpen(!open);
   const fetchUser = async () => {
@@ -104,10 +104,18 @@ export default function Sidebar({
   }, []);
 
   const handleLogout = async () => {
-    const refreshToken = localStorage.getItem("refresh_token") || 1;
+    const refreshToken = localStorage.getItem("refresh_token");
     if (refreshToken) {
       try {
-        await LoginService.LogOut({ refresh_token: refreshToken });
+        const response = await LoginService.LogOut({
+          refresh_token: refreshToken,
+        });
+        console.log(response)
+        if (response.status === "success") {
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          window.location.href = "/login";
+        }
       } catch (err) {
         console.error("Logout failed", err);
       }
@@ -138,8 +146,6 @@ export default function Sidebar({
         );
       })()
     : "";
-
-
 
   return (
     <div className="flex flex-col sticky top-0 h-screen justify-between bg-[#111827] p-4  border border-gray-700">

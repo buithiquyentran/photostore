@@ -1,16 +1,16 @@
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import AssetsService from "@/components/api/assets.service";
-
 
 import MosaicView from "@/components/ui/View/MosaicView";
 import ListView from "@/components/ui/View/ListView";
 import CardView from "@/components/ui/View/CardView";
+import empty_message_image from "@/assets/empty_message.png";
 
 const Brower = () => {
   const navigate = useNavigate();
   const { assetsOutlet, view, setFolderPath } = useOutletContext();
-  const [assets, setAssets] = useState<any[]>();
+  const [assets, setAssets] = useState<any[]>([]);
   useEffect(() => {
     setFolderPath("home");
     setAssets(assetsOutlet);
@@ -53,7 +53,21 @@ const Brower = () => {
 
   return (
     <div className="bg-[rgb(31,36,46)] min-h-full">
-      <div className="p-4">{renderView()}</div>
+      {assets.length > 0 ? (
+        renderView()
+      ) : (
+        <div className=" text-gray-400 text-xl flex flex-col items-center gap-4">
+          <img
+            src={empty_message_image}
+            alt={"empty-state.png"}
+            className="flex justify-center"
+          />
+
+          <div>
+            Try adjusting your search or filter to find what you're looking for
+          </div>
+        </div>
+      )}
     </div>
   );
 };

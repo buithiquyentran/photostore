@@ -10,10 +10,12 @@ from pathlib import Path
 from typing import Optional
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from datetime import datetime
+
 from db.session import get_session
 from models import  Projects, Folders, Assets , Users
 from dependencies.dependencies import get_current_user
-from db.crud_asset import add_asset
+from db.crud_asset import add_asset,  sort_type, display_order
 from db.crud_embedding import create_embedding_for_asset
 from db.crud_thumbnail import generate_thumbnail_urls_for_file
 
@@ -90,34 +92,49 @@ def count(session: Session = Depends(get_session), current_user: dict = Depends(
 def list_assets(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
+    
+    keyword: Optional[str] = None,
+    match_type: Optional[str] = "start-with",  # "start-with" hoặc "equal-to"
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    file_extension: Optional[str] = None,
     is_favorite: bool | None = Query(None, description="Lọc ảnh được đánh dấu yêu thích"),
     is_deleted: bool | None = Query(None, description="Lọc ảnh đã xóa"),
+    is_private: bool | None = Query(None, description="Lọc ảnh riêng tư"),
+    is_image: bool | None = Query(None, description="Lọc ảnh (True) hoặc video (False)"),
+    shape: Optional[str] = None,  # "landscape", "portrait", "square"
+    tag: Optional[str] = None,
+    folder_path: Optional[str] = None,
+    sort_by: Optional[str] = "date",     # "date", "name", "size"
+    sort_order: Optional[str] = "desc",  # "asc" hoặc "desc"
+
+    skip: int = 0,
+    page: int = 1,
+    limit: int = 100,
 ):
-    try:
-        statement = (
-            select(Assets)
-            .join(Folders, Assets.folder_id == Folders.id)
-            .join(Projects, Folders.project_id == Projects.id)
-            .where(Projects.user_id == current_user.id)
-        )
-        if is_favorite is not None:
-            statement = statement.where(Assets.is_favorite == is_favorite)
-
-        if is_deleted is not None:
-            statement = statement.where(Assets.is_deleted == is_deleted)
-        assets = session.exec(statement).all()
-        
-        # Format response giống như upload-images API
-        results = []
-        for asset in assets:
-            formatted_asset = format_asset_response(asset, session)
-            results.append(
-                formatted_asset
-            )
-
-        return {"status": 1, "data": results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi: {str(e)}")
+    asset_ids_list, children_folders  = sort_type(
+        current_user=current_user,
+        session=session,
+        keyword=keyword,
+        match_type=match_type,
+        start_date=start_date,
+        end_date=end_date,
+        file_extension=file_extension,
+        is_favorite=is_favorite,
+        is_deleted=is_deleted,
+        is_private=is_private,
+        is_image=is_image,
+        shape=shape,
+        tag=tag,
+        folder_path =folder_path
+    )
+    if asset_ids_list is None or len(asset_ids_list) == 0:
+        return {"page": page, "limit": limit, "total": 0, "assets": [], "folders": children_folders}
+    result = display_order(
+        session=session, 
+        asset_ids_list=asset_ids_list, skip=skip, limit=limit, sort_by=sort_by, sort_order=sort_order
+    )
+    return {"page": page, "limit": limit, "total": result["total"], "assets": result["files"], "folders": children_folders}
 class AssetUpdate(BaseModel):
     is_private: Optional[bool] = None
     is_favorite: Optional[bool] = None
@@ -254,14 +271,14 @@ async def upload_assets(
         if not project:
             project = Projects(
             user_id=current_user.id,
-            name="Default Project",
-            slug=f"default-project-{current_user.id}",
+            name="My Assets",
+            slug=f"my-assets-{current_user.id}",
             is_default=True
         )
         session.add(project)
         session.flush()
     
-    # Tìm folder theo path slugs hoặc default
+    # Tìm foler theo path slugs hoặc default
     if folder_slug:
         # folder_slug có thể là path: "parent-slug/child-slug"
         try:
@@ -272,6 +289,7 @@ async def upload_assets(
                 folder = Folders(
                     name=folder_slug.replace("-", " ").title(),  # thu-muc-moi → Thu Muc Moi
                     slug=folder_slug,
+                    path=folder_slug,
                     project_id=project.id,
                     parent_id=None,  # Root folder
                     is_default=False
@@ -293,6 +311,7 @@ async def upload_assets(
             folder = Folders(
                 name="Home",
                 slug="home",
+                path="home",
                 project_id=project.id,
                 parent_id=None,
                 is_default=True
@@ -349,8 +368,9 @@ async def upload_assets(
             full_path = build_full_path(session, project.id, folder.id)
             
             # relative path (lưu trong DB)
-            object_path = f"{full_path}/{storage_filename}"
-
+            object_path = f"{current_user.id}/{full_path}/{storage_filename}" # mỗi user có thư mục riêng
+            path = f"{full_path}/{storage_filename}" # path bắt đầu từ project
+            
             # absolute path (lưu trong ổ cứng)
             save_path = os.path.join(UPLOAD_DIR, object_path).replace("\\", "/")
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -375,7 +395,7 @@ async def upload_assets(
                     file_type=file.content_type,
                     format=file.content_type,  # Sử dụng MIME type làm format
                     file_size=size,
-                    path=object_path,
+                    path=path,
                     file_url=file_url,
                     folder_path=full_path,
                     width=width,
@@ -409,26 +429,26 @@ async def upload_assets(
                         print(f"⚠️ Embedding creation failed for asset {asset_id}: {emb_err}")
                     
                     # 🏷️ TỰ ĐỘNG ĐÁNH TAG cho ảnh
-                    auto_tags = []  # Store tags for response
-                    try:
-                        from services.tagging_service import auto_tag_asset
-                        # Open image từ bytes
-                        image_for_tagging = Image.open(io.BytesIO(file_bytes)).convert("RGB")
-                        tags = auto_tag_asset(
-                            session=session,
-                            asset_id=asset_id,
-                            image=image_for_tagging,
-                            threshold=0.25,  # Cosine similarity threshold (0-1)
-                            top_k=20  # Tăng lên 20 tags
-                        )
-                        auto_tags = tags  # Save for response
-                        if tags:
-                            print(f"✅ Auto-tagged asset {asset_id} with {len(tags)} tags: {', '.join(tags)}")
-                        else:
-                            print(f"⚠️ No tags generated for asset {asset_id}")
-                    except Exception as tag_err:
-                        # Không raise error, chỉ log warning
-                        print(f"⚠️ Auto-tagging failed for asset {asset_id}: {tag_err}")
+                    # auto_tags = []  # Store tags for response
+                    # try:
+                    #     from services.tagging_service import auto_tag_asset
+                    #     # Open image từ bytes
+                    #     image_for_tagging = Image.open(io.BytesIO(file_bytes)).convert("RGB")
+                    #     tags = auto_tag_asset(
+                    #         session=session,
+                    #         asset_id=asset_id,
+                    #         image=image_for_tagging,
+                    #         threshold=0.25,  # Cosine similarity threshold (0-1)
+                    #         top_k=3  # Tăng lên 3 tags
+                    #     )
+                    #     auto_tags = tags  # Save for response
+                    #     if tags:
+                    #         print(f"✅ Auto-tagged asset {asset_id} with {len(tags)} tags: {', '.join(tags)}")
+                    #     else:
+                    #         print(f"⚠️ No tags generated for asset {asset_id}")
+                    # except Exception as tag_err:
+                    #     # Không raise error, chỉ log warning
+                    #     print(f"⚠️ Auto-tagging failed for asset {asset_id}: {tag_err}")
     
             except Exception as e:
                 if os.path.exists(save_path):
@@ -451,8 +471,8 @@ async def upload_assets(
                 "project_slug": project.slug,
                 "folder_path": full_path,  # Full path từ project → parent folders → current folder
                 "is_private": is_private,
-                "auto_tags": auto_tags,  # ← Thêm danh sách tags tự động
-                "tags_count": len(auto_tags),  # ← Số lượng tags
+                # "auto_tags": auto_tags,  # ← Thêm danh sách tags tự động
+                # "tags_count": len(auto_tags),  # ← Số lượng tags
                 "created_at": int(time.time()),
                 "updated_at": int(time.time()),
                 "thumbnails": thumbnails

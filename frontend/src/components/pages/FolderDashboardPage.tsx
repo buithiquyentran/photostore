@@ -114,6 +114,7 @@ export default function Dashboard() {
               <BreadcrumbPath
                 refetchFolders={refetchFolders}
                 setFolderPath={setFolderPath}
+                setSelectedMenu={setSelectedMenu}
               />
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -122,7 +123,8 @@ export default function Dashboard() {
           </div>
           <Button
             onClick={() => fileInputRef.current?.click()}
-            className="bg-primary text-[#000] hover:bg-primary/90"
+            disabled={selectedMenu?.split("/").length ==1} // disable khi ở root project
+            className="bg-primary text-[#000] hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none"
           >
             <UploadCloud className="h-4 w-4 mr-2" />
             Upload Files

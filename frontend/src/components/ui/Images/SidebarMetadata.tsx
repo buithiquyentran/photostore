@@ -13,8 +13,8 @@ interface SidebarMetadataProps {
     file_size: number;
     width: string;
     height: string;
-    created_at: string;
-    updated_at: string;
+    created_at: number;
+    updated_at: number;
     name: string;
     system_name: string;
     is_private: boolean;

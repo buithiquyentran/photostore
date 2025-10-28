@@ -16,14 +16,14 @@ def build_full_path(session: Session, project_id: int, folder_id: int) -> str:
         folder_id: ID của folder
         
     Returns:
-        Full path dạng: "user_id/project-slug/parent-folder-slug/child-folder-slug"
+        Full path dạng: "project-slug/parent-folder-slug/child-folder-slug"
     """
     # Get project slug
     project = session.get(Projects, project_id)
     if not project:
         return ""
     
-    path_parts = [str(project.user_id), project.slug]
+    path_parts = [project.slug]
     
     # Build folder path
     current_folder = session.get(Folders, folder_id)

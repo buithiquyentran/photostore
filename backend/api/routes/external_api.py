@@ -31,6 +31,8 @@ from db.crud_embedding import create_embedding_for_asset
 from utils.filename_utils import truncate_filename, split_filename, sanitize_filename
 from utils.folder_finder import find_folder_by_path
 
+from db.crud_thumbnail import generate_thumbnail_urls_for_file
+
 router = APIRouter(prefix="/external", tags=["External API"])
 
 
@@ -153,12 +155,16 @@ async def create_folder(
                     "message": "Folder with this name already exists"
                 }
             )
-
+        if parent:
+            folder_path = f"{parent.path}/{folder_slug}"
+        else:
+            folder_path = folder_slug  # root level
         # Tạo folder mới
         new_folder = Folders(
             project_id=project.id,
             name=folder.name,
             slug=folder_slug,
+            path=folder_path,
             parent_id=folder.parent_id,
             description=folder.description
         )
@@ -435,17 +441,15 @@ async def upload_assets(
                         # Không raise error, chỉ log warning
                         # Upload vẫn thành công nhưng không có embedding
                         print(f"⚠️ Embedding creation failed for asset {asset_id}: {emb_err}")
-    
+                
+                thumbnails = None
+                if file.content_type.startswith("image/"):
+                    thumbnails = generate_thumbnail_urls_for_file(asset_id)
             except Exception as e:
                 if os.path.exists(save_path):
                     os.remove(save_path)
                 raise HTTPException(status_code=500, detail=f"DB insert failed: {e}")
 
-            preview_url = f"/uploads/{object_path}"
-            safe_path = object_path.replace("\\", "/")
-            file_path = (UPLOAD_DIR / safe_path).resolve()
-
-            
             results.append({
                 "status": 1,
                 "id": asset_id,
@@ -463,7 +467,8 @@ async def upload_assets(
                 "folder_path": full_path,  # Full path từ project → parent folders → current folder
                 "is_private": is_private,
                 "created_at": int(time.time()),
-                "updated_at": int(time.time())
+                "updated_at": int(time.time()),
+                "thumbnails": thumbnails
             })
 
         # Format response theo GraphQL style

@@ -22,6 +22,8 @@ def create_api_client(user_id: int, name: str, session: Session = Depends(get_se
     # Tạo folder mặc định cho project vừa tạo
     default_folder = Folders(
         name="Home",
+        slug="home",    
+        path="home",
         project_id=client.id,
         is_default=True
     )
