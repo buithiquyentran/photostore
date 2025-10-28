@@ -39,4 +39,3 @@ class TagsDetail(SQLModel, table=True):
     
     # Relationship
     tag: Optional["Tags"] = Relationship(back_populates="tag_details")
-

@@ -15,6 +15,9 @@ class Folders(SQLModel, table=True):
 
     name: str = Field(max_length=100, nullable=False)
     slug: str = Field(max_length=150, nullable=False, index=True)  # URL-friendly version of name
+    path: str = Field(max_length=500, nullable=False, description="Relative path using slugs")
+
+    
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_default: bool = Field(default=False)
 

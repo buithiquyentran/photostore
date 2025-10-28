@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState} from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, ChevronDown, Folder } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ interface FolderNode {
   icon?: React.ReactNode;
   children?: FolderNode[];
   slug: string;
+  path: string;
 }
 
 interface FolderTreeProps {
@@ -25,7 +26,9 @@ export default function FolderTree({
   setFolderPath,
 }: FolderTreeProps) {
   const navigate = useNavigate();
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
+    new Set()
+  );
 
   const toggleFolder = (folderId: string) => {
     const newExpanded = new Set(expandedFolders);
@@ -37,14 +40,15 @@ export default function FolderTree({
   const renderFolder = (folder: FolderNode, level = 0, parentPath = "") => {
     const isExpanded = expandedFolders.has(folder.id);
     const hasChildren = folder.children && folder.children.length > 0;
-    const isSelected = selectedMenu === folder.id;
+    const isSelected = selectedMenu === folder.path;
     const fullPath = parentPath ? `${parentPath}/${folder.slug}` : folder.slug;
 
     const handleOpenFolder = () => {
-      if (selectedMenu === folder.id) return;
+      if (selectedMenu === (folder.path || folder.slug)) return;
       setFolderPath(fullPath);
       navigate(`/dashboard/${fullPath}`);
-      setSelectedMenu(folder.id);
+      setSelectedMenu(fullPath);
+      console.log(fullPath);
     };
 
     return (
@@ -86,5 +90,7 @@ export default function FolderTree({
     );
   };
 
-  return <div className="space-y-0.5">{folders?.map((f) => renderFolder(f))}</div>;
+  return (
+    <div className="space-y-0.5">{folders?.map((f) => renderFolder(f))}</div>
+  );
 }

@@ -7,11 +7,13 @@ import { toast } from "@/hooks/use-toast";
 type BreadcrumbPathProps = {
   refetchFolders: () => Promise<any> | void;
   setFolderPath: React.Dispatch<React.SetStateAction<string>>;
+  setSelectedMenu: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export default function BreadcrumbPath({
   refetchFolders,
   setFolderPath,
+  setSelectedMenu,
 }: BreadcrumbPathProps) {
   const location = useLocation();
 
@@ -29,6 +31,8 @@ export default function BreadcrumbPath({
   const handleCrumbClick = (index: number) => {
     const p = pathParts.slice(0, index + 1).join("/");
     setFolderPath(p);
+    setSelectedMenu(p);
+    console.log(p)
   };
 
   const handleAddFolder = async (name: string) => {
@@ -48,38 +52,31 @@ export default function BreadcrumbPath({
       if (refetchFolders) await refetchFolders();
     } catch (err) {
       console.error(err);
-      alert("Thêm folder thất bại");
+      toast({ title: "Folder creation failed!" });
     }
   };
 
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center text-xl text-muted-foreground">
-        <Link
-          to="/dashboard"
-          className="flex items-center font-medium text-foreground hover:underline"
-          onClick={() => setFolderPath("")} // về root -> folderPath rỗng
-        >
-          <Folder className="w-4 h-4 mr-1" />
-          Projects
-        </Link>
-
+        <Folder className="w-4 h-4 mr-3" />
         {pathParts.map((part, index) => (
           <div key={index} className="flex items-center">
-            <ChevronRight className="w-4 h-4 mx-1 text-muted-foreground" />
             {index === pathParts.length - 1 ? (
               <span className="flex items-center text-foreground font-medium">
-
                 {part}
               </span>
             ) : (
-              <Link
-                to={buildHref(index)}
-                onClick={() => handleCrumbClick(index)}
-                className="flex items-center text-foreground hover:text-foreground hover:underline"
-              >
-                {part}
-              </Link>
+              <>
+                <Link
+                  to={buildHref(index)}
+                  onClick={() => handleCrumbClick(index)}
+                  className="flex items-center text-foreground hover:text-foreground hover:underline"
+                >
+                  {part}
+                </Link>
+                <ChevronRight className="w-4 h-4 mx-1 text-muted-foreground" />
+              </>
             )}
           </div>
         ))}

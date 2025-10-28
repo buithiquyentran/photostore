@@ -76,16 +76,16 @@ export default function Sidebar({
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const fetchCounts = async () => {
+    const fetchFolderTree = async () => {
       try {
-        const response = await FolderService.GetAll();
+        const response = await FolderService.GetFolderTree();
         setFolders(response);
       } catch (err) {
         console.error("Failed to fetch asset count:", err);
       }
     };
 
-    fetchCounts();
+    fetchFolderTree();
   }, []);
   const toggleUser = () => setOpen(!open);
   const fetchUser = async () => {

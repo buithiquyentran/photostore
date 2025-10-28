@@ -5,9 +5,13 @@ class FolderService {
   constructor(baseUrl = "/api/v1/folders") {
     this.api = createApiClient(baseUrl);
   }
+  async GetFolderTree() {
+    const res = await this.api.get("/folder_tree");
+    return res.data.data;
+  }
   async GetAll() {
     const res = await this.api.get("/all");
-    return res.data.data;
+    return res.data;
   }
   async Create(data: {
     project_slug: string;

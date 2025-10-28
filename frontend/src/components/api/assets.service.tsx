@@ -18,7 +18,7 @@ class AssetService {
     });
   }
   async GetAll(params: Record<string, any> = {}) {
-    return (await this.api.get("/assets/all", { params })).data.data;
+    return (await this.api.get("/assets/all", { params })).data;
   }
 
   async GetMetadata(file_path: string | undefined) {

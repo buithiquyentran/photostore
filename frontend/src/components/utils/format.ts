@@ -12,9 +12,10 @@ function formatFileSize(size: number): string {
   return `${formatted} ${units[i]}`;
 }
 
-function formattedDate(dt: string) {
-  const timeZone = "Asia/Ho_Chi_Minh"; // múi giờ VN
-  const localDate = toZonedTime(new Date(dt), timeZone);
+
+function formattedDate(timestamp: number) {
+  const timeZone = "Asia/Ho_Chi_Minh";
+  const localDate = toZonedTime(new Date(timestamp * 1000), timeZone);
   return format(localDate, "MMM dd, yyyy h:mm a", { timeZone });
 }
 
