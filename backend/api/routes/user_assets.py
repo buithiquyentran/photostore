@@ -271,8 +271,8 @@ async def upload_assets(
         if not project:
             project = Projects(
             user_id=current_user.id,
-            name="Default Project",
-            slug=f"default-project-{current_user.id}",
+            name="My Assets",
+            slug=f"my-assets-{current_user.id}",
             is_default=True
         )
         session.add(project)

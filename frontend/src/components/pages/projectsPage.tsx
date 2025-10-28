@@ -240,13 +240,13 @@ export default function ProjectsPage() {
   };
   return (
     <div className="min-h-screen">
-      <div className="mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto px-2 py-8 sm:px-6 lg:px-2">
         <div className="mb-8 flex items-start justify-between">
           <div>
-            <h1 className="text-balance text-3xl font-semibold tracking-tight text-foreground">
+            <h1 className="text-balance text-3xl font-semibold tracking-tight text-foreground p-3">
               Projects
             </h1>
-            <p className="mt-2 text-pretty text-base">
+            <p className="mt-2 text-pretty text-base p-3">
               Manage API key and secret pairs for your product environment. To
               build the environment variable for each pair, copy the provided
               format and substitute your actual values for the placeholders.
@@ -268,22 +268,22 @@ export default function ProjectsPage() {
           <Table>
             <TableHeader className="bg-[#111827]">
               <TableRow className="hover:bg-transparent ">
-                <TableHead className="font-semibold text-white text-xl">
+                <TableHead className="font-medium text-white text-xl">
                   Name
                 </TableHead>
-                <TableHead className="font-semibold text-white text-xl">
+                <TableHead className="font-medium text-white text-xl">
                   Slug
                 </TableHead>
-                <TableHead className="font-semibold text-white text-xl">
+                <TableHead className="font-medium text-white text-xl">
                   Created At
                 </TableHead>
-                <TableHead className="font-semibold text-white text-xl">
+                <TableHead className="font-medium text-white text-xl">
                   API Key
                 </TableHead>
-                <TableHead className="font-semibold text-white text-xl">
+                <TableHead className="font-medium text-white text-xl">
                   Secret Key
                 </TableHead>
-                <TableHead className="text-right font-semibold text-white text-xl">
+                <TableHead className="text-right font-medium text-white text-xl">
                   Actions
                 </TableHead>
               </TableRow>
@@ -300,14 +300,12 @@ export default function ProjectsPage() {
               ) : (
                 projects?.map((project) => (
                   <TableRow key={project.id}>
-                    <TableCell className="font-medium">
-                      {project.name}
-                    </TableCell>
-                    <TableCell className="font-mono text-base ">
+                    <TableCell className="text-sm ">{project.name}</TableCell>
+                    <TableCell className=" text-sm ">
                       {project.slug}
                     </TableCell>
                     <TableCell className="">{project.created_at}</TableCell>
-                    <TableCell className="font-mono text-base">
+                    <TableCell className=" text-sm">
                       {project.api_key}
                       <Button
                         variant="ghost"
@@ -325,7 +323,7 @@ export default function ProjectsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <code className="rounded  px-2 py-1 font-mono text-base">
+                        <code className="rounded  px-2 py-1  text-sm">
                           {visibleSecrets.has(project.id)
                             ? project.api_secret
                             : "•••••••••••••••••••••••••••••"}

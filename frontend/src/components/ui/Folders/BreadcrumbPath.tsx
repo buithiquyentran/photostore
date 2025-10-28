@@ -32,7 +32,6 @@ export default function BreadcrumbPath({
     const p = pathParts.slice(0, index + 1).join("/");
     setFolderPath(p);
     setSelectedMenu(p);
-    console.log(p)
   };
 
   const handleAddFolder = async (name: string) => {

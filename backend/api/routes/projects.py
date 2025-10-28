@@ -27,7 +27,7 @@ def get_projects(
     try:
         projects = session.exec(
             select(Projects)
-            .where((Projects.user_id == current_user.id))
+            .where((Projects.user_id == current_user.id) &(Projects.is_default == False)  )
         ).all()
         return {"status": "success", "data": projects}
     except Exception as e:

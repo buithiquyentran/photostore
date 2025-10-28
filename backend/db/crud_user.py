@@ -47,8 +47,8 @@ def register_user(session: Session, email: str, sub: str, username: str):
         # 4️⃣ Thêm project mặc định
         default_project = Projects(
             user_id=new_user.id,
-            name="Default Project",
-            slug=f"default-project",
+            name="My Assets",
+            slug=f"my-assets",
             is_default=True
         )
         session.add(default_project)
@@ -59,7 +59,7 @@ def register_user(session: Session, email: str, sub: str, username: str):
             project_id=default_project.id,
             name="Home",
             slug="home",
-            path="default-project/home", 
+            path="my-assets/home", 
             is_default=True
         )
         session.add(default_folder)

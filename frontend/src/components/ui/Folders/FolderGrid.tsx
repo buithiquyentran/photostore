@@ -25,6 +25,7 @@ interface FolderNode {
   icon?: React.ReactNode;
   children?: FolderNode[];
   slug: string;
+  path: string;
 }
 interface FolderGridProps {
   folders: FolderNode[] | null;
@@ -51,7 +52,7 @@ export default function FolderGrid({
     console.log(fullPath);
     setFolderPath(fullPath);
     navigate(`/dashboard/${fullPath}`);
-    setSelectedMenu(folder.id);
+    setSelectedMenu(folder.path);
   };
   if (!folders?.length)
     return (

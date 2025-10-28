@@ -18,6 +18,7 @@ import FOLDER_DASHBOARD from "@/components/pages/FolderDashboardPage";
 import { Toaster } from "@/components/ui/toaster";
 import keycloak from "@/keycloak";
 import { Loading } from "@/components/ui/Loading";
+import UserService from "@/components/api/user.service";
 
 function App() {
   const [keycloakReady, setKeycloakReady] = useState(false);
@@ -31,6 +32,16 @@ function App() {
         if (auth) {
           localStorage.setItem("access_token", keycloak.token || "");
           localStorage.setItem("refresh_token", keycloak.refreshToken || "");
+          try {
+          // Gọi route /social-login để đồng bộ user và upload assets mặc định
+            const res = await UserService.SocialLogin();
+            console.log("Social login (Facebook/Keycloak) response:", res);
+          } catch (err) {
+            console.error("Social login error:", err);
+          }
+
+        // Điều hướng sau khi đăng nhập
+        navigate(path.DASHBOARD);
         }
       })
       .catch((err) => {
