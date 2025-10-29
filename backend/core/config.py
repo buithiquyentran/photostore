@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     CLIENT_ID: str
     ADMIN_CLIENT_ID: str
     ADMIN_CLIENT_SECRET: str
-    
+    PERMANENT_DELETE_AFTER_DAYS: int = 30
     @property
     def all_cors_origins(self) -> List[str]:
         """Parse CORS_ORIGINS string to list"""
