@@ -15,7 +15,7 @@ from datetime import datetime
 from db.session import get_session
 from models import  Projects, Folders, Assets , Users
 from dependencies.dependencies import get_current_user
-from db.crud_asset import add_asset,  sort_type, display_order
+from db.crud_asset import add_asset,  sort_type, display_order, update, delete
 from db.crud_embedding import create_embedding_for_asset
 from db.crud_thumbnail import generate_thumbnail_urls_for_file
 
@@ -143,7 +143,7 @@ class AssetUpdate(BaseModel):
 @router.patch("/{id}")
 def update_asset(
     id: int,
-    update: AssetUpdate,
+    asset_update: AssetUpdate,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -157,8 +157,7 @@ def update_asset(
         user = session.exec(
             select(Users)
             .join(Projects, Users.id == Projects.user_id)
-            .join(Folders, Projects.id == Folders.project_id)
-            .join(Assets, Folders.id == Assets.folder_id)
+            .join(Assets, Projects.id == Assets.project_id)
             .where(Assets.id == asset.id)
         ).first()
 
@@ -169,19 +168,7 @@ def update_asset(
             raise HTTPException(401, "Unauthorized")
 
         # 3. Update các field
-        if update.is_private is not None:
-            asset.is_private = update.is_private
-           
-        if update.is_favorite is not None:
-            asset.is_favorite = update.is_favorite
-            print
-        if update.is_deleted is not None:
-            asset.is_deleted = update.is_deleted
-            print("is_deleted",update.is_deleted)
-
-        session.add(asset)
-        session.commit()
-        session.refresh(asset)
+        asset = update(session=session, asset_id = asset.id, update= asset_update)
 
         return {
             "message": "Asset updated successfully",
@@ -206,24 +193,15 @@ def delete_asset(
             raise HTTPException(status_code=404, detail="Assets not found")
         user  = session.exec(select(Users)
                 .join(Projects, Users.id == Projects.user_id)
-                .join(Folders, Projects.id == Folders.project_id)
-                .join(Assets, Folders.id == Assets.folder_id)
+                .join(Assets, Projects.id == Assets.project_id)
                 .where(Assets.id == asset.id)
             ).first()
         if not user:
             raise HTTPException(404, "Owner not found")
         if current_user.id != user.id:
             raise HTTPException(401, "Unauthorized")
-        try:
-            if asset.path:
-                file_path = os.path.join("uploads", asset.path)
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-        except Exception as file_err:
-            print(f"[WARNING] Không thể xóa: {file_err}")
-
-        session.delete(asset)
-        session.commit()
+        delete(session=session, asset = asset, user_id = current_user.id)
+       
 
         return {
             "status": "success",
