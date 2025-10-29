@@ -4,6 +4,9 @@ from fastapi import Depends ,HTTPException
 from datetime import datetime
 from sqlmodel import Session, select
 from sqlalchemy.sql import literal
+from pydantic import BaseModel
+import os
+
 from models import Assets, Projects,Tags, TagsDetail, Users, Folders
 from utils.folder_finder import find_folder_by_path
 
@@ -74,6 +77,62 @@ def add_asset(
     session.refresh(asset)
     return asset.id
 
+class AssetUpdate(BaseModel):
+    is_private: Optional[bool] = None
+    is_favorite: Optional[bool] = None
+    is_deleted: Optional[bool] = None
+
+def update (
+    session: Session,
+    asset_id: int,
+    update : AssetUpdate
+):
+    """
+    Cập nhật thông tin của asset.
+
+    Args:
+        session: Database session
+        asset_id: ID của asset cần cập nhật
+        kwargs: Các trường cần cập nhật và giá trị mới
+
+    Returns:
+        Assets: Đối tượng asset đã được cập nhật
+    """
+    asset = session.get(Assets, asset_id)
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    if update.is_private is not None:
+        asset.is_private = update.is_private 
+    if update.is_favorite is not None:
+        asset.is_favorite = update.is_favorite
+        
+    if update.is_deleted is not None:
+        asset.is_deleted = update.is_deleted
+        
+    if update.is_deleted is True:
+        # Nếu đánh dấu xóa, bỏ đánh dấu yêu thích
+        asset.is_favorite = False
+    if update.is_private is not None or update.is_favorite is not None or update.is_deleted is not None:
+        asset.updated_at = int(datetime.utcnow().timestamp())
+    session.add(asset)
+    session.commit()
+    session.refresh(asset)
+
+    return asset
+
+def delete ( session: Session, asset :any, user_id: int):
+    """Xóa asset khỏi database"""
+    try:
+        if asset.path:
+            file_path = os.path.join("uploads",str(user_id), asset.path)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+    except Exception as file_err:
+        print(f"[WARNING] Không thể xóa: {file_err}")
+
+    session.delete(asset)
+    session.commit()
 def sort_type ( 
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),  
