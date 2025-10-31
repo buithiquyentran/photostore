@@ -5,21 +5,20 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Copy, Link2 } from "lucide-react";
-import { useState } from "react";
+import { Folder } from "@/interfaces/interfaces";
+
 
 export default function ShareDialog({
   folder,
   onClose,
 }: {
-  folder: any;
+  folder: Folder;
   onClose: () => void;
 }) {
-  const [shareLink] = useState(
-    `${window.location.origin}/share/${folder.slug}`
-  );
+  // const [shareLink] = useState(
+  //   `${window.location.origin}/share/${folder.slug}`
+  // );
 
   return (
     <Dialog open={!!folder} onOpenChange={onClose}>
@@ -68,7 +67,9 @@ export default function ShareDialog({
         </div>
 
         <DialogFooter>
-          <Button className="text-black" onClick={onClose}>Xong</Button>
+          <Button className="text-black" onClick={onClose}>
+            Xong
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

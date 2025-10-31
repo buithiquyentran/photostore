@@ -4,9 +4,10 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import TagService from "@/components/api/tags.service";
 import { toast } from "@/hooks/use-toast";
+import { Tag } from "@/interfaces/interfaces";
 
 interface TagInputProps {
-  initialTags: object[];
+  initialTags: Tag[];
   asset_id: number;
 }
 
@@ -14,18 +15,16 @@ export default function TagInput({
   initialTags = [],
   asset_id,
 }: TagInputProps) {
-  const [tags, setTags] = useState<[]>();
-  const [tagList, setTagList] = useState<string[]>();
+  const [tags, setTags] = useState<Tag[]>(initialTags);
   const [inputValue, setInputValue] = useState("");
 
   useEffect(() => {
     setTags(initialTags);
-    setTagList(initialTags?.map((tag) => tag.name));
   }, [initialTags]);
 
   const addTag = async (value: string) => {
     const newTagValue = value.trim();
-    if (!newTagValue || tags.some((t) => t.name === newTagValue)) return;
+    if (!newTagValue || tags?.some((t) => t.name === newTagValue)) return;
 
     try {
       const response = await TagService.Add({
@@ -46,7 +45,7 @@ export default function TagInput({
     }
   };
 
-  const removeTag = async (tag) => {
+  const removeTag = async (tag: Tag) => {
     try {
       await TagService.Delete(asset_id, Number(tag.id));
       const newTags = tags?.filter((t) => t.name !== tag.name);
@@ -101,7 +100,7 @@ export default function TagInput({
         />
       </div>
 
-      {inputValue && !tags.includes(inputValue.trim()) && (
+      {inputValue && !tags.some((t) => t.name === inputValue.trim()) && (
         <div
           className="text-base text-muted-foreground border rounded-md px-3 py-2 cursor-pointer hover:bg-accent"
           onClick={() => addTag(inputValue)}

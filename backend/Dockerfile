@@ -10,9 +10,16 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
+# Giảm warning + tăng tốc cài package
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 # Copy requirements và cài đặt Python packages
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
+# Tải sẵn model CLIP vào cache để không phải tải lại mỗi lần container restart
+RUN python -c "import clip; clip.load('ViT-B/32', device='cpu')"
 
 # Copy toàn bộ backend code
 COPY . .

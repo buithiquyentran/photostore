@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     API_KEY_EXPIRY_SECONDS: int = 300  # 5 minutes by default
     
     # CORS - Đọc từ CORS_ORIGINS và parse thành list
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173, http://photostore_frontend:5173"
     
     # Keycloak
     KEYCLOAK_URL: str

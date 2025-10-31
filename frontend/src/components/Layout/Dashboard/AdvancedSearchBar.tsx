@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import dayjs from "dayjs";
 import {
   ChevronDown,
-  ChevronUp,
   Square,
   RectangleHorizontal,
   RectangleVertical,
@@ -16,10 +15,11 @@ import {
 } from "@/components/ui/select";
 import TagsService from "@/components/api/tags.service";
 import FolderSerivce from "@/components/api/folder.service";
-interface AdvancedSearchBarProps {
-  fetchContent: (filters: any) => void;
-  filters: any;
-  setFilters: React.Dispatch<React.SetStateAction<string>>;
+import { Filter, Tag, Folder } from "@/interfaces/interfaces";
+interface Props {
+  fetchContent: (filters: Filter) => void;
+  filters: Filter;
+  setFilters: React.Dispatch<React.SetStateAction<Filter>>;
   resetSignal: number;
 }
 
@@ -28,11 +28,10 @@ export default function AdvancedSearchBar({
   filters,
   setFilters,
   resetSignal,
-}: AdvancedSearchBarProps) {
-  // const [filters, setFilters] = useState<any>({});
+}: Props) {
   const [query, setQuery] = useState("");
-  const [tags, setTags] = useState<Array<{ id: number; name: string }>>([]);
-  const [folders, setFolders] = useState<Array<any>>([]);
+  const [tags, setTags] = useState<Array<Tag>>([]);
+  const [folders, setFolders] = useState<Array<Folder>>([]);
 
   useEffect(() => {
     const loadTags = async () => {
@@ -74,9 +73,10 @@ export default function AdvancedSearchBar({
         default:
           start_date = null;
       }
+
       const newFilters = {
         ...filters,
-        start_date,
+        start_date: start_date ? start_date.toString() : undefined,
         end_date: end_date.toISOString(),
       };
 
@@ -180,7 +180,17 @@ export default function AdvancedSearchBar({
 
 interface DropdownProps {
   label: string;
-  options?: Array<string | {}>;
+  options?: Array<
+    | string
+    | {
+        value?: string;
+        label?: string;
+        icon?: React.ReactNode;
+        path?: string;
+        slug?: string;
+        name?: string;
+      }
+  >;
   onChange: (value: string) => void;
   isDisplayName?: boolean;
   withInput?: boolean;
@@ -188,6 +198,7 @@ interface DropdownProps {
   showPath?: boolean; // ✅ thêm prop mới
   resetSignal: number;
 }
+
 function Dropdown({
   label,
   options,
@@ -208,7 +219,7 @@ function Dropdown({
   const filteredOptions = options?.filter((opt) => {
     const text =
       typeof opt === "string" ? opt : opt.label ?? opt.value ?? opt.name;
-    return text.toLowerCase().includes(search.toLowerCase());
+    return text?.toLowerCase().includes(search.toLowerCase());
   });
 
   const handleSelectOption = (value: string) => {
@@ -302,8 +313,10 @@ function Dropdown({
               <div className="max-h-40 overflow-y-auto">
                 {filteredOptions && filteredOptions.length > 0 ? (
                   filteredOptions.map((opt) => {
-                    const key =
-                      typeof opt === "string" ? opt : opt.value || opt.path;
+                    const itemKey =
+                      typeof opt === "string"
+                        ? opt
+                        : opt.value ?? opt.path ?? opt.name ?? opt.label ?? "";
                     const labelText =
                       typeof opt === "string" ? opt : opt.label || opt.name;
                     const icon = typeof opt === "string" ? null : opt.icon;
@@ -316,8 +329,8 @@ function Dropdown({
 
                     return (
                       <div
-                        key={key}
-                        onClick={() => handleSelectOption(key)}
+                        key={itemKey}
+                        onClick={() => handleSelectOption(itemKey)}
                         className="px-2 py-1 text-sm text-white hover:bg-gray-600 cursor-pointer flex flex-col"
                       >
                         <div className="flex items-center">

@@ -21,7 +21,7 @@ function onRefreshed(token: string) {
 
 const createApiClient = (baseURL: string): AxiosInstance => {
   const api = axios.create({
-    baseURL,
+    baseURL: import.meta.env.VITE_API_URL + baseURL,
     ...commonConfig,
   });
 
@@ -62,7 +62,7 @@ const createApiClient = (baseURL: string): AxiosInstance => {
 
       // 4) Queue handling: nếu đang refresh, subscribe và đợi token mới
       if (isRefreshing) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           addSubscriber((token: string) => {
             originalRequest.headers = {
               ...originalRequest.headers,

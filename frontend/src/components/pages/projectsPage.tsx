@@ -40,15 +40,7 @@ import {
 } from "lucide-react";
 import ApiBaseVariable from "@/components/ui/Modals/ApiBaseVariable";
 import ProjectsService from "@/components/api/projects.service";
-interface Project {
-  id: number;
-  name: string;
-  slug?: string;
-  api_key: string;
-  api_secret: string;
-  description: string;
-  created_at?: string;
-}
+import { Project } from "@/interfaces/interfaces";
 
 export default function ProjectsPage() {
   const { toast } = useToast();
@@ -61,7 +53,7 @@ export default function ProjectsPage() {
     };
     fetchData();
   }, []);
-  const [visibleSecrets, setVisibleSecrets] = useState<Set<string>>(new Set());
+  const [visibleSecrets, setVisibleSecrets] = useState<Set<number>>(new Set());
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -69,7 +61,7 @@ export default function ProjectsPage() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
 
-  const toggleSecretVisibility = (projectId: string) => {
+  const toggleSecretVisibility = (projectId: number) => {
     setVisibleSecrets((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(projectId)) {
@@ -219,14 +211,6 @@ export default function ProjectsPage() {
     setIsRegenerateDialogOpen(true);
   };
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }).format(date);
-  };
-
   const [copied, setCopied] = useState(false);
   const handleCopy = async (item: string) => {
     try {
@@ -301,9 +285,7 @@ export default function ProjectsPage() {
                 projects?.map((project) => (
                   <TableRow key={project.id}>
                     <TableCell className="text-sm ">{project.name}</TableCell>
-                    <TableCell className=" text-sm ">
-                      {project.slug}
-                    </TableCell>
+                    <TableCell className=" text-sm ">{project.slug}</TableCell>
                     <TableCell className="">{project.created_at}</TableCell>
                     <TableCell className=" text-sm">
                       {project.api_key}
