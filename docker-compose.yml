@@ -102,12 +102,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://photostore_backend:8000
-    environment:
-      - VITE_KEYCLOAK_URL=http://photostore_keycloak:8080
-      - VITE_KEYCLOAK_REALM=photostore_realm
-      - VITE_KEYCLOAK_CLIENT=photostore_client
-      - VITE_API_URL=http://photostore_backend:8000
+        - VITE_API_URL=http://localhost:8000
+        - VITE_KEYCLOAK_URL=http://localhost:8080
+        - VITE_KEYCLOAK_REALM=photostore_realm
+        - VITE_KEYCLOAK_CLIENT=photostore_client
+    # environment: # Với static site (Nginx), biến môi trường runtime không có tác dụng, phải dùng build args
+    #   - ...
 
     container_name: photostore_frontend
     ports:

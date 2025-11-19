@@ -41,6 +41,7 @@ def register_user(session: Session, email: str, sub: str, username: str):
 
         # 3️⃣ Thêm user mới
         new_user = Users(email=email, sub=sub, username=username)
+        # Ensure no manual created_at is passed if it's auto-generated, though here we aren't passing it.
         session.add(new_user)
         session.flush()  # flush để có new_user.id mà chưa commit
         print("🧩 Step 1: create user")

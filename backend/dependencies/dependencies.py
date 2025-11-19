@@ -63,15 +63,50 @@ def get_jwks():
 #         print(f"✅ Created new user in DB: {current_user.email} (id: {current_user.id})")
     
 #     return current_user
-def get_current_user(request: Request,  session: Session = Depends(get_session)):
-    if not hasattr(request.state, "user") or request.state.user is None:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    sub = request.state.user["sub"]
+async def get_or_create_user(session: Session, user_info: dict) -> Users:
+    """
+    Helper function: Lấy user từ DB, nếu chưa có thì tạo mới kèm assets.
+    """
+    sub = user_info.get("sub")
+    email = user_info.get("email")
+    username = user_info.get("preferred_username") or email
+    
+    if not sub or not email:
+         raise HTTPException(status_code=400, detail="Token missing sub or email")
+
+    # 1. Thử lấy user từ DB
     current_user = session.exec(select(Users).where(Users.sub == sub)).first()
     if current_user:
         return current_user
-    else:
-        return request.state.user
+
+    # 2. Nếu chưa có -> Tạo mới
+    try:
+        from db.crud_user import add_user_with_assets
+        await add_user_with_assets(session, email, username, sub)
+        
+        new_user = session.exec(select(Users).where(Users.sub == sub)).first()
+        if not new_user:
+                raise HTTPException(status_code=500, detail="Failed to create user")
+        return new_user
+        
+    except Exception as e:
+        print(f"Error creating user: {e}")
+        # Fallback: tạo user cơ bản
+        new_user = Users(sub=sub, email=email, username=username)
+        session.add(new_user)
+        session.commit()
+        session.refresh(new_user)
+        return new_user
+
+async def get_current_user(request: Request, session: Session = Depends(get_session)):
+    """
+    Dependency: Lấy current user. 
+    Nếu user chưa tồn tại, tự động tạo mới (thông qua helper).
+    """
+    if not hasattr(request.state, "user") or request.state.user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    return await get_or_create_user(session, request.state.user)
 
 def get_key(token: str):
     """Chọn public key theo kid trong header JWT"""
