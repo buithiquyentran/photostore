@@ -70,6 +70,8 @@ services:
     container_name: photostore_backend
     env_file:
       - ./backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
     ports:
       - "8000:8000"
     healthcheck:
@@ -90,13 +92,7 @@ services:
       keycloak:
         condition: service_started
     restart: unless-stopped
-  redis:
-    image: redis:7
-    container_name: photostore_redis
-    ports:
-      - "6379:6379"
-    networks:
-      - photostore_network
+
   frontend:
     build:
       context: ./frontend
@@ -125,7 +121,49 @@ services:
         condition: service_started
     networks:
       - photostore_network
+  redis:
+    image: redis:7
+    container_name: photostore_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - photostore_network
+  # Celery Worker
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: photostore_worker
+    command: celery -A celery_app worker --loglevel=info # ⚠️ celery_app : đường dẫn tới biến app celery
+    env_file:
+      - ./backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - ./backend/uploads:/app/uploads # Phải khớp với backend để worker thấy file mà xóa
+    networks:
+      - photostore_network
+    depends_on:
+      - redis
+      - mysql
+    restart: unless-stopped
 
+  # Celery Beat ( xóa định kỳ, ví dụ: 30 ngày xóa 1 lần)
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: photostore_beat
+    command: celery -A celery_app beat --loglevel=info # ⚠️ celery_app : đường dẫn tới biến app celery
+    env_file:
+      - ./backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    networks:
+      - photostore_network
+    depends_on:
+      - redis
 networks:
   photostore_network:
     driver: bridge
