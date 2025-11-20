@@ -128,13 +128,14 @@ services:
       - "6379:6379"
     networks:
       - photostore_network
-  # Celery Worker 
+  # Celery Worker
   celery_worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: photostore_worker
     command: celery -A celery_app worker --loglevel=info # ⚠️ celery_app : đường dẫn tới biến app celery
+    env_file:
       - ./backend/.env
     environment:
       - REDIS_URL=redis://redis:6379/0
