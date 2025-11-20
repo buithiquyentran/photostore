@@ -89,7 +89,7 @@ def register_user(session: Session, email: str, sub: str, username: str):
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
-RESOURCE_DIR = "uploads/public_assets"   # Thư mục chứa ảnh mặc định
+RESOURCE_DIR = "public_assets"   # Thư mục chứa ảnh mặc định
 UPLOAD_DIR = Path("uploads") 
 
 async def add_user_with_assets(session: Session, email: str, username: str, sub: str):

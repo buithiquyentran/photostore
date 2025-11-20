@@ -14,7 +14,7 @@ def permanent_delete_assets():
     try:
         with Session(engine) as db:
             threshold_date = int((datetime.utcnow() - timedelta(days=settings.PERMANENT_DELETE_AFTER_DAYS)).timestamp())
-            # threshold_date = int((datetime.utcnow() - timedelta(minutes=1)).timestamp())
+            # threshold_date = int((datetime.utcnow() - timedelta(minutes=1)).timestamp()) # test
             
             assets_to_delete = db.exec(
                 select(Assets).where(

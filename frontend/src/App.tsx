@@ -6,14 +6,14 @@ import PublicLayout from "@/components/Layout/Public/PublicLayout";
 import DashboardLayout from "@/components/Layout/Dashboard/DashboardLayout";
 import ProjectsLayout from "@/components/Layout/Dashboard/ProjectsLayout";
 
-import HOME from "@/components/pages/welcome/home";
-import LOGIN from "@/components/pages/loginPage/loginPage";
-import REGISTER from "@/components/pages/loginPage/registerPage";
+import HOME from "@/components/pages/Welcome/home";
+import LOGIN from "@/components/pages/LoginPage/LoginPage";
+import REGISTER from "@/components/pages/LoginPage/RegisterPage";
 import DASHBOARD from "@/components/pages/DashBoardPage";
 import VIEWER from "@/components/pages/ViewerPage";
-import FAVORITE from "@/components/pages/favoritePage";
-import TRASH from "@/components/pages/deletedPage";
-import MY_PROJECT from "@/components/pages/projectsPage"
+import FAVORITE from "@/components/pages/FavoritePage";
+import TRASH from "@/components/pages/DeletedPage";
+import MY_PROJECT from "@/components/pages/ProjectsPage";
 import FOLDER_DASHBOARD from "@/components/pages/FolderDashboardPage";
 import { Toaster } from "@/components/ui/toaster";
 import keycloak from "@/keycloak";
@@ -37,7 +37,7 @@ function App() {
         }
       })
       .catch((err) => {
-        console.error("Keycloak init error", err);
+        console.error("Keycloak init error", err); 
         // Nếu lỗi init (ví dụ keycloak down), có thể báo lỗi hoặc về trang login
         navigate("/login");
       });
