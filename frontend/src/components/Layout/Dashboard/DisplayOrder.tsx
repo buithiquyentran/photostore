@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check, ArrowUp, ArrowDown } from "lucide-react";
+import { Filter } from "@/interfaces/interfaces";
 
-interface AdvancedSearchBarProps {
-  fetchContent: (filters: any) => void;
-  filters: any;
-  setFilters: React.Dispatch<React.SetStateAction<string>>;
+interface Props {
+  fetchContent: (filters: Filter) => void;
+  filters: Filter;
+  setFilters: React.Dispatch<React.SetStateAction<Filter>>;
 }
 const sortOptions = [
   { label: "Creation date", value: "date" },
@@ -16,7 +17,7 @@ export default function DisplayOrder({
   fetchContent,
   filters,
   setFilters,
-}: AdvancedSearchBarProps) {
+}: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState("Creation date");
   const [order, setOrder] = useState<"asc" | "desc">("desc");

@@ -1,4 +1,4 @@
-import React, { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -15,12 +15,17 @@ import { formatFileSize } from "@/components/utils/format";
 import AssetThumbnail from "../Images/AssetThumbnail";
 import AccessControlModal from "../Modals/AccessControlModal";
 import AssetsService from "@/components/api/assets.service";
-
-const ListView = ({ assets }) => {
+import { Asset } from "@/interfaces/interfaces";
+interface Props {
+  assets: Asset[];
+  onSelect?: (asset: Asset) => void;
+  onDelete?: (asset_id: number) => void;
+}
+const ListView = ({ assets }: Props) => {
   const navigate = useNavigate();
   const [openAccessModal, setOpenAccessModal] = useState(false);
-  const [listAssets, setListAssets] = useState(assets);
-  const [editAsset, setEditAsset] = useState(null);
+  const [listAssets, setListAssets] = useState<Array<Asset>>(assets);
+  const [editAsset, setEditAsset] = useState<Asset>();
   useEffect(() => {
     setListAssets(assets);
   }, [assets]);
@@ -57,7 +62,7 @@ const ListView = ({ assets }) => {
   const handleBulkStar = async () => {
     try {
       await Promise.all(
-        selectedIds.map((id) => AssetsService.Update(id, { starred: true }))
+        selectedIds.map((id) => AssetsService.Update(id, { is_favorite: true }))
       );
       setSelectedIds([]);
     } catch (err) {
@@ -68,7 +73,9 @@ const ListView = ({ assets }) => {
   const handleBulkDelete = async () => {
     if (!confirm("Delete selected assets?")) return;
     try {
-      await Promise.all(selectedIds.map((id) => AssetsService.Delete(id)));
+      await Promise.all(
+        selectedIds.map((id) => AssetsService.Update(id, { is_deleted: true }))
+      );
       setListAssets((prev) => prev.filter((a) => !selectedIds.includes(a.id)));
       setSelectedIds([]);
     } catch (err) {
@@ -81,7 +88,7 @@ const ListView = ({ assets }) => {
     for (const asset of selectedAssets) {
       const link = document.createElement("a");
       link.href = asset.file_url;
-      link.download = asset.display_name || "asset";
+      link.download = asset.name || "asset";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -141,12 +148,8 @@ const ListView = ({ assets }) => {
             <TableHead className="font-semibold text-white">
               Container folder
             </TableHead>
-            <TableHead className="font-semibold text-white">
-              Format
-            </TableHead>
-            <TableHead className="font-semibold text-white">
-              Size
-            </TableHead>
+            <TableHead className="font-semibold text-white">Format</TableHead>
+            <TableHead className="font-semibold text-white">Size</TableHead>
             <TableHead className="font-semibold text-white">
               Dimensions
             </TableHead>
@@ -225,7 +228,7 @@ const ListView = ({ assets }) => {
           open={openAccessModal}
           onClose={() => {
             setOpenAccessModal(false);
-            setEditAsset(null);
+            setEditAsset(undefined);
           }}
           onSave={handleChangeAccessControl}
           _is_private={editAsset.is_private}

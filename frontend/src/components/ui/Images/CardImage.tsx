@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   Download,
   Trash2,
@@ -32,33 +32,18 @@ import { useToast } from "@/hooks/use-toast";
 import { formatFileSize, formattedDate } from "@/components/utils/format";
 import AccessControlModal from "../Modals/AccessControlModal";
 import AssetsService from "@/components/api/assets.service";
-
-export interface Asset {
-  id: string | number;
-  name: string;
-  file_url: string;
-  type?: string;
-  size?: string;
-  created_at?: string;
-  path: string;
-  is_private: boolean;
-}
-
+import { Asset } from "@/interfaces/interfaces";
 export interface ImageCardProps {
-  asset;
-  onClick;
-  onDelete: (asset_id) => void;
-  onDownload?: (asset: Asset) => void;
+  asset: Asset;
+  onClick: () => void;
+  onDelete: (asset_id: number) => void;
 }
 
 export default function ImageCard({
   asset,
   onClick,
   onDelete,
-  onDownload,
 }: ImageCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [imageError, setImageError] = useState(false);
   const [openAccessModal, setOpenAccessModal] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [cardAsset, setCardAsset] = useState(asset);
@@ -122,7 +107,7 @@ export default function ImageCard({
   const handleChangeAccessControl = async (is_private: boolean) => {
     try {
       await AssetsService.Update(cardAsset.id, { is_private: is_private });
-      setCardAsset((prev: any) => ({ ...prev, is_private })); // cập nhật lại state ngay
+      setCardAsset((prev) => ({ ...prev, is_private })); // cập nhật lại state ngay
     } catch (err) {
       console.error("Toggle star failed", err);
     }
@@ -130,11 +115,12 @@ export default function ImageCard({
   const handleToggleStar = async (is_favorite: boolean) => {
     try {
       await AssetsService.Update(cardAsset.id, { is_favorite: is_favorite });
-      setCardAsset((prev: any) => ({ ...prev, is_favorite })); // cập nhật lại state ngay
+      setCardAsset((prev) => ({ ...prev, is_favorite })); // cập nhật lại state ngay
     } catch (err) {
       console.error("Toggle star failed", err);
     }
   };
+
   const handleCopy = async (url: string) => {
     try {
       await navigator.clipboard.writeText(url);

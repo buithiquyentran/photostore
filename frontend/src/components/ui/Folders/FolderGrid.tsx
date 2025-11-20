@@ -10,7 +10,6 @@ import {
   Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -19,16 +18,10 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import ShareDialog from "@/components/ui/Modals/ShareDialog";
-interface FolderNode {
-  id: string;
-  name: string;
-  icon?: React.ReactNode;
-  children?: FolderNode[];
-  slug: string;
-  path: string;
-}
+import { Folder } from "@/interfaces/interfaces";
+
 interface FolderGridProps {
-  folders: FolderNode[] | null;
+  folders: Folder[] | null;
   selectedMenu: string;
   setSelectedMenu: (id: string) => void;
   setFolderPath: (path: string) => void;
@@ -42,17 +35,18 @@ export default function FolderGrid({
 }: FolderGridProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [shareFolder, setShareFolder] = useState<FolderNode | null>(null);
+  const [shareFolder, setShareFolder] = useState<Folder | null>(null);
   const pathParts = location.pathname.replace(/^\/dashboard\/?/, "");
 
-  const handleOpenFolder = (folder: FolderNode) => {
-    if (selectedMenu === folder.id) return;
+  const handleOpenFolder = (folder: Folder) => {
+    if (selectedMenu == String(folder.id)) return;
     console.log(selectedMenu, folder.id);
     const fullPath = pathParts ? `${pathParts}/${folder.slug}` : folder.slug;
-    console.log(fullPath);
-    setFolderPath(fullPath);
-    navigate(`/dashboard/${fullPath}`);
-    setSelectedMenu(folder.path);
+    if (fullPath) {
+      setFolderPath(fullPath);
+      navigate(`/dashboard/${fullPath}`);
+      setSelectedMenu(folder.path);
+    }
   };
   if (!folders?.length)
     return (

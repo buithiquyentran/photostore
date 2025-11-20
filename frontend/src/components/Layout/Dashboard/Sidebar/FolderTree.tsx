@@ -1,19 +1,11 @@
-import { useState} from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, ChevronDown, Folder } from "lucide-react";
+import { ChevronRight, ChevronDown, Folder as FolderIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface FolderNode {
-  id: string;
-  name: string;
-  icon?: React.ReactNode;
-  children?: FolderNode[];
-  slug: string;
-  path: string;
-}
+import { Folder } from "@/interfaces/interfaces";
 
 interface FolderTreeProps {
-  folders: FolderNode[] | null;
+  folders: Folder[] | null;
   selectedMenu: string;
   setSelectedMenu: (id: string) => void;
   setFolderPath: (path: string) => void;
@@ -26,18 +18,18 @@ export default function FolderTree({
   setFolderPath,
 }: FolderTreeProps) {
   const navigate = useNavigate();
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
+  const [expandedFolders, setExpandedFolders] = useState<Set<number>>(
     new Set()
   );
 
-  const toggleFolder = (folderId: string) => {
+  const toggleFolder = (folderId: number) => {
     const newExpanded = new Set(expandedFolders);
     if (newExpanded.has(folderId)) newExpanded.delete(folderId);
     else newExpanded.add(folderId);
     setExpandedFolders(newExpanded);
   };
 
-  const renderFolder = (folder: FolderNode, level = 0, parentPath = "") => {
+  const renderFolder = (folder: Folder, level = 0, parentPath = "") => {
     const isExpanded = expandedFolders.has(folder.id);
     const hasChildren = folder.children && folder.children.length > 0;
     const isSelected = selectedMenu === folder.path;
@@ -45,9 +37,11 @@ export default function FolderTree({
 
     const handleOpenFolder = () => {
       if (selectedMenu === (folder.path || folder.slug)) return;
-      setFolderPath(fullPath);
-      navigate(`/dashboard/${fullPath}`);
-      setSelectedMenu(fullPath);
+      if (fullPath) {
+        setFolderPath(fullPath);
+        setSelectedMenu(fullPath);
+        navigate(`/dashboard/${fullPath}`);
+      }
       console.log(fullPath);
     };
 
@@ -75,13 +69,13 @@ export default function FolderTree({
           ) : (
             <div className="w-4" />
           )}
-          <Folder className="h-4 w-4 shrink-0" />
+          <FolderIcon className="h-4 w-4 shrink-0" />
           <span className="truncate">{folder.name}</span>
         </button>
 
         {hasChildren && isExpanded && (
           <div className="mt-0.5">
-            {folder.children!.map((child) =>
+            {folder.children?.map((child) =>
               renderFolder(child, level + 1, fullPath)
             )}
           </div>

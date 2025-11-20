@@ -1,42 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-import {
-  Bookmark,
-  Play,
-  User,
-  Tag,
-  Settings,
-  Camera,
-  UserPlus,
-  Puzzle,
-  HelpCircle,
-  Key,
-} from "lucide-react";
+import { Settings, Camera } from "lucide-react";
 import UserService from "@/components/api/user.service";
 import FolderService from "@/components/api/folder.service";
 import LoginService from "@/components/api/login.service";
-import {
-  ChevronRight,
-  ChevronDown,
-  Folder,
-  Star,
-  Clock,
-  Trash2,
-  Plus,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Folder as FolderIcon, Star, Clock, Trash2 } from "lucide-react";
 import FolderTree from "@/components/Layout/Dashboard/Sidebar/FolderTree";
 import { cn } from "@/lib/utils";
 import path from "@/resources/path";
-
-interface FolderNode {
-  id: string;
-  name: string;
-  icon?: React.ReactNode;
-  children?: FolderNode[];
-  slug: string;
-}
+import { Folder } from "@/interfaces/interfaces";
 
 interface SidebarProps {
   selectedMenu: string;
@@ -47,7 +20,7 @@ const quickAccess = [
   {
     id: "all",
     name: "All Files",
-    icon: <Folder className="h-4 w-4" />,
+    icon: <FolderIcon className="h-4 w-4" />,
     path: path.DASHBOARD,
   },
   {
@@ -72,7 +45,7 @@ export default function Sidebar({
   const navigate = useNavigate();
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
-  const [folders, setFolders] = useState<FolderNode[] | null>([]);
+  const [folders, setFolders] = useState<Folder[] | null>([]);
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -110,7 +83,7 @@ export default function Sidebar({
         const response = await LoginService.LogOut({
           refresh_token: refreshToken,
         });
-        console.log(response)
+        console.log(response);
         if (response.status === "success") {
           localStorage.removeItem("access_token");
           localStorage.removeItem("refresh_token");

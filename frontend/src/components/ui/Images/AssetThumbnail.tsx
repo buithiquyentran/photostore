@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton"; // shadcn skeleton nếu có
 import AssetsService from "@/components/api/assets.service";
+import { Asset } from "@/interfaces/interfaces";
 
-const AssetThumbnail = ({ asset, size = 48 }) => {
+interface Props {
+  asset: Asset;
+  size?: number; // kích thước thumbnail
+}
+const AssetThumbnail = ({ asset, size = 48 }: Props) => {
   const [imgUrl, setImgUrl] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 

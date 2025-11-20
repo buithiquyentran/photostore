@@ -1,6 +1,8 @@
-import React, { useEffect, useState, useRef } from "react";
+import  { useEffect, useState, useRef } from "react";
 import AssetsService from "@/components/api/assets.service";
-function LazyImage({ asset }: { asset: any }) {
+import { Asset } from "@/interfaces/interfaces";
+
+function LazyImage({ asset }: { asset: Asset }) {
   const [loaded, setLoaded] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const imgRef = useRef<HTMLDivElement | null>(null);
@@ -9,7 +11,10 @@ function LazyImage({ asset }: { asset: any }) {
 
     const fetchAndSetImage = async () => {
       try {
-        const res = await AssetsService.GetThumbnail(asset.id, { w: 500, h:500 });
+        const res = await AssetsService.GetThumbnail(asset.id, {
+          w: 500,
+          h: 500,
+        });
         const blob = res.data as Blob;
         const url = URL.createObjectURL(blob);
         setImageUrl(url);

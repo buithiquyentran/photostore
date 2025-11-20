@@ -163,8 +163,9 @@ async def verify_static_access(request: Request, call_next):
             ).first()
             if not asset:
                 return JSONResponse(status_code=404, content={"status": "error", "message": "File not found 2"})
-            file_path = os.path.join("uploads", path)
-
+            if not user:
+                raise HTTPException(404, "Owner not found")
+            file_path = os.path.join("uploads", str(user.id), path)
             if not os.path.exists(file_path):
                 return JSONResponse(status_code=404, content={"status": "error", "message": "File not found 3"})
             # -----------------------------

@@ -3,15 +3,16 @@ import { Link, useLocation } from "react-router-dom";
 import FolderService from "@/components/api/folder.service";
 import CreateFolderDialog from "@/components/ui/Modals/CreateFolderDialog";
 import { toast } from "@/hooks/use-toast";
+import { Filter } from "@/interfaces/interfaces";
 
 type BreadcrumbPathProps = {
-  refetchFolders: () => Promise<any> | void;
+  fetchContent: (filters: Filter) => void;
   setFolderPath: React.Dispatch<React.SetStateAction<string>>;
   setSelectedMenu: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export default function BreadcrumbPath({
-  refetchFolders,
+  fetchContent,
   setFolderPath,
   setSelectedMenu,
 }: BreadcrumbPathProps) {
@@ -48,7 +49,7 @@ export default function BreadcrumbPath({
       toast({ title: "Folder created!" });
 
       // gọi đúng hàm refetch
-      if (refetchFolders) await refetchFolders();
+      if (fetchContent) await fetchContent({});
     } catch (err) {
       console.error(err);
       toast({ title: "Folder creation failed!" });

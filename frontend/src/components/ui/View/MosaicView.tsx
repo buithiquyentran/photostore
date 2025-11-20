@@ -1,8 +1,14 @@
-import React from "react";
 import Masonry from "react-masonry-css";
 import LazyImage from "../Images/LazyImage";
+import  {Asset} from "@/interfaces/interfaces";
+import type { FC } from "react";
 
-const MosaicView = ({ assets, onSelect }) => {
+type MosaicViewProps = {
+  assets: Asset[];
+  onSelect: (asset: Asset) => void;
+};
+
+const MosaicView: FC<MosaicViewProps> = ({ assets, onSelect }) => {
   const breakpointColumns = { default: 4, 1024: 3, 768: 2, 500: 1 };
 
   return (

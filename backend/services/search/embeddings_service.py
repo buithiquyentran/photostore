@@ -26,7 +26,7 @@ from services.search.faiss_index import (
 )
 
 # Load CLIP model (cached)
-model, preprocess, device = get_clip_model()
+# model, preprocess, device = get_clip_model()  <-- Moved inside functions to speed up startup
 
 
 def embed_image(image: Image.Image) -> np.ndarray:
@@ -39,6 +39,7 @@ def embed_image(image: Image.Image) -> np.ndarray:
     Returns:
         numpy array shape (512,) - normalized vector
     """
+    model, preprocess, device = get_clip_model()
     image_tensor = preprocess(image).unsqueeze(0).to(device)
     
     with torch.no_grad():
@@ -59,6 +60,7 @@ def embed_text(text: str) -> np.ndarray:
     Returns:
         numpy array shape (512,) - normalized vector
     """
+    model, preprocess, device = get_clip_model()
     text_token = clip.tokenize([text]).to(device)
     
     with torch.no_grad():

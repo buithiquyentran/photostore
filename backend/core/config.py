@@ -21,14 +21,14 @@ class Settings(BaseSettings):
     API_KEY_EXPIRY_SECONDS: int = 300  # 5 minutes by default
     
     # CORS - Đọc từ CORS_ORIGINS và parse thành list
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173, http://photostore_frontend:5173"
     
     # Keycloak
     KEYCLOAK_URL: str
     CLIENT_ID: str
     ADMIN_CLIENT_ID: str
     ADMIN_CLIENT_SECRET: str
-    
+    PERMANENT_DELETE_AFTER_DAYS: int = 30
     @property
     def all_cors_origins(self) -> List[str]:
         """Parse CORS_ORIGINS string to list"""

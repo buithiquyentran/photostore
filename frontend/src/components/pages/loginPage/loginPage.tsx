@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Eye, EyeOff, Facebook } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,10 +10,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-// import { FaLock } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import FormGroup from "@/components/ui/FormGroup";
-// import ModalThongBao from "@/components/TracNghiem9231/shared/ModalThongBao";
 import path from "@/resources/path";
 import LoginService from "@/components/api/login.service";
 import UserService from "@/components/api/user.service";
@@ -25,15 +22,6 @@ const DangNhapPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-
-  // useEffect(() => {
-  //   // Kiểm tra xem người dùng đã đăng nhập hay chưa
-  //   const accessToken = localStorage.getItem("access_token");
-  //   if (accessToken) {
-  //     // Nếu đã đăng nhập, chuyển hướng đến trang
-  //     navigate(path.HOME);
-  //   }
-  // }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

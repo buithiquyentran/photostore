@@ -34,7 +34,7 @@ def login_with_keycloak(credentials: LoginRequest):
     Login user với Keycloak và trả về access_token + refresh_token
     """
     payload = {
-        "client_id": settings.CLIENT_ID,
+        "client_id": settings.CLIENT_ID, # CLIENT_ID  = photostore_client
         "grant_type": "password",
         "username": credentials.username,
         "password": credentials.password,
@@ -42,7 +42,7 @@ def login_with_keycloak(credentials: LoginRequest):
 
     try:
         resp = requests.post(
-            f"{settings.KEYCLOAK_URL}/protocol/openid-connect/token",
+            f"{settings.KEYCLOAK_URL}/protocol/openid-connect/token", # KEYCLOAK_URL  = http://photostore_keycloak:8080/realms/photostore_realm
             data=payload,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             timeout=10

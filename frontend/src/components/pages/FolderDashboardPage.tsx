@@ -1,20 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import {
-  MoreVertical,
-  Download,
-  Trash2,
-  Star,
-  UploadCloud,
-  Upload,
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Card } from "@/components/ui/card";
+import { UploadCloud, Upload } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import FolderGrid from "@/components/ui/Folders/FolderGrid";
@@ -23,12 +10,17 @@ import { useOutletContext, useNavigate } from "react-router-dom";
 import MosaicView from "@/components/ui/View/MosaicView";
 import ListView from "@/components/ui/View/ListView";
 import CardView from "@/components/ui/View/CardView";
+import AssetsService from "@/components/api/assets.service";
+
+import { Asset, Folder, Filter } from "@/interfaces/interfaces";
+
 type DashboardContextType = {
-  assetsOutlet: any[];
-  view: any[];
-  foldersOutlet: any[];
-  onUpload: any;
-  refetchFolders: any;
+  assetsOutlet: Asset[];
+  view: string;
+  foldersOutlet: Folder[];
+  onUpload: (e: React.ChangeEvent<HTMLInputElement> | File[]) => void;
+  fetchContent: (filters: Filter) => void;
+
   setFolderPath: React.Dispatch<React.SetStateAction<string>>;
   selectedMenu: string;
   setSelectedMenu: React.Dispatch<React.SetStateAction<string>>;
@@ -40,12 +32,12 @@ export default function Dashboard() {
     view,
     foldersOutlet,
     onUpload,
-    refetchFolders,
+    fetchContent,
     setFolderPath,
     selectedMenu,
     setSelectedMenu,
   } = useOutletContext<DashboardContextType>();
-  const [assets, setAssets] = useState<any[]>(assetsOutlet);
+  const [assets, setAssets] = useState<Asset[]>(assetsOutlet);
   const navigate = useNavigate();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -69,7 +61,14 @@ export default function Dashboard() {
       onUpload(Array.from(e.dataTransfer.files));
     }
   };
-
+  const handleDelete = async (asset_id: number) => {
+    try {
+      await AssetsService.Update(asset_id, { is_deleted: true });
+      setAssets((prev) => prev.filter((p) => p.id !== asset_id));
+    } catch (err) {
+      console.error("Toggle star failed", err);
+    }
+  };
   useEffect(() => {
     setAssets(assetsOutlet);
   }, [assetsOutlet, view, setFolderPath]);
@@ -87,7 +86,7 @@ export default function Dashboard() {
           <CardView
             assets={assets}
             onSelect={(a) => navigate(`/photos/${a.path}`)}
-            // onDelete={handleDelete}
+            onDelete={handleDelete}
           />
         );
       default:
@@ -112,7 +111,7 @@ export default function Dashboard() {
           <div>
             <h2 className="text-2xl font-semibold text-foreground mb-1">
               <BreadcrumbPath
-                refetchFolders={refetchFolders}
+                fetchContent={fetchContent}
                 setFolderPath={setFolderPath}
                 setSelectedMenu={setSelectedMenu}
               />
@@ -123,7 +122,7 @@ export default function Dashboard() {
           </div>
           <Button
             onClick={() => fileInputRef.current?.click()}
-            disabled={selectedMenu?.split("/").length ==1} // disable khi ở root project
+            disabled={selectedMenu?.split("/").length == 1} // disable khi ở root project
             className="bg-primary text-[#000] hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none"
           >
             <UploadCloud className="h-4 w-4 mr-2" />

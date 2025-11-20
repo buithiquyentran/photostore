@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # MySQL Database
   mysql:
@@ -10,9 +8,9 @@ services:
       MYSQL_DATABASE: photostore
       MYSQL_USER: photostore_user
       MYSQL_PASSWORD: photostore_pass
-      MYSQL_ROOT_HOST: '%'
+      MYSQL_ROOT_HOST: "%"
     ports:
-      - "3306:3306"
+      - "3305:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -42,7 +40,7 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_DB: mysql
-      KC_DB_URL: jdbc:mysql://mysql:3306/keycloak?createDatabaseIfNotExist=true
+      KC_DB_URL: jdbc:mysql://photostore_mysql:3306/keycloak?createDatabaseIfNotExist=true
       KC_DB_USERNAME: root
       KC_DB_PASSWORD: rootpassword
       KC_HOSTNAME: localhost
@@ -51,6 +49,11 @@ services:
       KC_HEALTH_ENABLED: true
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 20s
+      timeout: 20s
+      retries: 90
     networks:
       - photostore_network
     depends_on:
@@ -62,17 +65,23 @@ services:
   # FastAPI Backend
   backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     container_name: photostore_backend
     env_file:
-      - .env
+      - ./backend/.env
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
     volumes:
-      - .:/app
-      - /app/__pycache__
-      - ./uploads:/app/uploads  # Mount local uploads directory
+      - ./backend:/app
+      - ./backend/uploads:/app/uploads
+
     networks:
       - photostore_network
     depends_on:
@@ -81,6 +90,41 @@ services:
       keycloak:
         condition: service_started
     restart: unless-stopped
+  redis:
+    image: redis:7
+    container_name: photostore_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - photostore_network
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      args:
+        - VITE_API_URL=http://localhost:8000
+        - VITE_KEYCLOAK_URL=http://localhost:8080
+        - VITE_KEYCLOAK_REALM=photostore_realm
+        - VITE_KEYCLOAK_CLIENT=photostore_client
+    container_name: photostore_frontend_dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_KEYCLOAK_URL=http://localhost:8080
+      - VITE_KEYCLOAK_REALM=photostore_realm
+      - VITE_KEYCLOAK_CLIENT=photostore_client
+    command: npm run dev -- --host
+    depends_on:
+      backend:
+        condition: service_started
+      keycloak:
+        condition: service_started
+    networks:
+      - photostore_network
 
 networks:
   photostore_network:

@@ -9,29 +9,35 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import DisplayOrder from "@/components/Layout/Dashboard/DisplayOrder";
-
+import { Filter } from "@/interfaces/interfaces";
+interface Props {
+  onSearch: (e?: React.ChangeEvent<HTMLInputElement> | null, queryText?: string) => void;
+  onUpload: (e: React.ChangeEvent<HTMLInputElement> | File[]) => void;
+  fetchContent: (filters: Filter) => void;
+  view: string;
+  setView: React.Dispatch<React.SetStateAction<string>>;
+}
 export default function SearchBar({
   onSearch,
   onUpload,
   fetchContent,
   view,
   setView,
-  folderPath,
-}) {
+}: Props) {
   const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<any>({}); // Lưu trữ các filter đã chọn
+  const [filters, setFilters] = useState<Filter>({}); // Lưu trữ các filter đã chọn
   const [resetSignal, setResetSignal] = useState(0); // Dùng để reset AdvancedSearchBar
 
   // Debounce (chỉ gọi API sau khi ngừng gõ 500ms)
-  const debounce = (func, delay) => {
-    let timeout;
-    return (...args) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), delay);
+  const debounce = <F extends (...args: any[]) => any>(func: F, delay: number) => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    return (...args: Parameters<F>): void => {
+      if (timeout !== undefined) clearTimeout(timeout);
+      timeout = setTimeout(() => func(...(args as unknown as Parameters<F>)), delay);
     };
   };
   // Wrap search với debounce
-  const debouncedSearch = useCallback(debounce(onSearch, 500), []);
+  const debouncedSearch = useCallback(debounce(onSearch, 500), [onSearch]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const text = e.target.value;
@@ -43,15 +49,15 @@ export default function SearchBar({
     if (e.key === "Enter") {
       e.preventDefault();
       console.log(query);
-      onSearch(query); // gọi search khi nhấn Enter
-      fetchContent();
+      onSearch(null, query); // gọi search khi nhấn Enter
+      fetchContent({ ...filters , keyword: query});
     }
   };
   const handleResetFilters = () => {
     setFilters({});
     setQuery("");
     setResetSignal((prev) => prev + 1);
-    fetchContent();
+    fetchContent({});
   };
   return (
     <div className=" sticky top-0 bg-gray-900 z-20">
@@ -83,7 +89,7 @@ export default function SearchBar({
         </div>
         {/* Upload ảnh */}
         <button className="p-2 text-gray-400 hover:text-white">
-          <UploadButton onClick={onUpload} />
+          <UploadButton onUpload={onUpload} />
         </button>
         {/* Menu ba chấm */}
         <button className="p-2 text-gray-400 hover:text-white">

@@ -1,5 +1,13 @@
 import ImageCard from "@/components/ui/Images/CardImage";
-const CardView = ({ assets, onSelect, onDelete }) => {
+import { Asset } from "@/interfaces/interfaces";
+
+interface Props {
+  assets: Asset[];
+  onSelect: (asset: Asset) => void;
+  onDelete: (asset_id: number) => void;
+}
+
+const CardView = ({ assets, onSelect, onDelete }: Props) => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {assets.map((asset) => (

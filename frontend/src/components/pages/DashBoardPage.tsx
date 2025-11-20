@@ -6,17 +6,22 @@ import MosaicView from "@/components/ui/View/MosaicView";
 import ListView from "@/components/ui/View/ListView";
 import CardView from "@/components/ui/View/CardView";
 import empty_message_image from "@/assets/empty_message.png";
-
+import { Asset } from "@/interfaces/interfaces";
+interface Props {
+  assetsOutlet: Asset[];
+  view: string;
+  setFolderPath: (path: string) => void;
+}
 const Brower = () => {
   const navigate = useNavigate();
-  const { assetsOutlet, view, setFolderPath } = useOutletContext();
-  const [assets, setAssets] = useState<any[]>([]);
+  const { assetsOutlet, view, setFolderPath }: Props = useOutletContext();
+  const [assets, setAssets] = useState<Asset[]>([]);
   useEffect(() => {
     setFolderPath("home");
     setAssets(assetsOutlet);
   }, [assetsOutlet, view, setFolderPath]);
 
-  const handleDelete = async (asset_id) => {
+  const handleDelete = async (asset_id: number) => {
     try {
       await AssetsService.Update(asset_id, { is_deleted: true });
       setAssets((prev) => prev.filter((p) => p.id !== asset_id));

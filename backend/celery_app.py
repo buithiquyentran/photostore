@@ -12,6 +12,8 @@ celery_app.conf.beat_schedule = {
     "delete-soft-deleted-assets-every-midnight": {
         "task": "tasks.cleanup_tasks.permanent_delete_assets",
         "schedule": 24 * 60 * 60,  # mỗi 24h
+        # "schedule":  60 * 2,  # mỗi 2p
+        
         
     },
 }

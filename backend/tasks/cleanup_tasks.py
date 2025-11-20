@@ -5,13 +5,17 @@ from sqlmodel import Session, select
 from models import Assets
 import os
 
+from core.config import settings
+
 
 @celery_app.task(name="tasks.cleanup_tasks.permanent_delete_assets")
 def permanent_delete_assets():
     """Xóa hoàn toàn các asset đã bị đánh dấu xóa > 7 ngày"""
     try:
         with Session(engine) as db:
-            threshold_date = int((datetime.utcnow() - timedelta(days=1)).timestamp())
+            threshold_date = int((datetime.utcnow() - timedelta(days=settings.PERMANENT_DELETE_AFTER_DAYS)).timestamp())
+            # threshold_date = int((datetime.utcnow() - timedelta(minutes=1)).timestamp())
+            
             assets_to_delete = db.exec(
                 select(Assets).where(
                     Assets.is_deleted == True,

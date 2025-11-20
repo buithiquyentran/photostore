@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Outlet } from "react-router-dom";
 
-import SearchBar from "@/components/Layout/Dashboard/SearchBar";
+import SearchBar from "@/components/Layout/Dashboard/Searchbar";
 import Sidebar from "@/components/Layout/Dashboard/Sidebar/Sidebar";
 import SearchService from "@/components/api/search.service";
 import AssetsService from "@/components/api/assets.service";
-import folderService from "@/components/api/folder.service";
-
+import { Asset } from "@/interfaces/interfaces";
 interface FolderNode {
   id: string;
   name: string;
@@ -16,11 +15,15 @@ interface FolderNode {
 }
 const Layout = () => {
   const pathParts = location.pathname.replace(/^\/dashboard\/?/, "");
-  const [assets, setAssets] = useState<any[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [selectedMenu, setSelectedMenu] = useState<string>("");
   const [folders, setFolders] = useState<FolderNode[] | null>([]);
   const [folderPath, setFolderPath] = useState<string>(pathParts);
-  const [view, setView] = useState<"mosaic" | "list" | "card">("mosaic");
+  const [view, setView] = useState<string>("mosaic"); //"mosaic" | "list" | "card";
+
+  // const fetchContent = async () => {
+  //   console.log("fetchContent disabled");
+  // };
 
   const fetchContent = useCallback(
     async (filters = {}) => {
@@ -31,25 +34,22 @@ const Layout = () => {
             is_deleted: false,
             ...filters,
           });
-          
         } else if (folderPath === "trash") {
           response = await AssetsService.GetAll({
             is_deleted: true,
             ...filters,
           });
-          
         } else if (folderPath === "favorite") {
           response = await AssetsService.GetAll({
             is_deleted: false,
-            is_favorite: true, ...filters ,
+            is_favorite: true,
+            ...filters,
           });
-          
         } else {
           response = await AssetsService.GetAll({
             folder_path: folderPath,
             ...filters,
           });
-          
         }
         setFolders(response.folders);
         setAssets(response.assets);
@@ -64,28 +64,35 @@ const Layout = () => {
     fetchContent();
   }, [fetchContent]); // ✅ thêm fetchContent vào deps
 
-  const handleSearch = async (e, queryText: string) => {
-    try {
-      const formData = new FormData();
+  const handleSearch = (
+    e?: React.ChangeEvent<HTMLInputElement> | null,
+    queryText?: string
+  ): void => {
+    (async () => {
+      try {
+        const formData = new FormData();
 
-      // Nếu gọi từ input file thì có e.target.files
-      const file = e?.target?.files?.[0];
-      if (file) {
-        formData.append("file", file);
+        // Nếu gọi từ input file thì có e.target.files
+        if (e) {
+          const file = e?.target?.files?.[0];
+          if (file) {
+            formData.append("file", file);
+          }
+        }
+
+        // Nếu có text search thì thêm query_text
+        if (queryText) {
+          formData.append("query_text", queryText);
+        }
+
+        // Gọi API
+        const res = await SearchService.Search(formData);
+        console.log("Search result:", res);
+        setAssets(res); // ✅ Tùy backend trả về dạng nào
+      } catch (err) {
+        console.error("Search failed", err);
       }
-
-      // Nếu có text search thì thêm query_text
-      if (queryText) {
-        formData.append("query_text", queryText);
-      }
-
-      // Gọi API
-      const res = await SearchService.Search(formData);
-      console.log("Search result:", res);
-      setAssets(res); // ✅ Tùy backend trả về dạng nào
-    } catch (err) {
-      console.error("Search failed", err);
-    }
+    })();
   };
 
   const handleUpload = async (
@@ -106,7 +113,12 @@ const Layout = () => {
       for (let i = 0; i < files.length; i++) {
         formData.append("files", files[i]); // phải trùng với tên param trong BE
       }
-      if (folderPath && folderPath !== "home" && folderPath !== "trash" && folderPath !== "favorite") {
+      if (
+        folderPath &&
+        folderPath !== "home" &&
+        folderPath !== "trash" &&
+        folderPath !== "favorite"
+      ) {
         const project_slug = folderPath.split("/")[0];
         const folder_slug = folderPath.split("/").slice(1).join("/");
         formData.append("project_slug", project_slug);
@@ -140,7 +152,6 @@ const Layout = () => {
             fetchContent={fetchContent}
             view={view}
             setView={setView}
-            folderPath={folderPath}
           />
 
           <div className="grow">
@@ -150,7 +161,7 @@ const Layout = () => {
                 foldersOutlet: folders,
                 view: view,
                 onUpload: handleUpload,
-                refetchFolders: fetchContent,
+                fetchContent: fetchContent,
                 setFolderPath: setFolderPath,
                 selectedMenu: selectedMenu,
                 setSelectedMenu: setSelectedMenu,
