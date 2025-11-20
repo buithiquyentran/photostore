@@ -82,6 +82,7 @@ const createApiClient = (baseURL: string): AxiosInstance => {
         if (!newToken) {
           // refresh fail -> logout
           localStorage.clear();
+          console.log("Redirecting to login due to refresh failure");
           window.location.href = "/login";
           return Promise.reject(error);
         }

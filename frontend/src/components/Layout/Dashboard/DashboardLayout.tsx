@@ -21,48 +21,48 @@ const Layout = () => {
   const [folderPath, setFolderPath] = useState<string>(pathParts);
   const [view, setView] = useState<string>("mosaic"); //"mosaic" | "list" | "card";
 
-  const fetchContent = async () => {
-    console.log("fetchContent disabled");
-  };
+  // const fetchContent = async () => {
+  //   console.log("fetchContent disabled");
+  // };
 
-  // const fetchContent = useCallback(
-  //   async (filters = {}) => {
-  //     try {
-  //       let response;
-  //       if (folderPath === "home") {
-  //         response = await AssetsService.GetAll({
-  //           is_deleted: false,
-  //           ...filters,
-  //         });
-  //       } else if (folderPath === "trash") {
-  //         response = await AssetsService.GetAll({
-  //           is_deleted: true,
-  //           ...filters,
-  //         });
-  //       } else if (folderPath === "favorite") {
-  //         response = await AssetsService.GetAll({
-  //           is_deleted: false,
-  //           is_favorite: true,
-  //           ...filters,
-  //         });
-  //       } else {
-  //         response = await AssetsService.GetAll({
-  //           folder_path: folderPath,
-  //           ...filters,
-  //         });
-  //       }
-  //       setFolders(response.folders);
-  //       setAssets(response.assets);
-  //     } catch (error) {
-  //       console.error("Error fetching assets:", error);
-  //     }
-  //   },
-  //   [folderPath]
-  // );
+  const fetchContent = useCallback(
+    async (filters = {}) => {
+      try {
+        let response;
+        if (folderPath === "home") {
+          response = await AssetsService.GetAll({
+            is_deleted: false,
+            ...filters,
+          });
+        } else if (folderPath === "trash") {
+          response = await AssetsService.GetAll({
+            is_deleted: true,
+            ...filters,
+          });
+        } else if (folderPath === "favorite") {
+          response = await AssetsService.GetAll({
+            is_deleted: false,
+            is_favorite: true,
+            ...filters,
+          });
+        } else {
+          response = await AssetsService.GetAll({
+            folder_path: folderPath,
+            ...filters,
+          });
+        }
+        setFolders(response.folders);
+        setAssets(response.assets);
+      } catch (error) {
+        console.error("Error fetching assets:", error);
+      }
+    },
+    [folderPath]
+  );
 
-  // useEffect(() => {
-  //   fetchContent();
-  // }, [fetchContent]); // ✅ thêm fetchContent vào deps
+  useEffect(() => {
+    fetchContent();
+  }, [fetchContent]); // ✅ thêm fetchContent vào deps
 
   const handleSearch = (
     e?: React.ChangeEvent<HTMLInputElement> | null,

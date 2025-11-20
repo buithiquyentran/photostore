@@ -100,18 +100,24 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
       args:
         - VITE_API_URL=http://localhost:8000
         - VITE_KEYCLOAK_URL=http://localhost:8080
         - VITE_KEYCLOAK_REALM=photostore_realm
         - VITE_KEYCLOAK_CLIENT=photostore_client
-    # environment: # Với static site (Nginx), biến môi trường runtime không có tác dụng, phải dùng build args
-    #   - ...
-
-    container_name: photostore_frontend
+    container_name: photostore_frontend_dev
     ports:
-      - "5173:80"
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_KEYCLOAK_URL=http://localhost:8080
+      - VITE_KEYCLOAK_REALM=photostore_realm
+      - VITE_KEYCLOAK_CLIENT=photostore_client
+    command: npm run dev -- --host
     depends_on:
       backend:
         condition: service_started
