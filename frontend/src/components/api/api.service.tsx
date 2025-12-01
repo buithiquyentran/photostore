@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
 import RefreshToken from "./refresh_token.service";
-import { showProgressBar, hideProgressBar } from "../../hooks/useProgressBar";
+import { showProgressBar, hideProgressBar } from "@/hooks/useProgressBar";
 
 const commonConfig = {
   headers: {
