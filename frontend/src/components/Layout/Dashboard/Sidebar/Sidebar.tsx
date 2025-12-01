@@ -48,6 +48,8 @@ export default function Sidebar({
   const [folders, setFolders] = useState<Folder[] | null>([]);
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const fetchFolderTree = async () => {
       try {
@@ -119,7 +121,18 @@ export default function Sidebar({
         );
       })()
     : "";
-
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   return (
     <div className="flex flex-col sticky top-0 h-screen justify-between bg-[#111827] p-4  border border-gray-700">
       {/* Top section */}
@@ -193,20 +206,61 @@ export default function Sidebar({
             </div>
             <span>{username}</span>
           </div>
+
           {open && (
-            <div className="absolute left-14 bottom-0 bg-white shadow-lg rounded-sm z-100">
-              <div className="px-4 py-1 text-base text-gray-700 border-b flex">
-                <span className="font-bold mr-2"> Ussername: </span> {username}
+            <div
+              ref={dropdownRef}
+              className="absolute left-14 bottom-0 bg-white shadow-2xl rounded-lg border border-gray-700 z-[100] min-w-[280px] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200"
+            >
+              {/* Header with gradient */}
+              <div className="bg-gradient-to-r bg-[#005095] px-4 py-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm text-white font-bold text-lg ring-2 ring-white/30">
+                    {initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-base truncate">
+                      {username}
+                    </p>
+                    <p className="text-blue-100 text-sm truncate">{email}</p>
+                  </div>
+                </div>
               </div>
-              <div className="px-4 py-1 text-base text-gray-700 border-b flex">
-                <span className="font-bold mr-2"> Email: </span> {email}
+
+              {/* User info section */}
+              <div className="px-4 py-3 space-y-2 bg-white/5">
+                <div className="flex items-center gap-2 text-gray-700 text-sm">
+                  <span className="text-gray-500 font-medium">Username:</span>
+                  <span className="font-medium">{username}</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-700 text-sm">
+                  <span className="text-gray-500 font-medium">Email:</span>
+                  <span className="font-medium truncate">{email}</span>
+                </div>
               </div>
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-1 text-base text-red-600 hover:bg-gray-100"
-              >
-                Đăng xuất
-              </button>
+
+              {/* Logout button */}
+              <div className="px-2 pb-2">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center gap-2 px-2 py-2 text-base font-medium text-red-700 hover:text-red-600 bg-red-500/10  rounded-lg transition-all duration-200 border border-red-500/20 hover:border-red-500 group"
+                >
+                  <svg
+                    className="w-5 h-5 group-hover:translate-x-0.5 transition-transform"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                    />
+                  </svg>
+                  <span>Đăng xuất</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

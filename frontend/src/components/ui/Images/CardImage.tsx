@@ -162,30 +162,31 @@ export default function ImageCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="bg-popover border-border"
+              className="bg-white border-gray-300 shadow-xl rounded-lg overflow-hidden min-w-[180px]"
             >
               <DropdownMenuItem
-                className="text-popover-foreground hover:bg-accent"
+                className="text-gray-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer px-3 py-2 transition-colors"
                 onClick={handleDownload}
               >
                 <Download className="h-4 w-4 mr-2" />
-                Download
+                <span className="font-medium">Download</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-popover-foreground hover:bg-accent"
+                className="text-gray-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer px-3 py-2 transition-colors"
                 onClick={() => handleToggleStar(true)}
               >
                 <Star className="h-4 w-4 mr-2" />
-                Add to Starred
+                <span className="font-medium">Add to Starred</span>
               </DropdownMenuItem>
+              <div className="border-t border-gray-200"></div>
               <DropdownMenuItem
-                className="text-destructive hover:bg-destructive/10"
+                className="text-red-600 hover:bg-red-50 cursor-pointer px-3 py-2 transition-colors"
                 onClick={() => {
                   setIsDeleteDialogOpen(true);
                 }}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                <span className="font-medium">Delete</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -290,18 +291,26 @@ export default function ImageCard({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              image &quot;{cardAsset?.name}&quot; and remove all associated API
-              credentials.
-            </AlertDialogDescription>
           </AlertDialogHeader>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the image
+            &quot;{cardAsset?.name}&quot; and remove all associated API
+            credentials.
+          </AlertDialogDescription>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsDeleteDialogOpen(false);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(cardAsset.id);
+                setIsDeleteDialogOpen(false);
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

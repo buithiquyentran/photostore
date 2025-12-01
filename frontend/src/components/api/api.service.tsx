@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
 import RefreshToken from "./refresh_token.service";
+import { showProgressBar, hideProgressBar } from "@/hooks/useProgressBar";
 
 const commonConfig = {
   headers: {
@@ -30,16 +31,29 @@ const createApiClient = (baseURL: string): AxiosInstance => {
     ...commonConfig,
   });
 
+  // Request interceptor - show progress bar
   api.interceptors.request.use((config) => {
     const token = localStorage.getItem("access_token");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Show progress bar for non-refresh requests
+    const url = config.url || "";
+    if (!url.includes("/auth/refresh")) {
+      showProgressBar();
+    }
+
     return config;
   });
 
+  // Response interceptor - hide progress bar
   api.interceptors.response.use(
-    (res) => res,
+    (res) => {
+      // Hide progress bar on success
+      hideProgressBar();
+      return res;
+    },
     async (error: AxiosError) => {
       const originalRequest = (error.config || {}) as any;
       // Xử lý trường hợp: network / CORS errors (error.response === undefined)
@@ -129,6 +143,7 @@ const createApiClient = (baseURL: string): AxiosInstance => {
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
+        hideProgressBar(); // Ensure progress bar is hidden
       }
     }
   );
