@@ -18,8 +18,11 @@ import FOLDER_DASHBOARD from "@/components/pages/FolderDashboardPage";
 import { Toaster } from "@/components/ui/toaster";
 import keycloak from "@/keycloak";
 import { Loading } from "@/components/ui/Loading";
+import ProgressBar from "@/components/ui/ProgressBar";
+import { useProgressBar } from "@/hooks/useProgressBar";
 
 function App() {
+  const { isLoading, progress } = useProgressBar();
   const [keycloakReady, setKeycloakReady] = useState(false);
   const navigate = useNavigate();
 
@@ -37,7 +40,7 @@ function App() {
         }
       })
       .catch((err) => {
-        console.error("Keycloak init error", err); 
+        console.error("Keycloak init error", err);
         // Nếu lỗi init (ví dụ keycloak down), có thể báo lỗi hoặc về trang login
         navigate("/login");
       });
@@ -47,6 +50,9 @@ function App() {
 
   return (
     <>
+      {/* Global Progress Bar */}
+      <ProgressBar isLoading={isLoading} progress={progress} />
+
       <Routes>
         <Route path={path.HOME} element={<PublicLayout />}>
           <Route path={path.HOME} element={<HOME />} />
