@@ -259,54 +259,60 @@ function Dropdown({
       {/* Trigger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-base text-left flex"
+        className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-base text-left flex items-center justify-between hover:bg-gray-700 transition-colors"
       >
-        {selected || label} <ChevronDown />
+        <span className={selected ? "text-white font-medium" : "text-gray-400"}>
+          {selected || label}
+        </span>
+        <ChevronDown className="w-4 h-4" />
       </button>
-      <span></span>
 
       {/* Dropdown */}
       <div className="relative">
         {isOpen &&
           (isDisplayName ? (
-            <div className="absolute w-60 bg-gray-800 border border-gray-700 rounded mt-1 shadow-lg">
-              <Select
-                value={selectedMatchType}
-                onValueChange={(v) => {
-                  setSelectedMatchType(v);
-                  onSelectMatchType?.(v);
-                }}
-              >
-                <SelectTrigger className="bg-gray-800 text-white">
-                  <SelectValue placeholder="Choose match type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="start-with">Start with</SelectItem>
-                  <SelectItem value="equal-to">Equal to</SelectItem>
-                </SelectContent>
-              </Select>
-              <input
-                type="text"
-                placeholder="Enter name..."
-                value={displayName}
-                onChange={(e) => {
-                  handleChangeDisplayName(e.target.value);
-                  setDisplayName(e.target.value);
-                }}
-                className="w-full px-2 py-1 bg-gray-700 text-white rounded outline-none border-gray-600"
-              />
-            </div>
-          ) : (
-            <div className="absolute  w-60 bg-gray-800 border border-gray-600 rounded mt-1 shadow-lg">
-              {/* Search input */}
-              {withInput && (
+            <div className="absolute w-50 bg-white border border-gray-300 rounded mt-1 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+              <div className="p-1 space-y-2">
+                <Select
+                  value={selectedMatchType}
+                  onValueChange={(v) => {
+                    setSelectedMatchType(v);
+                    onSelectMatchType?.(v);
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-gray-300 text-gray-900">
+                    <SelectValue placeholder="Choose match type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="start-with">Start with</SelectItem>
+                    <SelectItem value="equal-to">Equal to</SelectItem>
+                  </SelectContent>
+                </Select>
                 <input
                   type="text"
                   placeholder="Search..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full px-2 py-1 text-base bg-gray-700 text-white border-b border-gray-600 outline-none"
+                  value={displayName}
+                  onChange={(e) => {
+                    handleChangeDisplayName(e.target.value);
+                    setDisplayName(e.target.value);
+                  }}
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 text-gray-900 rounded outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                 />
+              </div>
+            </div>
+          ) : (
+            <div className="absolute w-40 bg-white border border-gray-300 rounded mt-1 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+              {/* Search input */}
+              {withInput && (
+                <div className="border-b border-gray-100">
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-gray-100 border border-gray-300 text-gray-900 rounded outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
               )}
 
               {/* Options */}
@@ -331,14 +337,14 @@ function Dropdown({
                       <div
                         key={itemKey}
                         onClick={() => handleSelectOption(itemKey)}
-                        className="px-2 py-1 text-sm text-white hover:bg-gray-600 cursor-pointer flex flex-col"
+                        className="px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer flex flex-col transition-colors"
                       >
-                        <div className="flex items-center">
-                          {icon && <span className="mr-2">{icon}</span>}
-                          <span>{labelText}</span>
+                        <div className="flex items-center gap-2">
+                          {icon && <span>{icon}</span>}
+                          <span className="font-medium">{labelText}</span>
                         </div>
                         {showPath && path && (
-                          <span className="text-xs text-gray-400 ml-2 truncate">
+                          <span className="text-xs text-gray-500 ml-2 truncate mt-0.5">
                             {path}
                           </span>
                         )}
@@ -346,7 +352,7 @@ function Dropdown({
                     );
                   })
                 ) : (
-                  <div className="px-2 py-1 text-gray-400">
+                  <div className="px-3 py-2 text-sm text-gray-400">
                     No results found
                   </div>
                 )}
