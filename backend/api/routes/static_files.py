@@ -72,7 +72,8 @@ def get_thumbnail(
             format=format,
             quality=q
         )
-        file_path = os.path.join("uploads/thumbnails", thumbnail.filename)
+        file_path = os.path.join(f"uploads/{user.id}/thumbnails", thumbnail.filename)
+        
         if not os.path.exists(file_path):
                     raise HTTPException(status_code=404, detail="File not found")
                 

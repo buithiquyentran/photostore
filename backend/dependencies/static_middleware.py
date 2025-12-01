@@ -19,16 +19,49 @@ from db.crud_thumbnail import get_or_create_thumbnail
 
 UPLOAD_DIR = Path("uploads")
 
+from urllib.parse import parse_qs
+
 def parse_thumbnail_filename(filename: str):
-    import re
-    m = re.match(r"(\d+)_(\d+)x(\d+)\.(\w+)", filename)
-    if not m:
-        raise ValueError(f"Invalid thumbnail filename format: {filename}")
-    asset_id, width, height, ext = m.groups()
-    return int(asset_id), int(width), int(height), ext.lower()
+    # 1. Tách phần ID và phần tham số (ngăn cách bởi dấu ?)
+    if "_" not in filename:
+        raise ValueError(f"Invalid filename format (missing query params): {filename}")
+    
+    id, query_part = filename.split("_", 1)
+    
+    # 2. Parse Asset ID
+    if not id.isdigit():
+        raise ValueError(f"Invalid Asset ID: {id}")
+    asset_id = int(id)
 
+    # 3. Parse các tham số bằng thư viện chuẩn parse_qs
+    # parse_qs trả về dict dạng: {'width': ['500'], 'height': ['500']...}
+    params = parse_qs(query_part)
 
-UPLOAD_DIR = Path("uploads")
+    # Hàm phụ để lấy giá trị an toàn từ dict
+    def get_val(key, default=None, required=True):
+        values = params.get(key)
+        if not values:
+            if required:
+                raise ValueError(f"Missing required parameter: {key}")
+            return default
+        return values[0]
+
+    # 4. Trích xuất và ép kiểu
+    try:
+        width = int(get_val("w"))
+        height = int(get_val("h"))
+        # format mặc định là jpg nếu không truyền
+        ext = get_val("format", default="webp", required=False)
+        # quality mặc định là 80 nếu không truyền
+        quality = int(get_val("q", default="80", required=False))
+        
+    except ValueError as e:
+        raise ValueError(f"Invalid parameter value: {e}")
+
+    return asset_id, width, height, ext.lower(), quality
+
+# --- Test thử ---
+# filename_input = "51?width=500&height=500&format=png&quality=90"  Kết quả: (51, 500, 500, 'png', 90)
 
 async def verify_static_access(request: Request, call_next):
     """
@@ -40,33 +73,43 @@ async def verify_static_access(request: Request, call_next):
     path = request.url.path
     if not path.startswith("/uploads/"):
         return await call_next(request)
+    if path.startswith("/uploads/thumbnail/"):
+        return await call_next(request)
     # -----------------------------
     # 1️⃣ Trường hợp THUMBNAIL
     # -----------------------------
-    if  path.startswith("/uploads/thumbnail/"):
+    if  path.startswith("/uploads/public-thumbnail/"):
         filename = path.split("/")[-1]  # VD: 274_800x800.webp 
-        asset_id, w, h, format = parse_thumbnail_filename(filename)
+        print("Thumbnail filename:", filename)
+        asset_id, width, height, ext, quality = parse_thumbnail_filename(filename)
         # Lấy thumbnail record (nếu có)
         with Session(engine) as session:
             asset = session.get(Assets, asset_id)
             if not asset:
                     return JSONResponse(status_code=404, content={"status": "error", "message": "Original asset not found"})
+            user = session.exec(
+                select(Users)
+                .join(Projects, Users.id == Projects.user_id)
+                .join(Assets, Projects.id == Assets.project_id)
+                .where(Assets.id == asset_id)
+            ).first()
             # ✅ File public → cho phép ngay
             if not asset.is_private:
                 # Get or create thumbnail
                 thumbnail = get_or_create_thumbnail(
                     session=session,
                     asset_id=asset_id,
-                    width=w,
-                    height=h,
-                    format=format,
+                    user_id=user.id ,
+                    width=width,
+                    height=height,
+                    format=ext,
+                    quality=quality
                 )
-                file_path = os.path.join("uploads/thumbnails", thumbnail.filename)
+                file_path = os.path.join(f"uploads/{user.id}/thumbnails", thumbnail.filename)
                 if not os.path.exists(file_path):
                     raise HTTPException(status_code=404, detail="File not found")
                 
                 return FileResponse(file_path, media_type="image/jpeg")
-
             # ⚠️ Nếu file private → xác thực giống như logic bên dưới
             token = request.headers.get("Authorization")
             api_key = request.headers.get("X-API-Key")
