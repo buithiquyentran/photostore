@@ -21,7 +21,7 @@ from PIL import Image
 UPLOAD_DIR = Path("uploads")
 from models import  Assets , Thumbnails
 
-UPLOAD_THUMBNAILS = Path("uploads/thumbnails")
+UPLOAD_THUMBNAILS = Path("uploads")
 
 # Thumbnail schemas
 class ThumbnailCreate(BaseModel):
@@ -105,9 +105,11 @@ def resize_image(image_data: bytes, width: int, height: int, format: str = "webp
 def upload_thumbnail_to_local(
     thumbnail_data: bytes,
     asset_id: int,
+    user_id: int,
     width: int,
     height: int,
-    format: str = "webp"
+    format: str = "webp",
+    quality: int = 80,
 ) -> str:
     """
     Lưu thumbnail xuống local (uploads/thumbnails)
@@ -115,11 +117,11 @@ def upload_thumbnail_to_local(
     """
     try:
         # Đảm bảo thư mục tồn tại
-        os.makedirs(UPLOAD_THUMBNAILS, exist_ok=True)
+        os.makedirs(UPLOAD_THUMBNAILS / str(user_id) / "thumbnails", exist_ok=True)
 
         # Đặt tên file (nên dùng _ thay vì ? vì ? gây lỗi URL)
-        thumbnail_filename = f"{asset_id}_{width}x{height}.{format.lower()}"
-        save_path = UPLOAD_THUMBNAILS / thumbnail_filename
+        thumbnail_filename = f"{asset_id}_{width}x{height}_q={quality}.{format.lower()}"
+        save_path = UPLOAD_THUMBNAILS / str(user_id) / "thumbnails" / thumbnail_filename
 
         # Ghi file từ bytes
         with open(save_path, "wb") as f:
@@ -139,7 +141,7 @@ def upload_thumbnail_to_local(
 def get_or_create_thumbnail(
     session: Session,
     asset_id: int,
-    user_id : int,
+    user_id: int,
     width: int,
     height: int,
     format: str = "webp",
@@ -199,9 +201,9 @@ def get_or_create_thumbnail(
     thumbnail_data = resize_image(original_image_data, width, height, format, quality)
 
     # Step 6️⃣: Lưu thumbnail xuống local
-    thumbnail_url = upload_thumbnail_to_local(thumbnail_data, asset_id, width, height, format)
+    thumbnail_url = upload_thumbnail_to_local(thumbnail_data, asset_id, user_id, width, height, format, quality)
     
-    filename = f"{asset_id}_{width}x{height}.{format.lower()}"
+    filename = f"{asset_id}_{width}x{height}_q={quality}.{format.lower()}"
     # Step 7️⃣: Tạo record trong DB
     new_thumbnail = Thumbnails(
         asset_id=asset_id,
