@@ -96,7 +96,8 @@ const Layout = () => {
   };
 
   const handleUpload = async (
-    eOrFiles: React.ChangeEvent<HTMLInputElement> | File[]
+    eOrFiles: React.ChangeEvent<HTMLInputElement> | File[],
+    isPrivate: boolean = false
   ) => {
     let files: File[] = [];
 
@@ -113,6 +114,10 @@ const Layout = () => {
       for (let i = 0; i < files.length; i++) {
         formData.append("files", files[i]); // phải trùng với tên param trong BE
       }
+
+      // Thêm is_private vào formData
+      formData.append("is_private", isPrivate.toString());
+
       if (
         folderPath &&
         folderPath !== "home" &&
