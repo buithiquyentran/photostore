@@ -75,7 +75,7 @@ export default function ShareDialog({
         <DialogFooter className="px-6 pb-2">
           <Button
             variant="outline"
-             onClick={onClose}
+            onClick={onClose}
             className="border-gray-200 text-gray-700 bg-gray-100 hover:border-gray-400"
           >
             Cancel

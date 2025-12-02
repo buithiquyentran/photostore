@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Search, Upload, MoreVertical, X } from "lucide-react";
 import UploadButton from "@/components/ui/Images/UploadButton";
 import AdvancedSearchBar from "@/components/Layout/Dashboard/AdvancedSearchBar";
+import PreviewUploadDialog from "@/components/ui/Modals/PreviewUploadDialog";
 import {
   RotateCcw,
   LayoutDashboard,
@@ -15,7 +16,7 @@ interface Props {
     e?: React.ChangeEvent<HTMLInputElement> | null,
     queryText?: string
   ) => void;
-  onUpload: (e: React.ChangeEvent<HTMLInputElement> | File[]) => void;
+  onUpload: (e: React.ChangeEvent<HTMLInputElement> | File[], isPrivate?: boolean) => void;
   fetchContent: (filters: Filter) => void;
   view: string;
   setView: React.Dispatch<React.SetStateAction<string>>;
@@ -33,6 +34,8 @@ export default function SearchBar({
   const [searchImagePreview, setSearchImagePreview] = useState<string | null>(
     null
   ); // Preview ảnh search
+  const [previewFiles, setPreviewFiles] = useState<File[]>([]);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
 
   // Debounce (chỉ gọi API sau khi ngừng gõ 500ms)
   const debounce = <F extends (...args: any[]) => any>(
@@ -103,6 +106,37 @@ export default function SearchBar({
     };
   }, [searchImagePreview]);
 
+  // Handle upload button click - show preview dialog
+  const handleUploadClick = (
+    e: React.ChangeEvent<HTMLInputElement> | File[]
+  ) => {
+    let files: File[] = [];
+
+    if (Array.isArray(e)) {
+      files = e;
+    } else {
+      files = Array.from(e.target.files || []);
+    }
+
+    if (files.length > 0) {
+      setPreviewFiles(files);
+      setShowPreviewDialog(true);
+    }
+  };
+
+  // Handle confirm upload from preview dialog
+  const handleConfirmUpload = (files: File[], isPrivate: boolean) => {
+    onUpload(files, isPrivate);
+    setPreviewFiles([]);
+    setShowPreviewDialog(false);
+  };
+
+  // Handle close preview dialog
+  const handleClosePreview = () => {
+    setPreviewFiles([]);
+    setShowPreviewDialog(false);
+  };
+
   return (
     <div className=" sticky top-0 bg-gray-900 z-20">
       <div className="flex items-center px-2 py-1 gap-2 w-full mx-auto border-b border-gray-700">
@@ -163,7 +197,7 @@ export default function SearchBar({
         </div>
         {/* Upload ảnh */}
         <button className="p-2 text-gray-400 hover:text-white">
-          <UploadButton onUpload={onUpload} />
+          <UploadButton onUpload={handleUploadClick} />
         </button>
         {/* Menu ba chấm */}
         <button className="p-2 text-gray-400 hover:text-white">
@@ -225,6 +259,14 @@ export default function SearchBar({
           </div>
         </div>
       </div>
+
+      {/* Preview Upload Dialog */}
+      <PreviewUploadDialog
+        files={previewFiles}
+        open={showPreviewDialog}
+        onClose={handleClosePreview}
+        onConfirm={handleConfirmUpload}
+      />
     </div>
   );
 }
