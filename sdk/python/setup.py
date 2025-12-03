@@ -37,7 +37,9 @@ setup(
     ],
     python_requires=">=3.8",
     install_requires=[
-        "requests>=2.25.0",
+        "requests",
+        "fastapi",
+        "python-multipart"
     ],
     extras_require={
         "dev": [
