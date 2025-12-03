@@ -2,11 +2,11 @@
 PhotoStore Python SDK - Setup Configuration
 """
 
-from setuptools import setup, find_packages
+from setuptools import setup
 from pathlib import Path
 
 # Read README for long description
-readme_file = Path(__file__).parent / "python" / "README.md"
+readme_file = Path(__file__).parent / "README.md"
 long_description = ""
 if readme_file.exists():
     with open(readme_file, "r", encoding="utf-8") as f:
@@ -21,8 +21,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/buithiquyentran/photostore",
-    packages=find_packages(where="python"),
-    package_dir={"": "python"},
+    py_modules=["photostore_sdk"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -37,9 +36,7 @@ setup(
     ],
     python_requires=">=3.8",
     install_requires=[
-        "requests",
-        "fastapi",
-        "python-multipart"
+        "requests>=2.25.0",
     ],
     extras_require={
         "dev": [
