@@ -136,15 +136,26 @@ async def verify_static_access(request: Request, call_next):
                     thumbnail = get_or_create_thumbnail(
                         session=session,
                         asset_id=asset_id,
-                        width=w,
-                        height=h,
-                        format=format,
+                        user_id=user.id,
+                        width=width,
+                        height=height,
+                        format=ext,
+                        quality=quality
                     )
-                    file_path = os.path.join("uploads/thumbnails", thumbnail.filename)
+                    file_path = os.path.join(f"uploads/{user.id}/thumbnails", thumbnail.filename)
                     if not os.path.exists(file_path):
                         raise HTTPException(status_code=404, detail="File not found")
                     
-                    return FileResponse(file_path, media_type="image/jpeg")
+                    # Determine correct media type
+                    media_type = f"image/{ext}"
+                    if ext in ["jpg", "jpeg"]:
+                        media_type = "image/jpeg"
+                    elif ext == "webp":
+                        media_type = "image/webp"
+                    elif ext == "png":
+                        media_type = "image/png"
+                    
+                    return FileResponse(file_path, media_type=media_type)
                 except JWTError:
                     return JSONResponse(status_code=401, content={"status": "error", "message": "Invalid token"})
 
@@ -169,15 +180,26 @@ async def verify_static_access(request: Request, call_next):
                 thumbnail = get_or_create_thumbnail(
                     session=session,
                     asset_id=asset_id,
-                    width=w,
-                    height=h,
-                    format=format,
+                    user_id=user.id,
+                    width=width,
+                    height=height,
+                    format=ext,
+                    quality=quality
                 )
-                file_path = os.path.join("uploads/thumbnails", thumbnail.filename)
+                file_path = os.path.join(f"uploads/{user.id}/thumbnails", thumbnail.filename)
                 if not os.path.exists(file_path):
                     raise HTTPException(status_code=404, detail="File not found")
                 
-                return FileResponse(file_path, media_type="image/jpeg")
+                # Determine correct media type
+                media_type = f"image/{ext}"
+                if ext in ["jpg", "jpeg"]:
+                    media_type = "image/jpeg"
+                elif ext == "webp":
+                    media_type = "image/webp"
+                elif ext == "png":
+                    media_type = "image/png"
+                
+                return FileResponse(file_path, media_type=media_type)
 
             else:
                 return JSONResponse(status_code=401, content={"status": "error", "message": "Unauthorized"})

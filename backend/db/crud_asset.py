@@ -121,18 +121,35 @@ def update (
 
     return asset
 
-def delete ( session: Session, asset :any, user_id: int):
+def delete(session: Session, asset: any, user_id: int, permanently: bool = False):
     """Xóa asset khỏi database"""
     try:
-        if asset.path:
-            file_path = os.path.join("uploads",str(user_id), asset.path)
-            if os.path.exists(file_path):
-                os.remove(file_path)
+        if permanently:
+            # Xóa vĩnh viễn - xóa file và record
+            if asset.path:
+                file_path = os.path.join("uploads", str(user_id), asset.path)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    print(f"[INFO] Deleted file: {file_path}")
+            
+            session.delete(asset)
+            session.commit()
+            print(f"[INFO] Permanently deleted asset ID: {asset.id}")
+        else:
+            # Xóa mềm - chỉ đánh dấu is_deleted
+            asset.is_deleted = True
+            asset.is_favorite = False  # Bỏ yêu thích khi xóa
+            asset.updated_at = int(datetime.utcnow().timestamp())
+            session.add(asset)
+            session.commit()
+            session.refresh(asset)
+            print(f"[INFO] Soft deleted asset ID: {asset.id}")
+            
     except Exception as file_err:
-        print(f"[WARNING] Không thể xóa: {file_err}")
-
-    session.delete(asset)
-    session.commit()
+        session.rollback()
+        print(f"[ERROR] Không thể xóa asset: {file_err}")
+        raise
+    
 def sort_type ( 
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),  
