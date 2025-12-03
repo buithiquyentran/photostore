@@ -16,7 +16,10 @@ interface Props {
     e?: React.ChangeEvent<HTMLInputElement> | null,
     queryText?: string
   ) => void;
-  onUpload: (e: React.ChangeEvent<HTMLInputElement> | File[], isPrivate?: boolean) => void;
+  onUpload: (
+    e: React.ChangeEvent<HTMLInputElement> | File[],
+    isPrivate?: boolean
+  ) => void;
   fetchContent: (filters: Filter) => void;
   view: string;
   setView: React.Dispatch<React.SetStateAction<string>>;
@@ -64,6 +67,11 @@ export default function SearchBar({
     if (e.key === "Enter") {
       e.preventDefault();
       console.log(query);
+      if (query.trim() === "") {
+        // Nếu search rỗng thì fetch lại toàn bộ
+        fetchContent(filters);
+        return;
+      }
       onSearch(null, query); // gọi search khi nhấn Enter
       fetchContent({ ...filters, keyword: query });
     }

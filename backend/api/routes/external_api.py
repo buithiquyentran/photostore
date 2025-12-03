@@ -26,7 +26,7 @@ from services.search.embeddings_service import search_by_image, search_by_text
 from utils.slug import create_slug
 from utils.path_builder import build_full_path, build_file_url
 from core.config import settings
-from db.crud_asset import add_asset
+from db.crud_asset import add_asset, delete
 from db.crud_embedding import create_embedding_for_asset
 from utils.filename_utils import truncate_filename, split_filename, sanitize_filename
 from utils.folder_finder import find_folder_by_path
@@ -389,7 +389,8 @@ async def upload_assets(
             full_path = build_full_path(session, project.id, folder.id)
             
             # relative path (lưu trong DB)
-            object_path = f"{full_path}/{storage_filename}"
+            object_path = f"{project.user_id}/{full_path}/{storage_filename}" # mỗi user có thư mục riêng
+            path = f"{full_path}/{storage_filename}" # path bắt đầu từ project
 
             # absolute path (lưu trong ổ cứng)
             save_path = os.path.join(UPLOAD_DIR, object_path).replace("\\", "/")
@@ -415,7 +416,7 @@ async def upload_assets(
                     file_type=file.content_type,
                     format=file.content_type,  # Sử dụng MIME type làm format
                     file_size=size,
-                    path=object_path,
+                    path=path,
                     file_url=file_url,
                     folder_path=full_path,
                     width=width,
@@ -541,6 +542,7 @@ def list_assets(
 def delete_asset(
     asset_id: int,
     project: Projects = Depends(verify_api_key),
+    permanently: bool = Query(False, description="Xóa vĩnh viễn không thể khôi phục"),
     session: Session = Depends(get_session)
 ):
     """Xóa asset"""
@@ -554,48 +556,133 @@ def delete_asset(
                     "message": "Asset not found"
                 }
             )
-
-        try:
-            if asset.path:
-                file_path = os.path.join("uploads", asset.path)
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-        except Exception as file_err:
-            print(f"[WARNING] Không thể xóa: {file_err}")
-
-        session.delete(asset)
-        session.commit()
-
+        
+        delete(session=session, asset=asset, user_id=project.user_id, permanently=permanently)
+        
         return {
             "status": "success",
-            "message": "Asset deleted"
+            "message": "Asset deleted permanently" if permanently else "Asset deleted"
         }
 
     except HTTPException as e:
         raise e
     except Exception as e:
+        import traceback
+        print(f"[ERROR] Delete asset failed: {str(e)}")
+        print(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail={
                 "status": "error",
-                "message": "Internal server error"
+                "message": f"Internal server error: {str(e)}"
             }
         )
 
 @router.delete("/assets")
-def delete_asset_by_url(file_url: str = Query(None, description="Xóa ảnh bằng file_url"), session: Session = Depends(get_session), project: Projects = Depends(verify_api_key)):
+def delete_asset_by_url(
+    file_url: str = Query(..., description="Xóa ảnh bằng file_url"),
+    permanently: bool = Query(False, description="Xóa vĩnh viễn không thể khôi phục"),
+    session: Session = Depends(get_session),
+    project: Projects = Depends(verify_api_key)
+):
+    """Xóa asset theo file URL"""
     asset = session.exec(
         select(Assets).where(Assets.file_url == file_url, Assets.project_id == project.id)
     ).first()
+    
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
 
-    if os.path.exists(asset.path):
-        os.remove(asset.path)
+    delete(session=session, asset=asset, user_id=project.user_id, permanently=permanently)
+    
+    return {
+        "status": "success",
+        "message": "Asset deleted successfully"
+    }
 
-    session.delete(asset)
-    session.commit()
-    return {"message": "Asset deleted successfully"}
+@router.get("/assets/{asset_id}/thumbnail")
+async def get_asset_thumbnail(
+    asset_id: int,
+    width: int = Query(300, ge=1, le=2000),
+    height: int = Query(300, ge=1, le=2000),
+    format: str = Query("webp", regex="^(webp|jpg|jpeg|png)$"),
+    quality: int = Query(80, ge=1, le=100),
+    project: Projects = Depends(verify_api_key),
+    session: Session = Depends(get_session)
+):
+    """
+    Get or generate thumbnail for an asset
+    
+    Args:
+        asset_id: Asset ID
+        width: Thumbnail width (1-2000, default: 300)
+        height: Thumbnail height (1-2000, default: 300)
+        format: Image format - webp, jpg, jpeg, png (default: webp)
+        quality: Image quality 1-100 (default: 80)
+    
+    Returns:
+        Thumbnail image file or JSON with thumbnail URL
+    """
+    from db.crud_thumbnail import get_or_create_thumbnail
+    from fastapi.responses import FileResponse
+    
+    try:
+        # Verify asset belongs to this project
+        asset = session.get(Assets, asset_id)
+        if not asset or asset.project_id != project.id:
+            raise HTTPException(
+                status_code=404,
+                detail="Asset not found"
+            )
+        
+        # Check if asset is an image
+        if not asset.is_image:
+            raise HTTPException(
+                status_code=400,
+                detail="Asset is not an image"
+            )
+        
+        # Get or create thumbnail
+        thumbnail = get_or_create_thumbnail(
+            session=session,
+            asset_id=asset_id,
+            user_id=project.user_id,
+            width=width,
+            height=height,
+            format=format,
+            quality=quality
+        )
+        
+        # Return thumbnail file
+        thumbnail_path = os.path.join(UPLOAD_DIR, str(project.user_id), "thumbnails", thumbnail.filename)
+        
+        if os.path.exists(thumbnail_path):
+            # Determine media type
+            media_type = f"image/{format}"
+            if format in ["jpg", "jpeg"]:
+                media_type = "image/jpeg"
+            
+            return FileResponse(
+                thumbnail_path,
+                media_type=media_type,
+                filename=thumbnail.filename
+            )
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail="Thumbnail file not found"
+            )
+            
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Thumbnail generation failed: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate thumbnail: {str(e)}"
+        )
 
 # ============================================
 # Search
