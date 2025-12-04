@@ -38,6 +38,7 @@ import {
   Plus,
   Copy,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import ApiBaseVariable from "@/components/ui/Modals/ApiBaseVariable";
 import ProjectsService from "@/components/api/projects.service";
 import { Project } from "@/interfaces/interfaces";
@@ -93,6 +94,7 @@ export default function ProjectsPage() {
         description: response.description,
         api_key: response.api_key,
         api_secret: response.api_secret,
+        is_active: response.is_active ?? true,
         created_at: response.created_at,
       };
 
@@ -132,6 +134,7 @@ export default function ProjectsPage() {
                 name: response.name,
                 description: response.description,
                 slug: response.slug,
+                is_active: response.is_active,
               }
             : p
         )
@@ -222,6 +225,35 @@ export default function ProjectsPage() {
       console.error("Copy failed:", err);
     }
   };
+
+  const handleToggleActive = async (project: Project) => {
+    try {
+      const newStatus = !project.is_active;
+      const response = await ProjectsService.Update(project.id, {
+        is_active: newStatus,
+      });
+
+      setProjects(
+        projects?.map((p) =>
+          p.id === project.id ? { ...p, is_active: response.is_active } : p
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: `Project ${
+          newStatus ? "activated" : "deactivated"
+        } successfully`,
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: "Failed to update project status",
+        variant: "destructive",
+      });
+    }
+  };
   return (
     <div className="min-h-screen">
       <div className="mx-auto px-2 py-8 sm:px-6 lg:px-2">
@@ -267,7 +299,7 @@ export default function ProjectsPage() {
                 <TableHead className="font-medium text-white text-xl">
                   Secret Key
                 </TableHead>
-                <TableHead className="text-right font-medium text-white text-xl">
+                <TableHead className="font-medium text-white text-xl">
                   Actions
                 </TableHead>
               </TableRow>
@@ -275,7 +307,7 @@ export default function ProjectsPage() {
             <TableBody>
               {projects?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center">
+                  <TableCell colSpan={7} className="h-32 text-center">
                     <p className="text-muted-foreground">
                       No projects yet. Create your first project to get started.
                     </p>
@@ -286,6 +318,7 @@ export default function ProjectsPage() {
                   <TableRow key={project.id}>
                     <TableCell className="text-sm ">{project.name}</TableCell>
                     <TableCell className=" text-sm ">{project.slug}</TableCell>
+
                     <TableCell className="">{project.created_at}</TableCell>
                     <TableCell className=" text-sm">
                       {project.api_key}
@@ -350,6 +383,21 @@ export default function ProjectsPage() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={project.is_active ?? true}
+                            onCheckedChange={() => handleToggleActive(project)}
+                          />
+                          <span
+                            className={
+                              project.is_active
+                                ? "text-green-500"
+                                : "text-gray-400"
+                            }
+                          >
+                            {project.is_active ? "Active" : "Inactive"}
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
                   </TableRow>

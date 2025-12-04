@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Outlet } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 import SearchBar from "@/components/Layout/Dashboard/Searchbar";
 import Sidebar from "@/components/Layout/Dashboard/Sidebar/Sidebar";
@@ -20,10 +21,8 @@ const Layout = () => {
   const [folders, setFolders] = useState<FolderNode[] | null>([]);
   const [folderPath, setFolderPath] = useState<string>(pathParts);
   const [view, setView] = useState<string>("mosaic"); //"mosaic" | "list" | "card";
+  const { toast } = useToast();
 
-  // const fetchContent = async () => {
-  //   console.log("fetchContent disabled");
-  // };
 
   const fetchContent = useCallback(
     async (filters = {}) => {
@@ -131,10 +130,11 @@ const Layout = () => {
       }
 
       try {
-        const res = await AssetsService.Upload(formData);
-
-        console.log("Upload results:", res.data);
-        alert("Upload thành công");
+        await AssetsService.Upload(formData);
+        toast({
+          title: "Success",
+          description: "Upload successfully",
+        });
       } catch (err) {
         console.error(err);
         alert("Upload thất bại");

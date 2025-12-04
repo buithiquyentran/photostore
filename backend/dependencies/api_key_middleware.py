@@ -42,6 +42,16 @@ def verify_api_key(request: Request, session: Session = Depends(get_session)) ->
             }
         )
 
+    # Check if project is active
+    if not project.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "status": "error",
+                "message": "Project is not active. Please contact administrator."
+            }
+        )
+
     # Verify signature
     timestamp = request.headers.get("X-Timestamp")
     signature = request.headers.get("X-Signature")
