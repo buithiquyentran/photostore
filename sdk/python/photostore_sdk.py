@@ -176,19 +176,103 @@ class PhotoStoreClient:
         
         return self._handle_response(response)
     
+    def search(
+        self,
+        query_text: Optional[str] = None,
+        image_path: Optional[Union[str, Path]] = None,
+        k: int = 10,
+        folder_id: Optional[int] = None,
+        similarity_threshold: float = 0.7
+    ) -> Dict[str, Any]:
+        """
+        Search assets by text query, image, or both (multimodal search)
+        
+        Args:
+            query_text: Text search query (optional)
+            image_path: Path to query image (optional)
+            k: Maximum number of results (default: 10)
+            folder_id: Optional folder ID to search within
+            similarity_threshold: Minimum similarity 0-1 (default: 0.7 = 70%)
+        
+        Returns:
+            Dict containing search results
+        
+        Example:
+            # Text search only
+            results = client.search(query_text="sunset beach", k=10)
+            
+            # Image search only
+            results = client.search(image_path="query.jpg", k=10)
+            
+            # Multimodal search (text + image)
+            results = client.search(
+                query_text="red car",
+                image_path="car.jpg",
+                k=10
+            )
+        """
+        if not query_text and not image_path:
+            raise PhotoStoreException("Must provide at least query_text or image_path")
+        
+        # Prepare form data
+        data = {
+            "k": k,
+            "similarity_threshold": similarity_threshold
+        }
+        
+        if query_text:
+            data["query_text"] = query_text
+        
+        if folder_id is not None:
+            data["folder_id"] = folder_id
+        
+        # Prepare files if image is provided
+        files = None
+        file_handle = None
+        
+        try:
+            if image_path:
+                path = Path(image_path)
+                if not path.exists():
+                    raise PhotoStoreException(f"Image not found: {image_path}")
+                
+                content_type = mimetypes.guess_type(str(path))[0] or "image/jpeg"
+                file_handle = open(path, "rb")
+                files = [("file", (path.name, file_handle, content_type))]
+            
+            # Send request
+            response = requests.post(
+                f"{self.api_endpoint}/image",
+                files=files,
+                data=data,
+                headers=self._get_headers(),
+                timeout=self.timeout
+            )
+        finally:
+            # Close file handle if opened
+            if file_handle:
+                try:
+                    file_handle.close()
+                except:
+                    pass
+        
+        return self._handle_response(response)
+    
     def search_text(
         self,
         query: str,
         k: int = 10,
-        folder_id: Optional[int] = None
+        folder_id: Optional[int] = None,
+        similarity_threshold: float = 0.7
     ) -> Dict[str, Any]:
         """
-        Search assets by text query
+        Search assets by text query (convenience method)
         
         Args:
             query: Text search query
             k: Maximum number of results (default: 10)
             folder_id: Optional folder ID to search within
+            similarity_threshold: Minimum similarity 0-1 (default: 0.7)
         
         Returns:
             Dict containing search results
@@ -196,35 +280,28 @@ class PhotoStoreClient:
         Example:
             results = client.search_text("sunset beach", k=10)
         """
-        data = {
-            "query": query,
-            "k": k
-        }
-        if folder_id is not None:
-            data["folder_id"] = folder_id
-            
-        response = requests.post(
-            f"{self.api_endpoint}/search/text",
-            data=data,
-            headers=self._get_headers(),
-            timeout=self.timeout
+        return self.search(
+            query_text=query,
+            k=k,
+            folder_id=folder_id,
+            similarity_threshold=similarity_threshold
         )
-        
-        return self._handle_response(response)
     
     def search_image(
         self,
         image_path: Union[str, Path],
         k: int = 10,
-        folder_id: Optional[int] = None
+        folder_id: Optional[int] = None,
+        similarity_threshold: float = 0.7
     ) -> Dict[str, Any]:
         """
-        Search similar images by uploading a query image
+        Search similar images by uploading a query image (convenience method)
         
         Args:
             image_path: Path to query image
             k: Maximum number of results (default: 10)
             folder_id: Optional folder ID to search within
+            similarity_threshold: Minimum similarity 0-1 (default: 0.7)
         
         Returns:
             Dict containing similar images
@@ -232,29 +309,13 @@ class PhotoStoreClient:
         Example:
             results = client.search_image("query.jpg", k=10)
         """
-        path = Path(image_path)
-        if not path.exists():
-            raise PhotoStoreException(f"Image not found: {image_path}")
-        
-        content_type = mimetypes.guess_type(str(path))[0] or "image/jpeg"
-        
-        data = {"k": k}
-        if folder_id is not None:
-            data["folder_id"] = folder_id
-        
-        with open(path, "rb") as f:
-            files = [("file", (path.name, f.read(), content_type))]
-            
-            response = requests.post(
-                f"{self.api_endpoint}/search/image",
-                files=files,
-                data=data,
-                headers=self._get_headers(),
-                timeout=self.timeout
-            )
-        
-        return self._handle_response(response)
-    
+        return self.search(
+            image_path=image_path,
+            k=k,
+            folder_id=folder_id,
+            similarity_threshold=similarity_threshold
+        )
+
     def get_asset(self, asset_id: int) -> Dict[str, Any]:
         """
         Get asset information by ID
