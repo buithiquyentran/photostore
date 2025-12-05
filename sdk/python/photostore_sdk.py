@@ -176,7 +176,7 @@ class PhotoStoreClient:
         
         return self._handle_response(response)
     
-    def search(
+    def search_image(
         self,
         query_text: Optional[str] = None,
         image_path: Optional[Union[str, Path]] = None,
@@ -257,64 +257,6 @@ class PhotoStoreClient:
                     pass
         
         return self._handle_response(response)
-    
-    def search_text(
-        self,
-        query: str,
-        k: int = 10,
-        folder_id: Optional[int] = None,
-        similarity_threshold: float = 0.7
-    ) -> Dict[str, Any]:
-        """
-        Search assets by text query (convenience method)
-        
-        Args:
-            query: Text search query
-            k: Maximum number of results (default: 10)
-            folder_id: Optional folder ID to search within
-            similarity_threshold: Minimum similarity 0-1 (default: 0.7)
-        
-        Returns:
-            Dict containing search results
-        
-        Example:
-            results = client.search_text("sunset beach", k=10)
-        """
-        return self.search(
-            query_text=query,
-            k=k,
-            folder_id=folder_id,
-            similarity_threshold=similarity_threshold
-        )
-    
-    def search_image(
-        self,
-        image_path: Union[str, Path],
-        k: int = 10,
-        folder_id: Optional[int] = None,
-        similarity_threshold: float = 0.7
-    ) -> Dict[str, Any]:
-        """
-        Search similar images by uploading a query image (convenience method)
-        
-        Args:
-            image_path: Path to query image
-            k: Maximum number of results (default: 10)
-            folder_id: Optional folder ID to search within
-            similarity_threshold: Minimum similarity 0-1 (default: 0.7)
-        
-        Returns:
-            Dict containing similar images
-        
-        Example:
-            results = client.search_image("query.jpg", k=10)
-        """
-        return self.search(
-            image_path=image_path,
-            k=k,
-            folder_id=folder_id,
-            similarity_threshold=similarity_threshold
-        )
 
     def get_asset(self, asset_id: int) -> Dict[str, Any]:
         """
