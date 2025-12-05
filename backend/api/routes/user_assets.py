@@ -449,8 +449,8 @@ async def upload_assets(
                 "project_slug": project.slug,
                 "folder_path": full_path,  # Full path từ project → parent folders → current folder
                 "is_private": is_private,
-                # "auto_tags": auto_tags,  # ← Thêm danh sách tags tự động
-                # "tags_count": len(auto_tags),  # ← Số lượng tags
+                "auto_tags": auto_tags,  # ← Thêm danh sách tags tự động
+                "tags_count": len(auto_tags),  # ← Số lượng tags
                 "created_at": int(time.time()),
                 "updated_at": int(time.time()),
                 "thumbnails": thumbnails
@@ -516,95 +516,3 @@ async def get_upload(folder_path: str, session: Session = Depends(get_session)):
 
     # Nếu không phải file hoặc folder → 404
     raise HTTPException(404, "Invalid file path")
-
-# ====== Route search_image ======
-@router.post("/search")
-async def search_assets(
-    query_text: str | None = Form(None), 
-    file: UploadFile | None = File(None),
-    project_id: Optional[int] = Form(None),  # Optional - nếu None thì search tất cả projects của user
-    folder_id: Optional[int] = Form(None),
-    k: int = Form(20),
-    current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session),
-):
-    """
-    Tìm kiếm ảnh bằng hình ảnh hoặc text cho user đã đăng nhập.
-    Endpoint này yêu cầu user authentication.
-    
-    Args:
-        query_text: Text query (e.g., "a cat on the sofa")
-        file: File ảnh upload
-        project_id: (Optional) ID của project cần tìm. Nếu None thì search tất cả projects của user
-        folder_id: (Optional) Chỉ tìm trong folder này
-        k: Số lượng kết quả trả về (default: 10)
-    
-    Returns:
-        {
-            "status": 1,
-            "data": [...assets...],
-            "total": <số lượng>
-        }
-    """
-    try:
-        # 🔒 SECURITY: Validate project ownership (nếu có project_id)
-        if project_id:
-            from api.routes.search import validate_project_ownership
-            validate_project_ownership(session, project_id, current_user.id)
-        
-        # Import search services
-        from services.search.embeddings_service import search_by_image, search_by_text
-        
-        assets = []
-        if file:  # search bằng ảnh
-            content = await file.read()
-            image = Image.open(io.BytesIO(content)).convert("RGB")
-            
-            # Tìm kiếm
-            assets = search_by_image(
-                session=session,
-                project_id=project_id,
-                image=image,
-                k=k,
-                folder_id=folder_id,
-                user_id=current_user.id
-            )
-
-        elif query_text:  # search bằng text
-            # Tìm kiếm
-            assets = search_by_text(
-                session=session,
-                project_id=project_id,
-                query_text=query_text,
-                k=k,
-                folder_id=folder_id,
-                user_id=current_user.id
-            )
-
-        else:
-            raise HTTPException(status_code=400, detail="Cần gửi query_text hoặc file ảnh")
-
-        # Format response giống như upload-images API
-        results = []
-        for asset in assets:
-            formatted_asset = format_asset_response(asset, session)
-            results.append({
-                "file": formatted_asset,
-                "message": "Search result",
-                "result": True
-            })
-        
-        return {
-            "data": {
-                "searchResults": results[0] if len(results) == 1 else results
-            },
-            "extensions": {
-                "cost": {
-                    "requestedQueryCost": 0,
-                    "maximumAvailable": 50000
-                }
-            }
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")

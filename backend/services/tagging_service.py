@@ -110,7 +110,7 @@ def get_cached_label_features(model, device, labels: List[str]):
 def get_image_tags(
     image: Image.Image,
     labels: Optional[List[str]] = None,
-    threshold: float = 0.25,
+    threshold: float = 0.2,
     top_k: int = 5
 ) -> List[Tuple[str, float]]:
     """
@@ -182,7 +182,7 @@ def auto_tag_asset(
     asset_id: int,
     image: Image.Image,
     labels: Optional[List[str]] = None,
-    threshold: float = 0.25,
+    threshold: float = 0.2,
     top_k: int = 5,
     overwrite: bool = False
 ) -> List[str]:
@@ -263,7 +263,7 @@ def auto_tag_asset_by_id(
     session: Session,
     asset_id: int,
     labels: List[str] = None,
-    threshold: float = 0.25,
+    threshold: float = 0.2,
     top_k: int = 5,
     overwrite: bool = False
 ) -> List[str]:
@@ -307,7 +307,7 @@ def batch_auto_tag_assets(
     session: Session,
     asset_ids: List[int],
     labels: Optional[List[str]] = None,
-    threshold: float = 0.25,
+    threshold: float = 0.2,
     top_k: int = 5,
     overwrite: bool = False,
     continue_on_error: bool = True

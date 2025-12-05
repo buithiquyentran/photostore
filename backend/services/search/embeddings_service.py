@@ -202,7 +202,7 @@ def search_by_image(
     
     if project_id:
         # Search trong 1 project cụ thể
-        asset_ids = search_in_project(project_id, query_vector, k, folder_id, similarity_threshold)
+        asset_ids = search_in_project(project_id, query_vector, k, folder_id, similarity_threshold, search_type="image" )
     else:
         # Search across all projects của user
         if not user_id:
@@ -220,7 +220,7 @@ def search_by_image(
         # Search trong từng project và merge results
         all_results = []
         for proj in user_projects:
-            proj_results = search_in_project(proj.id, query_vector, k, folder_id, similarity_threshold)
+            proj_results = search_in_project(proj.id, query_vector, k, folder_id, similarity_threshold, search_type="image")
             all_results.extend(proj_results)
         
         # Sort by similarity và lấy top k
@@ -248,7 +248,7 @@ def search_by_text(
     k: int = 10,
     folder_id: Optional[int] = None,
     user_id: Optional[int] = None,
-    similarity_threshold: float = 0.7  # Ngưỡng similarity (0.7 = 70% giống nhau)
+    similarity_threshold: float = 0.3  # Ngưỡng similarity (0.7 = 70% giống nhau)
 ) -> list[Assets]:
     """
     Tìm kiếm assets bằng text query.
@@ -269,7 +269,7 @@ def search_by_text(
     
     if project_id:
         # Search trong 1 project cụ thể
-        asset_ids = search_in_project(project_id, query_vector, k, folder_id, similarity_threshold)
+        asset_ids = search_in_project(project_id, query_vector, k, folder_id, similarity_threshold, search_type="text")
     else:
         # Search across all projects của user
         if not user_id:
@@ -287,7 +287,7 @@ def search_by_text(
         # Search trong từng project và merge results
         all_results = []
         for proj in user_projects:
-            proj_results = search_in_project(proj.id, query_vector, k, folder_id, similarity_threshold)
+            proj_results = search_in_project(proj.id, query_vector, k, folder_id, similarity_threshold, search_type="text")
             all_results.extend(proj_results)
         
         # Sort by similarity và lấy top k
@@ -305,13 +305,13 @@ def search_by_text(
     asset_dict = {asset.id: asset for asset in assets}
     sorted_assets = [asset_dict[aid] for aid in asset_ids if aid in asset_dict]
     
-    return sorted_assets
+#     return sorted_assets
 
 from typing import Union, Optional
 from PIL import Image
 import numpy as np
 
-def search_clip(
+def search(
     session: Session,
     project_id: Optional[int],
     query_text: Optional[str] = None,
@@ -319,7 +319,7 @@ def search_clip(
     k: int = 10,
     folder_id: Optional[int] = None,
     user_id: Optional[int] = None,
-    similarity_threshold: float = 0.2,
+    similarity_threshold: float = 0.7,
     mix_ratio: float = 0.5,  # tỉ lệ trộn giữa text và image (0.5 = cân bằng)
 ) -> list[Assets]:
     """
@@ -334,6 +334,7 @@ def search_clip(
     if query_text:
         text_vec = embed_text(query_text)
         vectors.append(text_vec)
+        similarity_threshold = 0.2 # Giảm ngưỡng cho text search
     if query_image:
         image_vec = embed_image(query_image)
         vectors.append(image_vec)
@@ -350,9 +351,16 @@ def search_clip(
     query_vector /= np.linalg.norm(query_vector)
 
     # 2️⃣ Search trong project hoặc tất cả project của user
+    search_type = "image" if query_image else "text"
+    
     if project_id:
         asset_ids = search_in_project(
-            project_id, query_vector, k, folder_id, similarity_threshold
+            project_id=project_id,
+            query_vector=query_vector,
+            k=k,
+            folder_id=folder_id,
+            search_type=search_type,
+            similarity_threshold=similarity_threshold
         )
     else:
         if not user_id:
@@ -366,7 +374,12 @@ def search_clip(
         all_results = []
         for proj in user_projects:
             proj_results = search_in_project(
-                proj.id, query_vector, k, folder_id, similarity_threshold
+                project_id=proj.id,
+                query_vector=query_vector,
+                k=k,
+                folder_id=folder_id,
+                search_type=search_type,
+                similarity_threshold=similarity_threshold
             )
             all_results.extend(proj_results)
 

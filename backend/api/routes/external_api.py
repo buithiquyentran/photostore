@@ -22,7 +22,7 @@ import traceback
 from db.session import get_session
 from models import Projects, Folders, Assets
 from dependencies.api_key_middleware import verify_api_key
-from services.search.embeddings_service import search_by_image, search_by_text
+from services.search.embeddings_service import search
 from utils.slug import create_slug
 from utils.path_builder import build_full_path, build_file_url
 from core.config import settings
@@ -32,6 +32,7 @@ from utils.filename_utils import truncate_filename, split_filename, sanitize_fil
 from utils.folder_finder import find_folder_by_path
 
 from db.crud_thumbnail import generate_thumbnail_urls_for_file
+from api.routes.search import validate_project_ownership
 
 router = APIRouter(prefix="/external", tags=["External API"])
 
@@ -100,12 +101,6 @@ class AssetResponse(BaseModel):
     created_at: datetime
     folder_path: str
     is_private: bool
-
-# Ảnh private cho API client
-# @router.get("/uploads/{path:path}")
-# def get_external_image(path: str, project: Projects = Depends(verify_api_key)):
-#     return FileResponse(f"uploads/{path}")
-
 
 # ============================================
 # Folder Management
@@ -688,173 +683,51 @@ async def get_asset_thumbnail(
 # Search
 # ============================================
 
-@router.post("/search/image")
-async def search_by_image_api(
-    file: UploadFile = File(...),
+
+@router.post("/image")
+async def search_by_image_upload_or_text(
+    query_text: Optional[str] = Form(None),  # Query text
+    file: UploadFile = File(None),
     folder_id: Optional[int] = Form(None),
-    k: int = Form(10),
+    k: int = Form(20),
+    similarity_threshold: float = Form(0.7),  # Ngưỡng similarity (0.7 = 70% giống nhau)
+    session: Session = Depends(get_session),
     project: Projects = Depends(verify_api_key),
-    session: Session = Depends(get_session)
-):
-    """Search bằng hình ảnh"""
-    try:
-        # Đọc file và chuyển thành PIL Image
-        contents = await file.read()
-        image = Image.open(io.BytesIO(contents))
-        
-        # Gọi service với image thay vì file
-        assets = search_by_image(
-            session=session,
-            project_id=project.id,
-            image=image,
-            folder_id=folder_id,
-            k=k,
-            user_id=None  # Không cần user_id vì đã có project_id
-        )
-        return {"status": 1, "data": assets}
-        
-        # Format response giống như upload-images API
-        results = []
-        for asset in assets:
-            formatted_asset = format_asset_response(asset, session)
-            results.append({
-                "file": formatted_asset,
-                "message": "Search result",
-                "result": True
-            })
-            
-        return {
-            "data": {
-                "searchResults": results[0] if len(results) == 1 else results
-            },
-            "extensions": {
-                "cost": {
-                    "requestedQueryCost": 0,
-                    "maximumAvailable": 50000
-                }
-            }
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Search failed: {str(e)}"
-        )
-
-@router.post("/search/text")
-def search_by_text_api(
-    query: str = Form(...),
-    folder_id: Optional[int] = Form(None),
-    k: int = Form(10),
-    project: Projects = Depends(verify_api_key),
-    session: Session = Depends(get_session)
-):
-    """Search bằng text"""
-    try:
-        print(f"[DEBUG] Text search: query='{query}', project_id={project.id}, folder_id={folder_id}, k={k}")
-        assets = search_by_text(
-            session=session,
-            project_id=project.id,
-            query_text=query,  # Đúng tên tham số là query_text, không phải query
-            k=k,
-            folder_id=folder_id,
-            user_id=None  # Không cần user_id vì đã có project_id
-        )
-        
-        # Format response giống như upload-images API
-        results = []
-        for asset in assets:
-            formatted_asset = format_asset_response(asset, session)
-            results.append({
-                "file": formatted_asset,
-                "message": "Search result",
-                "result": True
-            })
-            
-        return {
-            "data": {
-                "searchResults": results[0] if len(results) == 1 else results
-            },
-            "extensions": {
-                "cost": {
-                    "requestedQueryCost": 0,
-                    "maximumAvailable": 50000
-                }
-            }
-        }
-    except Exception as e:
-        import traceback
-        print(f"[ERROR] Search failed: {str(e)}")
-        print(traceback.format_exc())
-        raise HTTPException(
-            status_code=500,
-            detail=f"Search failed: {str(e)}"
-        )
-
-
-@router.get("/search/text")
-def search_by_text_external(
-    q: str,  # Query text
-    k: int = 10,
-    similarity_threshold: float = 0.7,
-    project: Projects = Depends(verify_api_key),
-    session: Session = Depends(get_session)
 ):
     """
-    Search images by text query using CLIP embeddings (External API with API key).
-    
-    GET /api/external/search/text?q=a+cat+on+sofa
-    Headers: X-API-Key: your_api_key
-    
-    Uses CLIP to find images with content similar to text query.
-    Searches only in the project associated with the API key.
+    Tìm kiếm ảnh tương tự bằng cách upload 1 ảnh.
     
     Args:
-        q: Text query (e.g., "a cat on sofa", "sunset beach", "woman in white shirt")
-        k: Number of results (default: 10)
-        similarity_threshold: Minimum similarity 0-1 (default: 0.7 = 70%)
+        file: File ảnh upload
+        project_id: (Optional) ID của project cần tìm. Nếu None thì search tất cả projects của user
+        folder_id: (Optional) Chỉ tìm trong folder này
+        k: Số lượng kết quả trả về (default: 10)
     
     Returns:
-        Images with similar content to the query
+        {
+            "status": 1,
+            "data": [...assets...],
+            "total": <số lượng>
+        }
     """
     try:
-        # Search by CLIP embeddings in this project
-        assets = search_by_text(
-            session=session,
-            project_id=project.id,  # Only search in API key's project
-            query_text=q,
-            k=k,
-            folder_id=None,
-            user_id=project.user_id,
-            similarity_threshold=similarity_threshold
-        )
+        # 🔒 SECURITY: Validate project ownership (nếu có project_id)
+        if project:
+            validate_project_ownership(session, project.id, project.user_id)
         
-        # Format response
-        results = []
-        for asset in assets:
-            formatted_asset = format_asset_response(asset, session)
-            results.append({
-                "file": formatted_asset,
-                "message": "Semantic search result",
-                "result": True
-            })
-            
-        return {
-            "status": 1,
-            "data": {
-                "searchResults": results[0] if len(results) == 1 else results
-            },
-            "query": q,
-            "method": "clip_embeddings",
-            "project_id": project.id,
-            "total": len(results),
-            "similarity_threshold": similarity_threshold
-        }
+        # Đọc ảnh
+        query_image = None
+        if (file):
+            content = await file.read()
+            query_image = Image.open(io.BytesIO(content)).convert("RGB")
+             
+        # Tìm kiếm
+        assets = search(session=session, project_id=project.id, query_text = query_text, query_image = query_image, k=k,
+            folder_id=folder_id,
+            user_id=project.user_id,
+            similarity_threshold=similarity_threshold)
+        return {"status": 1, "data": assets}
         
     except Exception as e:
-        import traceback
-        print(f"[ERROR] Text search failed: {str(e)}")
-        print(traceback.format_exc())
-        raise HTTPException(
-            status_code=500,
-            detail=f"Text search failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
