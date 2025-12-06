@@ -131,6 +131,7 @@ def create_folder(
         select(Folders)
         .join(Projects, Projects.id == Folders.project_id)
         .where(Folders.slug == req.folder_slug)
+        .where(Projects.slug == req.project_slug)
         .where(Projects.user_id == current_user.id)).first()
         
         if not parent_folder:
@@ -144,45 +145,28 @@ def create_folder(
             )
     # 4. Tạo slug từ name
     folder_slug = create_slug(req.name)
-    # 3. Check duplicate folder name trong cùng level
-    if parent_folder :
-        duplicate = session.exec(
+    
+    # 3. Check duplicate folder slug trong cùng level
+    existing_folder = session.exec(
             select(Folders)
             .where(Folders.project_id == project.id)
-            .where(Folders.parent_id == parent_folder.id)
-            .where(Folders.name == req.name)
-        ).first()
-    
-        if duplicate:
-            raise HTTPException(
-                status_code=409, 
-                detail=f"Folder '{req.name}' đã tồn tại trong cùng cấp"
-            )
-    
-        # Check duplicate slug trong cùng level
-        existing_folder = session.exec(
-            select(Folders)
-            .where(Folders.project_id == project.id)
-            .where(Folders.parent_id == parent_folder.id)
             .where(Folders.slug == folder_slug)
         ).first()
         
-        if existing_folder:
-            # Thêm suffix nếu slug đã tồn tại
-            counter = 1
-            while existing_folder:
-                new_slug = f"{folder_slug}-{counter}"
-                existing_folder = session.exec(
-                    select(Folders)
-                    .where(Folders.project_id == project.id)
-                    .where(Folders.parent_id == parent_folder.id)
-                    .where(Folders.slug == new_slug)
-                ).first()
-                if not existing_folder:
-                    folder_slug = new_slug
-                    break
-                counter += 1
-        
+    if existing_folder:
+        # Thêm suffix nếu slug đã tồn tại
+        counter = 1
+        while existing_folder:
+            new_slug = f"{folder_slug}-{counter}"
+            existing_folder = session.exec(
+                select(Folders)
+                .where(Folders.project_id == project.id)
+                .where(Folders.slug == new_slug)
+            ).first()
+            if not existing_folder:
+                folder_slug = new_slug
+                break
+            counter += 1
     if parent_folder:
         folder_path = f"{parent_folder.path}/{folder_slug}"
     else:
