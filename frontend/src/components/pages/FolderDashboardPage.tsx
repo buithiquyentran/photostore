@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { UploadCloud, Upload } from "lucide-react";
+import PreviewUploadDialog from "@/components/ui/Modals/PreviewUploadDialog";
 
 import { cn } from "@/lib/utils";
 import FolderGrid from "@/components/ui/Folders/FolderGrid";
@@ -42,6 +43,9 @@ export default function Dashboard() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [previewFiles, setPreviewFiles] = useState<File[]>([]);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -58,9 +62,40 @@ export default function Dashboard() {
     setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      onUpload(Array.from(e.dataTransfer.files));
+      const files = Array.from(e.dataTransfer.files);
+      setPreviewFiles(files);
+      setShowPreviewDialog(true);
     }
   };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      setPreviewFiles(files);
+      setShowPreviewDialog(true);
+    }
+  };
+
+  const handleConfirmUpload = (files: File[], isPrivate: boolean) => {
+    // Create a synthetic event-like object for onUpload
+    const syntheticEvent = {
+      target: {
+        files: files,
+      },
+    } as any;
+
+    // Call parent's onUpload with files and isPrivate
+    onUpload(files);
+
+    setShowPreviewDialog(false);
+    setPreviewFiles([]);
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleDelete = async (asset_id: number) => {
     try {
       await AssetsService.Update(asset_id, { is_deleted: true });
@@ -69,9 +104,11 @@ export default function Dashboard() {
       console.error("Toggle star failed", err);
     }
   };
+
   useEffect(() => {
     setAssets(assetsOutlet);
   }, [assetsOutlet, view, setFolderPath]);
+
   const renderView = () => {
     switch (view) {
       case "list":
@@ -98,6 +135,7 @@ export default function Dashboard() {
         );
     }
   };
+
   return (
     <main
       className="flex-1 overflow-y-auto p-4 bg-[rgb(31,36,46)] "
@@ -122,7 +160,6 @@ export default function Dashboard() {
           </div>
           <Button
             onClick={() => fileInputRef.current?.click()}
-            disabled={selectedMenu?.split("/").length == 1} // disable khi ở root project
             className="bg-primary text-[#000] hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none"
           >
             <UploadCloud className="h-4 w-4 mr-2" />
@@ -133,7 +170,7 @@ export default function Dashboard() {
             type="file"
             multiple
             accept="image/*"
-            onChange={onUpload}
+            onChange={handleFileSelect}
             className="hidden"
           />
         </div>
@@ -181,6 +218,20 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        {/* Preview Upload Dialog */}
+        <PreviewUploadDialog
+          open={showPreviewDialog}
+          files={previewFiles}
+          onClose={() => {
+            setShowPreviewDialog(false);
+            setPreviewFiles([]);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+            }
+          }}
+          onConfirm={handleConfirmUpload}
+        />
       </div>
     </main>
   );
