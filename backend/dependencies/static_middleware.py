@@ -162,7 +162,16 @@ async def verify_static_access(request: Request, call_next):
             # Nếu có API key → xác thực external
             elif api_key:
                 project = session.get(Projects, asset.project_id)
-                
+                 # Check if project is active
+                if not project.is_active:
+                    raise HTTPException(
+                        status_code=403,
+                        detail={
+                            "status": "error",
+                            "message": "Project is not active. Please contact administrator."
+                        }
+                    )
+
                 signature = request.headers.get("X-Signature")
                 timestamp = request.headers.get("X-Timestamp")
                 message = f"{timestamp}:{api_key}"

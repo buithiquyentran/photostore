@@ -150,7 +150,38 @@ def get_or_create_thumbnail(
     """
     Lấy thumbnail đã có hoặc tạo mới (lưu LOCAL)
     """
-
+    
+    # Validate input parameters
+    errors = []
+    
+    if width <= 0 or width > 4096:
+        errors.append("Width must be between 1 and 4096 pixels")
+    
+    if height <= 0 or height > 4096:
+        errors.append("Height must be between 1 and 4096 pixels")
+    
+    allowed_formats = ["webp", "jpg", "jpeg", "png"]
+    if format.lower() not in allowed_formats:
+        errors.append(f"Format must be one of: {', '.join(allowed_formats)}")
+    
+    if quality <= 0 or quality > 100:
+        errors.append("Quality must be between 1 and 100")
+    
+    if errors:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "Validation failed",
+                "messages": errors,
+                "parameters": {
+                    "width": width,
+                    "height": height,
+                    "format": format,
+                    "quality": quality
+                }
+            }
+        )
+    
     # Step 1️⃣: Kiểm tra thumbnail đã tồn tại chưa
     statement = select(Thumbnails).where(
         (Thumbnails.asset_id == asset_id)

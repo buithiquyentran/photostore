@@ -16,9 +16,7 @@ from typing import Optional
 from db.session import get_session
 from dependencies.dependencies import get_current_user
 from services.search.embeddings_service import (
-    search_by_image,
-    search_by_text,
-    rebuild_project_embeddings,search_clip
+rebuild_project_embeddings,search
 )
 from services.search.faiss_index import get_project_stats
 from models.projects import Projects
@@ -94,13 +92,13 @@ def validate_project_ownership(session: Session, project_id: int, user_id: int) 
 
 
 @router.post("/image")
-async def search_by_image_upload(
+async def search_by_image_upload_or_text(
     query_text: Optional[str] = Form(None),  # Query text
     file: UploadFile = File(None),
     project_id: Optional[int] = Form(None),  # Optional - nếu None thì search tất cả projects của user
     folder_id: Optional[int] = Form(None),
     k: int = Form(20),
-    similarity_threshold: float = Form(0.2),  # Ngưỡng similarity (0.7 = 70% giống nhau)
+    similarity_threshold: float = Form(0.7),  # Ngưỡng similarity (0.7 = 70% giống nhau)
     session: Session = Depends(get_session),
     current_user: dict = Depends(get_current_user)
 ):
@@ -132,105 +130,14 @@ async def search_by_image_upload(
             query_image = Image.open(io.BytesIO(content)).convert("RGB")
         
         # Tìm kiếm
-        
-        assets = search_clip(session=session, project_id=project_id, query_text = query_text, query_image = query_image, k=k,
+        assets = search(session=session, project_id=project_id, query_text = query_text, query_image = query_image, k=k,
             folder_id=folder_id,
             user_id=current_user.id,
             similarity_threshold=similarity_threshold)
-        # Format response giống như upload-images API
-        # results = []
-        # for asset in assets:
-        #     formatted_asset = format_asset_response(asset, session)
-        #     results.append({
-        #         "file": formatted_asset,
-        #         "message": "Search result",
-        #         "result": True
-        #     })
         return {"status": 1, "data": assets}
-        return {
-            "data": {
-                assets
-            },
-            "extensions": {
-                "cost": {
-                    "requestedQueryCost": 0,
-                    "maximumAvailable": 50000
-                }
-            }
-        }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
-
-
-@router.get("/text")
-def search_by_text_get(
-    q: str,  # Query text
-    project_id: Optional[int] = None,
-    folder_id: Optional[int] = None,
-    k: int = 10,
-    similarity_threshold: float = 0.2,
-    session: Session = Depends(get_session),
-    current_user: dict = Depends(get_current_user)
-):
-    """
-    Search images by text query using CLIP embeddings (GET methohrequestd).
-    
-    GET /api/v1/search/text?q=a+cat+on+sofa
-    
-    Uses CLIP to find images with content similar to text query.
-    NOT tag-based search, but semantic content search.
-    
-    Args:
-        q: Text query (e.g., "a cat on sofa", "sunset beach")
-        project_id: Optional project filter
-        folder_id: Optional folder filter
-        k: Number of results (default: 10)
-        similarity_threshold: Minimum similarity 0-1 (default: 0.7 = 70%)
-    
-    Returns:
-        Images with similar content to the query
-    """
-    try:
-        # Validate project ownership
-        if project_id:
-            validate_project_ownership(session, project_id, current_user.id)
-        
-        # Search by CLIP embeddings
-        assets = search_by_text(
-            session=session,
-            project_id=project_id,
-            query_text=q,
-            k=k,
-            folder_id=folder_id,
-            user_id=current_user.id,
-            similarity_threshold=similarity_threshold
-        )
-        
-        # Format response
-        results = []
-        for asset in assets:
-            formatted_asset = format_asset_response(asset, session)
-            results.append({
-                "file": formatted_asset,
-                "message": "Semantic search result",
-                "result": True
-            })
-        
-        return {
-            "status": 1,
-            "data": {
-                "searchResults": results[0] if len(results) == 1 else results
-            },
-            "query": q,
-            "method": "clip_embeddings",
-            "total": len(results),
-            "similarity_threshold": similarity_threshold
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
-
 
 @router.post("/rebuild")
 def rebuild_project_index(

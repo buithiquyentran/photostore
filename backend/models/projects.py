@@ -22,6 +22,7 @@ class Projects(SQLModel, table=True):
     slug: str = Field(max_length=150, nullable=False, index=True)  # URL-friendly version of name
     description: Optional[str] = Field(default=None)
     is_default: bool = Field(default=False)
+    is_active: bool = Field(default=True)  # Project active status
     created_at: datetime = Field(default_factory=datetime.utcnow)
     api_key: str = Field(default_factory=generate_api_key)  # Auto-generate
     api_secret: str = Field(default_factory=generate_api_secret)  # Auto-generate

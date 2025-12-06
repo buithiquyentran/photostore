@@ -1,7 +1,17 @@
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { UploadCloud, Upload } from "lucide-react";
+import { UploadCloud, Upload, ChevronDown } from "lucide-react";
+import PreviewUploadDialog from "@/components/ui/Modals/PreviewUploadDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import FolderService from "@/components/api/folder.service";
+import { useLocation } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 import { cn } from "@/lib/utils";
 import FolderGrid from "@/components/ui/Folders/FolderGrid";
@@ -18,7 +28,12 @@ type DashboardContextType = {
   assetsOutlet: Asset[];
   view: string;
   foldersOutlet: Folder[];
-  onUpload: (e: React.ChangeEvent<HTMLInputElement> | File[]) => void;
+  onUpload: (
+    e: React.ChangeEvent<HTMLInputElement> | File[],
+    isPrivate?: boolean,
+    project_slug?: string | null,
+    folder_slug?: string | null
+  ) => void;
   fetchContent: (filters: Filter) => void;
 
   setFolderPath: React.Dispatch<React.SetStateAction<string>>;
@@ -39,9 +54,15 @@ export default function Dashboard() {
   } = useOutletContext<DashboardContextType>();
   const [assets, setAssets] = useState<Asset[]>(assetsOutlet);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [previewFiles, setPreviewFiles] = useState<File[]>([]);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [uploadingFolder, setUploadingFolder] = useState<string | null>(null);
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -58,9 +79,82 @@ export default function Dashboard() {
     setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      onUpload(Array.from(e.dataTransfer.files));
+      const files = Array.from(e.dataTransfer.files);
+      setPreviewFiles(files);
+      setShowPreviewDialog(true);
     }
   };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+
+      // Check if this is folder upload by checking webkitRelativePath
+      const isFolder = files.some((f) => f.webkitRelativePath);
+
+      if (isFolder && files.length > 0) {
+        // Get folder name from first file's path
+        const folderName = files[0].webkitRelativePath.split("/")[0];
+        setUploadingFolder(folderName);
+        console.log("Uploading folder:", folderName);
+      } else {
+        setUploadingFolder(null);
+      }
+
+      setPreviewFiles(files);
+      setShowPreviewDialog(true);
+    }
+  };
+
+  const handleConfirmUpload = async (files: File[], isPrivate: boolean) => {
+    try {
+      // If uploading a folder, create folders first
+      if (uploadingFolder) {
+        const pathParts = location.pathname
+          .replace(/^\/dashboard\/?/, "")
+          .split("/")
+          .filter(Boolean);
+
+        const project_slug = pathParts[0];
+        const folder_slug =
+          pathParts.length > 1 ? pathParts[pathParts.length - 1] : null;
+
+        const folder = await FolderService.Create({
+          project_slug,
+          folder_slug,
+          name: uploadingFolder,
+        });
+        await onUpload(files, isPrivate, folder.project_slug, folder.slug);
+
+        toast({
+          title: "Folder created!",
+          description: `Created folder "${uploadingFolder}" and uploading ${files.length} files...`,
+        });
+      }
+
+      // Call parent's onUpload with files
+      onUpload(files, isPrivate);
+      setShowPreviewDialog(false);
+      setPreviewFiles([]);
+      setUploadingFolder(null);
+
+      // Reset file inputs
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      if (folderInputRef.current) {
+        folderInputRef.current.value = "";
+      }
+    } catch (err) {
+      console.error("Upload failed:", err);
+      toast({
+        title: "Upload failed",
+        description: "Could not create folder or upload files.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDelete = async (asset_id: number) => {
     try {
       await AssetsService.Update(asset_id, { is_deleted: true });
@@ -69,9 +163,11 @@ export default function Dashboard() {
       console.error("Toggle star failed", err);
     }
   };
+
   useEffect(() => {
     setAssets(assetsOutlet);
   }, [assetsOutlet, view, setFolderPath]);
+
   const renderView = () => {
     switch (view) {
       case "list":
@@ -98,6 +194,7 @@ export default function Dashboard() {
         );
     }
   };
+
   return (
     <main
       className="flex-1 overflow-y-auto p-4 bg-[rgb(31,36,46)] "
@@ -120,20 +217,48 @@ export default function Dashboard() {
               {assetsOutlet?.length} items
             </p>
           </div>
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={selectedMenu?.split("/").length == 1} // disable khi ở root project
-            className="bg-primary text-[#000] hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none"
-          >
-            <UploadCloud className="h-4 w-4 mr-2" />
-            Upload Files
-          </Button>
+
+          {/* Upload Dropdown Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="bg-primary text-[#000] hover:bg-primary/90">
+                <UploadCloud className="h-4 w-4 mr-2" />
+                Upload
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                <UploadCloud className="h-4 w-4 mr-2" />
+                Upload Files
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => folderInputRef.current?.click()}>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Folder
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Hidden input for files */}
           <input
             ref={fileInputRef}
             type="file"
             multiple
             accept="image/*"
-            onChange={onUpload}
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
+          {/* Hidden input for folder */}
+          <input
+            ref={folderInputRef}
+            type="file"
+            multiple
+            accept="image/*"
+            // @ts-expect-error - webkitdirectory is not in TypeScript types but supported by browsers
+            webkitdirectory="true"
+            directory="true"
+            onChange={handleFileSelect}
             className="hidden"
           />
         </div>
@@ -158,15 +283,26 @@ export default function Dashboard() {
               Upload your first files
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Drag and drop files here, or click the upload button
+              Drag and drop files or folders here, or use the upload button
             </p>
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              variant="outline"
-              className="border-border text-foreground hover:bg-accent"
-            >
-              Choose Files
-            </Button>
+            <div className="flex gap-2 justify-center">
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                variant="outline"
+                className="border-border text-foreground hover:bg-accent"
+              >
+                <UploadCloud className="h-4 w-4 mr-2" />
+                Choose Files
+              </Button>
+              <Button
+                onClick={() => folderInputRef.current?.click()}
+                variant="outline"
+                className="border-border text-foreground hover:bg-accent"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Choose Folder
+              </Button>
+            </div>
           </Card>
         ) : (
           <div className="p-4">{renderView()}</div>
@@ -176,11 +312,29 @@ export default function Dashboard() {
             <div className="bg-card border-2 border-dashed border-primary rounded-lg p-12 text-center">
               <Upload className="h-16 w-16 mx-auto mb-4 text-primary" />
               <h3 className="text-xl font-semibold text-foreground">
-                Drop files to upload
+                Drop files or folders to upload
               </h3>
             </div>
           </div>
         )}
+
+        {/* Preview Upload Dialog */}
+        <PreviewUploadDialog
+          open={showPreviewDialog}
+          files={previewFiles}
+          onClose={() => {
+            setShowPreviewDialog(false);
+            setPreviewFiles([]);
+            setUploadingFolder(null);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+            }
+            if (folderInputRef.current) {
+              folderInputRef.current.value = "";
+            }
+          }}
+          onConfirm={handleConfirmUpload}
+        />
       </div>
     </main>
   );

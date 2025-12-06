@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Outlet } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 import SearchBar from "@/components/Layout/Dashboard/Searchbar";
 import Sidebar from "@/components/Layout/Dashboard/Sidebar/Sidebar";
@@ -20,10 +21,7 @@ const Layout = () => {
   const [folders, setFolders] = useState<FolderNode[] | null>([]);
   const [folderPath, setFolderPath] = useState<string>(pathParts);
   const [view, setView] = useState<string>("mosaic"); //"mosaic" | "list" | "card";
-
-  // const fetchContent = async () => {
-  //   console.log("fetchContent disabled");
-  // };
+  const { toast } = useToast();
 
   const fetchContent = useCallback(
     async (filters = {}) => {
@@ -97,7 +95,9 @@ const Layout = () => {
 
   const handleUpload = async (
     eOrFiles: React.ChangeEvent<HTMLInputElement> | File[],
-    isPrivate: boolean = false
+    isPrivate: boolean = false,
+    project_slug: string | null = null,
+    folder_slug: string | null = null
   ) => {
     let files: File[] = [];
 
@@ -124,17 +124,22 @@ const Layout = () => {
         folderPath !== "trash" &&
         folderPath !== "favorite"
       ) {
-        const project_slug = folderPath.split("/")[0];
-        const folder_slug = folderPath.split("/").slice(1).join("/");
+        if (!project_slug) {
+          project_slug = folderPath.split("/")[0];
+        }
+        if (!folder_slug) {
+          folder_slug = folderPath.split("/").slice(1).join("/");
+        }
         formData.append("project_slug", project_slug);
         formData.append("folder_slug", folder_slug);
       }
 
       try {
-        const res = await AssetsService.Upload(formData);
-
-        console.log("Upload results:", res.data);
-        alert("Upload thành công");
+        await AssetsService.Upload(formData);
+        toast({
+          title: "Success",
+          description: "Upload successfully",
+        });
       } catch (err) {
         console.error(err);
         alert("Upload thất bại");

@@ -78,6 +78,7 @@ def create_project(
 class ProjectUpdateRequest(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    is_active: Optional[bool] = None
     
 @router.patch("/{project_id}")
 def update_project(
@@ -86,7 +87,7 @@ def update_project(
     session: Session = Depends(get_session),
     current_user: dict = Depends(get_current_user)
 ):
-    """Tạo lại project slug"""
+    """Update project information"""
     try:
         project = session.get(Projects, project_id)
         if not project:
@@ -107,26 +108,34 @@ def update_project(
                 }
             )
 
-        project_slug = create_slug(update.name)
-        # Kiểm tra trùng slug
-        existing = session.exec(
-            select(Projects)
-            .where(
-                Projects.user_id == current_user.id,
-                Projects.slug == project_slug
-            )
-        ).first()
-        
-        if existing:
-            raise HTTPException(
-                status_code=400,
-                detail="Project with this name already exists"
-            )
+        # Update name and slug if name is provided
         if update.name is not None:
+            project_slug = create_slug(update.name)
+            # Kiểm tra trùng slug (exclude current project)
+            existing = session.exec(
+                select(Projects)
+                .where(
+                    Projects.user_id == current_user.id,
+                    Projects.slug == project_slug,
+                    Projects.id != project_id
+                )
+            ).first()
+            
+            if existing:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Project with this name already exists"
+                )
             project.name = update.name
+            project.slug = project_slug
+        
+        # Update description if provided
         if update.description is not None:
             project.description = update.description
-        project.slug = project_slug
+        
+        # Update is_active status if provided
+        if update.is_active is not None:
+            project.is_active = update.is_active
         
         session.add(project)
         session.commit()

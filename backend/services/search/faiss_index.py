@@ -166,8 +166,9 @@ def search_in_project(
     query_vector: np.ndarray,
     k: int = 10,
     folder_id: Optional[int] = None,
-    similarity_threshold: float = 0.2  # Ngưỡng similarity (0.7 = 70% giống nhau)
-) -> list[int]:
+    search_type: str = "image",
+    similarity_threshold: float = 0.7  # Ngưỡng similarity (0.7 = 70% giống nhau),
+    ) -> list[int]:
     """
     Tìm kiếm trong project bằng vector query.
     
@@ -211,7 +212,9 @@ def search_in_project(
         # Tính similarity từ distance (FAISS trả về inner product)
         # Vì vectors đã được chuẩn hóa, inner product chính là cosine similarity
         similarity = float(D[0][i])
-        
+        if search_type == "text":
+            # Điều chỉnh threshold cho text search (thường thấp hơn)
+            similarity_threshold= 0.2
         # Chỉ lấy kết quả có similarity >= threshold
         if similarity < similarity_threshold:
             continue

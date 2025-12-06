@@ -15,7 +15,7 @@ class ProjectsService {
   }
   async Update(
     project_id: number,
-    data: { name: string; description?: string | null }
+    data: { name?: string; description?: string | null; is_active?: boolean }
   ) {
     const res = await this.api.patch(`/${project_id}`, data);
     return res.data.data;

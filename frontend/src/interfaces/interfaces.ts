@@ -55,6 +55,7 @@ export interface Project {
   api_key: string;
   api_secret: string;
   description: string;
+  is_active?: boolean;
   created_at?: string;
 }
 export interface ErrorMessage {

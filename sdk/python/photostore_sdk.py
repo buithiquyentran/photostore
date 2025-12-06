@@ -1,37 +1,3 @@
-"""
-PhotoStore SDK for Python
-==========================
-
-A simple SDK to interact with PhotoStore API without worrying about HMAC authentication.
-
-Usage:
-    from photostore_sdk import PhotoStoreClient
-    
-    client = PhotoStoreClient(
-        api_key="your_api_key",
-        api_secret="your_api_secret",
-        base_url="http://localhost:8000"
-    )
-    
-    # Upload files
-    result = client.upload_files(
-        files=["image1.jpg", "image2.png"],
-        folder_slug="photos",
-        is_private=False
-    )
-    
-    # Search by text
-    results = client.search_text("sunset beach")
-    
-    # Search by image
-    results = client.search_image("query_image.jpg")
-    
-    # Get asset info
-    asset = client.get_asset(asset_id=123)
-    
-    # Delete asset
-    client.delete_asset(asset_id=123)
-"""
 
 import hmac
 import hashlib
@@ -110,7 +76,8 @@ class PhotoStoreClient:
     
     def upload_files(
         self,
-        files: List[Union[str, Path]],
+        files: Optional[List[Union[str, Path]]] = None,
+        file_objects: Optional[List[tuple]] = None,
         folder_slug: Optional[str] = None,
         is_private: bool = False
     ) -> Dict[str, Any]:
@@ -118,7 +85,8 @@ class PhotoStoreClient:
         Upload one or multiple files to PhotoStore
         
         Args:
-            files: List of file paths to upload
+            files: List of file paths to upload (optional)
+            file_objects: List of tuples (filename, file_content, content_type) where file_content can be bytes or file-like object (optional)
             folder_slug: Target folder slug (optional)
             is_private: Whether files should be private (default: False)
         
@@ -126,28 +94,66 @@ class PhotoStoreClient:
             Dict containing upload results
         
         Example:
+            # Upload from file paths
             result = client.upload_files(
                 files=["photo1.jpg", "photo2.png"],
                 folder_slug="vacation",
                 is_private=True
             )
+            
+            # Upload from file bytes (FastAPI UploadFile, etc.)
+            result = client.upload_files(
+                file_objects=[
+                    ("photo1.jpg", image_bytes, "image/jpeg"),
+                    ("photo2.png", png_bytes, "image/png")
+                ],
+                folder_slug="vacation"
+            )
+            
+            # Upload from file-like objects
+            with open("image.jpg", "rb") as f:
+                result = client.upload_files(
+                    file_objects=[("image.jpg", f, "image/jpeg")],
+                    folder_slug="vacation"
+                )
         """
+        if not files and not file_objects:
+            raise PhotoStoreException("Must provide either 'files' or 'file_objects'")
+        
         # Prepare files - keep file handles open until after request
         files_to_upload = []
         file_handles = []
         
         try:
-            for file_path in files:
-                path = Path(file_path)
-                if not path.exists():
-                    raise PhotoStoreException(f"File not found: {file_path}")
-                
-                content_type = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
-                fh = open(path, "rb")
-                file_handles.append(fh)
-                files_to_upload.append(
-                    ("files", (path.name, fh, content_type))
-                )
+            # Handle file paths
+            if files:
+                for file_path in files:
+                    path = Path(file_path)
+                    if not path.exists():
+                        raise PhotoStoreException(f"File not found: {file_path}")
+                    
+                    content_type = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
+                    fh = open(path, "rb")
+                    file_handles.append(fh)
+                    files_to_upload.append(
+                        ("files", (path.name, fh, content_type))
+                    )
+            
+            # Handle file objects (bytes or file-like objects)
+            if file_objects:
+                from io import BytesIO
+                for filename, file_content, content_type in file_objects:
+                    if isinstance(file_content, bytes):
+                        # Wrap bytes in BytesIO
+                        fh = BytesIO(file_content)
+                        file_handles.append(fh)
+                    else:
+                        # Assume it's already a file-like object
+                        fh = file_content
+                    
+                    files_to_upload.append(
+                        ("files", (filename, fh, content_type or "application/octet-stream"))
+                    )
             
             # Prepare form data
             data = {}
@@ -167,7 +173,7 @@ class PhotoStoreClient:
                 timeout=self.timeout
             )
         finally:
-            # Close all file handles
+            # Close all file handles that we created
             for fh in file_handles:
                 try:
                     fh.close()
@@ -176,85 +182,102 @@ class PhotoStoreClient:
         
         return self._handle_response(response)
     
-    def search_text(
+    def search_image(
         self,
-        query: str,
+        query_text: Optional[str] = None,
+        file: Optional[Any] = None,
+        filename: Optional[str] = None,
         k: int = 10,
-        folder_id: Optional[int] = None
+        folder_id: Optional[int] = None,
+        similarity_threshold: float = 0.7
     ) -> Dict[str, Any]:
         """
-        Search assets by text query
+        Search assets by text query, image, or both (multimodal search)
         
         Args:
-            query: Text search query
+            query_text: Text search query (optional)
+            file: File-like object or bytes (optional, alternative to image_path)
+            filename: Filename when using file (optional, default: "image.jpg")
             k: Maximum number of results (default: 10)
             folder_id: Optional folder ID to search within
+            similarity_threshold: Minimum similarity 0-1 (default: 0.7 = 70%)
         
         Returns:
             Dict containing search results
         
         Example:
-            results = client.search_text("sunset beach", k=10)
+            # Text search only
+            results = client.search_image(query_text="sunset beach", k=10)
+            
+            # Image search from file path
+            results = client.search_image(file="query.jpg", k=10)
+            
+            # Image search from file bytes (FastAPI UploadFile, etc.)
+            with open("image.jpg", "rb") as f:
+                results = client.search_image(file=f, filename="image.jpg", k=10)
+            
+            # Multimodal search (text + image)
+            results = client.search_image(
+                query_text="red car",
+                image_path="car.jpg",
+                k=10
+            )
         """
+        if not query_text and not file:
+            raise PhotoStoreException("Must provide at least query_text, image_path, or file")
+        
+        # Prepare form data
         data = {
-            "query": query,
-            "k": k
+            "k": k,
+            "similarity_threshold": similarity_threshold
         }
-        if folder_id is not None:
-            data["folder_id"] = folder_id
-            
-        response = requests.post(
-            f"{self.api_endpoint}/search/text",
-            data=data,
-            headers=self._get_headers(),
-            timeout=self.timeout
-        )
         
-        return self._handle_response(response)
-    
-    def search_image(
-        self,
-        image_path: Union[str, Path],
-        k: int = 10,
-        folder_id: Optional[int] = None
-    ) -> Dict[str, Any]:
-        """
-        Search similar images by uploading a query image
+        if query_text:
+            data["query_text"] = query_text
         
-        Args:
-            image_path: Path to query image
-            k: Maximum number of results (default: 10)
-            folder_id: Optional folder ID to search within
-        
-        Returns:
-            Dict containing similar images
-        
-        Example:
-            results = client.search_image("query.jpg", k=10)
-        """
-        path = Path(image_path)
-        if not path.exists():
-            raise PhotoStoreException(f"Image not found: {image_path}")
-        
-        content_type = mimetypes.guess_type(str(path))[0] or "image/jpeg"
-        
-        data = {"k": k}
         if folder_id is not None:
             data["folder_id"] = folder_id
         
-        with open(path, "rb") as f:
-            files = [("file", (path.name, f.read(), content_type))]
-            
+        # Prepare files if image is provided
+        files = None
+        file_handle = None
+        should_close_handle = False
+        
+        try:
+            if file:
+                # Handle file-like object or bytes
+                if isinstance(file, bytes):
+                    # If bytes, wrap in BytesIO
+                    from io import BytesIO
+                    file_handle = BytesIO(file)
+                    should_close_handle = True
+                else:
+                    # Assume it's already a file-like object
+                    file_handle = file
+                    should_close_handle = False
+                
+                # Use provided filename or default
+                fname = filename or "image.jpg"
+                content_type = mimetypes.guess_type(fname)[0] or "image/jpeg"
+                files = [("file", (fname, file_handle, content_type))]
+            # Send request
             response = requests.post(
-                f"{self.api_endpoint}/search/image",
+                f"{self.api_endpoint}/image",
                 files=files,
                 data=data,
                 headers=self._get_headers(),
                 timeout=self.timeout
             )
+        finally:
+            # Close file handle only if we opened it
+            if file_handle and should_close_handle:
+                try:
+                    file_handle.close()
+                except:
+                    pass
         
         return self._handle_response(response)
-    
+
     def get_asset(self, asset_id: int) -> Dict[str, Any]:
         """
         Get asset information by ID
