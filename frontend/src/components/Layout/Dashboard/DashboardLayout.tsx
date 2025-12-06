@@ -23,7 +23,6 @@ const Layout = () => {
   const [view, setView] = useState<string>("mosaic"); //"mosaic" | "list" | "card";
   const { toast } = useToast();
 
-
   const fetchContent = useCallback(
     async (filters = {}) => {
       try {
@@ -96,7 +95,9 @@ const Layout = () => {
 
   const handleUpload = async (
     eOrFiles: React.ChangeEvent<HTMLInputElement> | File[],
-    isPrivate: boolean = false
+    isPrivate: boolean = false,
+    project_slug: string | null = null,
+    folder_slug: string | null = null
   ) => {
     let files: File[] = [];
 
@@ -123,8 +124,12 @@ const Layout = () => {
         folderPath !== "trash" &&
         folderPath !== "favorite"
       ) {
-        const project_slug = folderPath.split("/")[0];
-        const folder_slug = folderPath.split("/").slice(1).join("/");
+        if (!project_slug) {
+          project_slug = folderPath.split("/")[0];
+        }
+        if (!folder_slug) {
+          folder_slug = folderPath.split("/").slice(1).join("/");
+        }
         formData.append("project_slug", project_slug);
         formData.append("folder_slug", folder_slug);
       }
