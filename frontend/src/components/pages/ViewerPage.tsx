@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import {
   X,
   Share2,
-  SlidersHorizontal,
   ZoomIn,
   Info,
   Star,
@@ -12,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CodeXml,
+  Edit3,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -25,19 +25,21 @@ import {
 } from "@/components/ui/Modals/alert-dialog";
 import AssetService from "@/components/api/assets.service";
 import SidebarMetadata from "@/components/ui/Images/SidebarMetadata";
+import ImageEditor from "@/components/ui/Images/ImageEditor";
 import path from "@/resources/path";
 import { useToast } from "@/hooks/use-toast";
-
+import { Asset } from "@/interfaces/interfaces";
 export default function ViewerPage() {
   const { "*": file_url } = useParams();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [meta, setMeta] = useState<any>(null);
+  const [meta, setMeta] = useState<Asset | null>(null);
   const [toggleStar, setToggleStar] = useState<any>(null);
   const [nextPath, setNextPath] = useState<string>();
   const [prevPath, setPrevPath] = useState<string>();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -111,6 +113,56 @@ export default function ViewerPage() {
       console.error("Failed to copy: ", err);
     }
   };
+
+  const handleSaveEdit = async (editedBlob: Blob) => {
+    try {
+      // Create FormData to upload edited image
+      const formData = new FormData();
+      const fileName = meta?.name || "edited_image.jpg";
+      formData.append("files", editedBlob, fileName);
+
+      // Get folder slug from current path
+      const folderSlug = meta?.folder_path?.split("/")[0] || "home";
+      formData.append("folder_slug", folderSlug);
+      formData.append("is_private", String(meta?.is_private || false));
+
+      // Upload edited image
+      const uploadResult = await AssetService.Upload(formData);
+
+      // Get new image info
+      const newImage = uploadResult.data.uploadFile[0]?.file;
+      if (newImage) {
+        // Navigate to new image
+        navigate(`/photos/${newImage.path}`);
+      }
+
+      setIsEditing(false);
+      toast({
+        title: "Image saved!",
+        description:
+          "Your edits have been saved and the image has been updated.",
+      });
+    } catch (err) {
+      toast({
+        title: "Save failed",
+        description: "Could not save edited image.",
+        variant: "destructive",
+      });
+      console.error("Failed to save: ", err);
+    }
+  };
+
+  // Show editor if editing mode
+  if (isEditing && imageUrl) {
+    return (
+      <ImageEditor
+        imageUrl={imageUrl}
+        onSave={handleSaveEdit}
+        onCancel={() => setIsEditing(false)}
+      />
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black flex flex-col z-50">
       {/* Header */}
@@ -123,6 +175,13 @@ export default function ViewerPage() {
         </button>
         <div className="flex items-center justify-between bg-black/50 ">
           <button
+            onClick={() => setIsEditing(true)}
+            className="p-2 m-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
+            title="Edit Image"
+          >
+            <Edit3 size={24} />
+          </button>
+          <button
             onClick={() => handleCopy(meta.file_url)}
             className="p-2 m-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
           >
@@ -134,12 +193,7 @@ export default function ViewerPage() {
           >
             <Share2 size={24} />
           </button>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 m-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
-          >
-            <SlidersHorizontal size={24} />
-          </button>
+
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 m-2 rounded-full hover:bg-white/20 text-white cursor-pointer"
